@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "./utils.ts";
 import "./App.css";
 import { Info } from "./types.ts";
 function App() {
   const [services, setServices] = useState<Info[]>([]);
   useEffect(() => {
-    invoke<Info[]>("get_services").then(setServices);
+    invoke("get_plugins").then(setServices);
   }, []);
   return (
     <main className="container">
@@ -13,8 +13,8 @@ function App() {
       {services.map(({ name, description, author }) => (
         <div>
           <h2>{name}</h2>
-          <p>{description}</p>
-          <span>{author}</span>
+          <p>Description: {description}</p>
+          <span>Written by: {author}</span>
         </div>
       ))}
     </main>
