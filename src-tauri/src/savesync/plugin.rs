@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use mlua::{Function, Lua, Result, Table};
+use mlua::{ExternalError, Function, Lua, Result, Table};
 
 pub struct Plugin {
     backend: Lua,
@@ -11,13 +11,20 @@ impl Plugin {
         let table = self
             .backend
             .globals()
-            .get::<Function>("Info")?
+            .get::<Function>("Info")
+            .map_err(|_| "Info() function not defined".into_lua_err())?
             .call::<Table>(())?;
 
         Ok(PluginInfo {
-            name: table.get("name")?,
-            description: table.get("description")?,
-            author: table.get("author")?,
+            name: table
+                .get("name")
+                .map_err(|_| "Plugin name was not found".into_lua_err())?,
+            description: table
+                .get("description")
+                .map_err(|_| "Plugin description was not found".into_lua_err())?,
+            author: table
+                .get("author")
+                .map_err(|_| "Plugin author was not found".into_lua_err())?,
         })
     }
 }

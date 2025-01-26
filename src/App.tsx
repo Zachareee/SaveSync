@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "./utils.ts";
 import "./App.css";
 import { Info } from "./types.ts";
@@ -10,8 +10,8 @@ function App() {
   return (
     <main className="container">
       <h1>Welcome to Tauri + React</h1>
-      {services.map(({ name, description, author }) => (
-        <div>
+      {services.map(({ name, description, author }, idx) => (
+        <div key={idx}>
           <h2>{name}</h2>
           <p>Description: {description}</p>
           <span>Written by: {author}</span>

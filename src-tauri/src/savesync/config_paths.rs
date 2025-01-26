@@ -28,7 +28,7 @@ fn plugin() -> PathBuf {
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {
     if fs::exists(&path).is_ok_and(|x| !x) {
         fs::create_dir(&path).unwrap_or_else(|e| {
-            emit_error::<()>(e);
+            emit_error(e.to_string());
         })
     }
     path

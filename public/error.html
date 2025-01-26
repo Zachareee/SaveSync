@@ -1,0 +1,10 @@
+<html>
+
+<body>
+  <p id="error">Error found</p>
+</body>
+<script>
+  document.getElementById("error").innerHTML = new URLSearchParams(window.location.search).get("msg")
+</script>
+
+</html>
