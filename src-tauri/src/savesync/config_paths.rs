@@ -3,11 +3,13 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use crate::commands::emit_error;
+
 pub fn get_pluginfiles() -> Vec<PathBuf> {
-    fs::read_dir(plugin())
-        .unwrap()
-        .take_while(Result::is_ok)
-        .map(|e| e.unwrap().path())
+    let path = plugin();
+    fs::read_dir(&path)
+        .expect(&format!("Unable to read {}", path.to_string_lossy()))
+        .filter_map(|dir| dir.ok().map(|result| result.path()))
         .collect()
 }
 
@@ -24,8 +26,10 @@ fn plugin() -> PathBuf {
 }
 
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {
-    if !fs::exists(&path).unwrap() {
-        fs::create_dir(&path).unwrap()
+    if fs::exists(&path).is_ok_and(|x| !x) {
+        fs::create_dir(&path).unwrap_or_else(|e| {
+            emit_error::<()>(e);
+        })
     }
     path
 }
