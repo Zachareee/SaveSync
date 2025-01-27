@@ -1,16 +1,18 @@
 use std::path::PathBuf;
 use std::{collections::HashMap, fmt::Display};
 
+use serde_json::Value;
+
 use crate::{
     app_handle,
     savesync::{
         config_paths::get_pluginfiles,
-        plugin::{load_plugin, Plugin, PluginInfo},
+        plugin::{load_plugin, Plugin},
     },
 };
 
 #[tauri::command]
-pub fn get_plugins() -> Vec<PluginInfo> {
+pub fn get_plugins() -> Vec<HashMap<String, Value>> {
     load_plugins()
         .into_iter()
         .filter_map(|(path, plugin)| {
