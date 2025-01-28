@@ -19,7 +19,8 @@ impl Plugin {
                     .globals()
                     .get::<Function>("Info")
                     .map_err(|_| "Info() function not defined".into_lua_err())?
-                    .call::<Table>(())?,
+                    .call::<Table>(())
+                    .map_err(|_| "Info() function must return a table".into_lua_err())?,
             ))
             .map_err(|e| {
                 FIELD_MATCHER
@@ -45,7 +46,10 @@ pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin> {
     backend
         .globals()
         .get::<Function>("dofile")?
-        .call::<()>(servicename.as_path())?;
+        .call::<()>(servicename.as_path())
+        .map_err(|e| {
+            format!("Error parsing {}: {e}", servicename.to_string_lossy()).into_lua_err()
+        })?;
 
     Ok(Plugin { backend })
 }
