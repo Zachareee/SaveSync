@@ -1,76 +1,42 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{path::PathBuf, sync::LazyLock};
 
-use mlua::{prelude::LuaError, ExternalError, Function, Lua, Result, Table};
-use serde_json::Value;
+use mlua::{ExternalError, Function, Lua, LuaSerdeExt, Result, Table};
+
+use regex::Regex;
+
+const FIELD_MATCHER: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"`(.*)`").expect("Unable to compile regex"));
 
 pub struct Plugin {
     backend: Lua,
 }
 
-enum JsonValue {
-    String,
-    #[allow(dead_code)]
-    I32,
-}
-
-type TableTypes = (&'static str, JsonValue);
-
-const PLUGIN_INFO: [TableTypes; 3] = [
-    ("name", JsonValue::String),
-    ("description", JsonValue::String),
-    ("author", JsonValue::String),
-];
-
 impl Plugin {
-    pub fn info(&self) -> Result<HashMap<String, Value>> {
-        let table = self
-            .backend
-            .globals()
-            .get::<Function>("Info")
-            .map_err(|_| "Info() function not defined".into_lua_err())?
-            .call::<Table>(())?;
-
-        table.convert(&PLUGIN_INFO, "Plugin {} was not found")
-    }
-}
-
-trait TableToMap {
-    fn convert(
-        &self,
-        map_requirements: &[TableTypes],
-        error_str: &str,
-    ) -> Result<HashMap<String, Value>>;
-}
-
-impl TableToMap for Table {
-    fn convert(
-        &self,
-        map_requirements: &[TableTypes],
-        error_str: &str,
-    ) -> Result<HashMap<String, Value>> {
-        map_requirements
-            .iter()
-            .map(|(name, value_type)| {
-                Ok((
-                    name.to_string(),
-                    match value_type {
-                        JsonValue::String => {
-                            Value::String(self.get(name.to_string()).map_err(|_: LuaError| {
-                                error_str.replace("{}", name).into_lua_err()
-                            })?)
-                        }
-                        JsonValue::I32 => Value::Number(
-                            self.get::<i32>(name.to_string())
-                                .map_err(|_: LuaError| {
-                                    error_str.replace("{}", name).into_lua_err()
-                                })?
-                                .into(),
-                        ),
-                    },
-                ))
+    pub fn info(&self) -> Result<PluginInfo> {
+        self.backend
+            .from_value(mlua::Value::Table(
+                self.backend
+                    .globals()
+                    .get::<Function>("Info")
+                    .map_err(|_| "Info() function not defined".into_lua_err())?
+                    .call::<Table>(())?,
+            ))
+            .map_err(|e| {
+                FIELD_MATCHER
+                    .captures(&e.to_string())
+                    .map(|cap| {
+                        format!("Plugin {} was not found", cap.extract::<1>().1[0]).into_lua_err()
+                    })
+                    .unwrap()
             })
-            .collect()
     }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct PluginInfo {
+    name: String,
+    description: String,
+    author: String,
 }
 
 pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin> {
