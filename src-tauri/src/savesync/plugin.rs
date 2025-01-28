@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::LazyLock};
 
-use mlua::{ExternalError, Function, Lua, LuaSerdeExt, Result, Table};
+use mlua::{Function, Lua, LuaSerdeExt, Table};
 
 use regex::Regex;
 
@@ -12,22 +12,20 @@ pub struct Plugin {
 }
 
 impl Plugin {
-    pub fn info(&self) -> Result<PluginInfo> {
+    pub fn info(&self) -> Result<PluginInfo, String> {
         self.backend
             .from_value(mlua::Value::Table(
                 self.backend
                     .globals()
                     .get::<Function>("Info")
-                    .map_err(|_| "Info() function not defined".into_lua_err())?
+                    .map_err(|_| "Info() function not defined")?
                     .call::<Table>(())
-                    .map_err(|_| "Info() function must return a table".into_lua_err())?,
+                    .map_err(|_| "Info() function must return a table")?,
             ))
             .map_err(|e| {
                 FIELD_MATCHER
                     .captures(&e.to_string())
-                    .map(|cap| {
-                        format!("Plugin {} was not found", cap.extract::<1>().1[0]).into_lua_err()
-                    })
+                    .map(|cap| format!("Plugin {} was not found", cap.extract::<1>().1[0]))
                     .unwrap()
             })
     }
@@ -40,16 +38,15 @@ pub struct PluginInfo {
     author: String,
 }
 
-pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin> {
+pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin, String> {
     let backend = Lua::new();
 
     backend
         .globals()
-        .get::<Function>("dofile")?
+        .get::<Function>("dofile")
+        .unwrap() // dofile() should always be available in lua runtime
         .call::<()>(servicename.as_path())
-        .map_err(|e| {
-            format!("Error parsing {}: {e}", servicename.to_string_lossy()).into_lua_err()
-        })?;
+        .map_err(|e| format!("Error parsing {}: {e}", servicename.to_string_lossy()))?;
 
     Ok(Plugin { backend })
 }
