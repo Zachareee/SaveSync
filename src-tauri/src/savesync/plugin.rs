@@ -36,6 +36,7 @@ pub struct PluginInfo {
     name: String,
     description: String,
     author: String,
+    icon_url: Option<String>,
 }
 
 pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin, String> {
