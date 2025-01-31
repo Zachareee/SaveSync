@@ -1,5 +1,7 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{collections::HashMap, fmt::Display};
+
+use tauri::{Event, Listener};
 
 use crate::{
     app_handle,
@@ -8,6 +10,24 @@ use crate::{
         plugin::{load_plugin, Plugin, PluginInfo},
     },
 };
+
+pub fn emit_listeners(app: &tauri::App) {
+    [("init", init_listener)]
+        .into_iter()
+        .for_each(|(event, handler)| {
+            app.listen(event, handler);
+        });
+}
+
+fn init_listener(event: Event) {
+    let path = Path::new(event.payload()).to_path_buf();
+    let plugins = load_plugins();
+    if let Some(x) = plugins.get(&path) {
+        println!("Chosen provider: {:?}", x.info().unwrap())
+    } else {
+        println!("Couldn't find {path:?} in {plugins:?}")
+    }
+}
 
 #[tauri::command]
 pub fn get_plugins() -> Vec<PluginInfo> {

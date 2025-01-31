@@ -2,7 +2,7 @@
 mod commands;
 mod savesync;
 
-use commands::get_plugins;
+use commands::{emit_listeners, get_plugins};
 use std::sync::OnceLock;
 use tauri::{AppHandle, Manager};
 
@@ -14,6 +14,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![get_plugins])
         .setup(|app| {
+            emit_listeners(app);
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
             Ok(())
         })
