@@ -15,19 +15,34 @@ use crate::{
 };
 
 pub fn emit_listeners(app: &tauri::App) {
-    [("init", init_listener)]
-        .into_iter()
-        .for_each(|(event, handler)| {
-            app.listen(event, handler);
-        });
+    let arr: Vec<(&str, fn(Event))> = vec![("init", init_listener), ("refresh", refresh_listener)];
+    arr.into_iter().for_each(|(event, handler)| {
+        app.listen(event, handler);
+    });
 }
 
 fn init_listener(event: Event) {
-    if let Some(x) = load_plugins().get(&from_str::<OsString>(event.payload()).unwrap()) {
+    let path: OsString = from_str::<OsString>(event.payload()).unwrap();
+    if let Some(x) = load_plugins().get(&path) {
         app_handle()
             .emit("init_result", x.init().map_err(|e| emit_error(e)).is_ok())
             .expect("Unable to emit event");
+    } else {
+        emit_error(format!("{path:?} not found"));
     }
+}
+
+fn refresh_listener(_: Event) {
+    let map = load_plugins();
+    let handle = app_handle();
+    handle
+        .state::<Mutex<AppState>>()
+        .lock()
+        .expect("Unable to obtain lock to retrieve app state")
+        .plugins = map;
+    handle
+        .emit("plugins", &get_plugins())
+        .expect("Failed to emit event");
 }
 
 #[tauri::command]

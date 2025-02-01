@@ -8,7 +8,7 @@ export function invoke<T extends keyof InvokeTypes>(
   return old_invoke(command, payload);
 }
 
-export function emit<T extends keyof EmitTypes>(eventName: string, payload?: EmitTypes[T]) {
+export function emit<T extends keyof EmitTypes>(eventName: T, payload?: EmitTypes[T]) {
   return old_emit(eventName, payload)
 }
 
@@ -16,21 +16,28 @@ export function listen<T extends keyof ListenTypes>(eventName: T | EventName, ha
   return old_listen(eventName, handler, option)
 }
 
-/** key: command
+/** 
+ *  key: command
  *  value`[`0`]`: input type
  *  value`[`1`]`: output type
  */
 type InvokeTypes = {
-  get_plugins: [undefined, Info[]];
 };
 
-/** key: command
+/** 
+ *  key: command
  *  value: input type
  */
 type EmitTypes = {
   init: string;
+  refresh: undefined
 };
 
+/** 
+ *  key: command
+ *  value: output type
+ */
 type ListenTypes = {
+  plugins: Info[];
   init_result: boolean
 }
