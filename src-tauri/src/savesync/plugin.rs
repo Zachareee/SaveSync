@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
-use mlua::{Function, Lua, LuaSerdeExt, Table};
+use mlua::{FromLuaMulti, Function, IntoLuaMulti, Lua, LuaSerdeExt};
 
 use regex::Regex;
 
@@ -24,14 +24,7 @@ impl Plugin {
 
     pub fn info(&self) -> Result<PluginInfo, String> {
         self.backend
-            .from_value(mlua::Value::Table(
-                self.backend
-                    .globals()
-                    .get::<Function>("Info")
-                    .map_err(|_| "Info() function not defined")?
-                    .call::<Table>(())
-                    .map_err(|_| "Info() function must return a table")?,
-            ))
+            .from_value(mlua::Value::Table(self.run_function("Info", ())?))
             .map_or_else(
                 |e| {
                     Err(FIELD_MATCHER
@@ -44,6 +37,22 @@ impl Plugin {
                     Ok(info)
                 },
             )
+    }
+
+    pub fn init(&self) -> Result<(), String> {
+        self.run_function("Init", ())
+    }
+
+    fn run_function<T>(&self, fn_name: &str, args: impl IntoLuaMulti) -> Result<T, String>
+    where
+        T: FromLuaMulti,
+    {
+        self.backend
+            .globals()
+            .get::<Function>(fn_name)
+            .map_err(|_| format!("{fn_name} function not defined"))?
+            .call(args)
+            .map_err(|e| format!("Error while calling {fn_name}: {e}"))
     }
 }
 
