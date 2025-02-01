@@ -44,13 +44,10 @@ impl Plugin {
         let mut filename = self.filename.to_os_string();
         filename.push(".auth");
 
-        println!("Filename is {filename:?}");
+        let filename = super::config_paths::creds().join(&filename);
 
-        self.run_function(
-            "Init",
-            fs::read_to_string(super::config_paths::creds().join(&filename)).ok(),
-        )
-        .inspect(|creds| fs::write(&filename, creds).expect("Unable to write credentials"))
+        self.run_function("Init", fs::read_to_string(&filename).ok())
+            .inspect(|creds| fs::write(&filename, creds).expect("Unable to write credentials"))
     }
 
     fn run_function<T>(&self, fn_name: &str, args: impl IntoLuaMulti) -> Result<T, String>
