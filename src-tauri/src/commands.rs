@@ -1,9 +1,9 @@
 use serde_json::from_str;
 use std::ffi::OsString;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use std::{collections::HashMap, fmt::Display};
 
-use tauri::{Event, Listener};
+use tauri::{Emitter, Event, Listener, Manager};
 
 use crate::{
     app_handle,
@@ -11,6 +11,7 @@ use crate::{
         config_paths::get_pluginfiles,
         plugin::{load_plugin, Plugin, PluginInfo},
     },
+    AppState,
 };
 
 pub fn emit_listeners(app: &tauri::App) {
@@ -22,19 +23,21 @@ pub fn emit_listeners(app: &tauri::App) {
 }
 
 fn init_listener(event: Event) {
-    let path: OsString = from_str(event.payload()).unwrap();
-    let plugins = load_plugins();
-    if let Some(x) = plugins.get(&path) {
-        println!("Chosen provider: {:?}", x.info().unwrap())
-    } else {
-        println!("Couldn't find {path:?} in {plugins:?}")
+    if let Some(x) = load_plugins().get(&from_str::<OsString>(event.payload()).unwrap()) {
+        app_handle()
+            .emit("init_result", x.init().map_err(|e| emit_error(e)).is_ok())
+            .expect("Unable to emit event");
     }
 }
 
 #[tauri::command]
 pub fn get_plugins() -> Vec<PluginInfo> {
-    load_plugins()
-        .into_iter()
+    app_handle()
+        .state::<Mutex<AppState>>()
+        .lock()
+        .expect("Unable to obtain lock to retrieve app state")
+        .plugins
+        .iter()
         .filter_map(|(path, plugin)| {
             plugin.info().map_or_else(
                 |e| {
@@ -63,7 +66,7 @@ where
     });
 }
 
-fn load_plugins() -> HashMap<Rc<OsString>, Plugin> {
+pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
     get_pluginfiles()
         .into_iter()
         .filter_map(|path| {

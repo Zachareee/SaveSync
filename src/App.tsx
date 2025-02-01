@@ -1,4 +1,4 @@
-import { emit, invoke } from "./utils.ts";
+import { emit, invoke, listen } from "./utils.ts";
 import "./App.css";
 import { Info } from "./types.ts";
 import { createSignal, For, Show } from "solid-js";
@@ -6,7 +6,9 @@ import { createSignal, For, Show } from "solid-js";
 function App() {
   const [services, setServices] = createSignal<Info[]>([]);
 
+  // TODO: send refresh event to backend to to reflect plugin changes
   invoke("get_plugins").then(plugins => setServices(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name))));
+  listen("init_result", e => { console.log(e.payload) })
 
   return (
     <main class="container">
