@@ -12,8 +12,8 @@ function App() {
     <main class="container">
       <h1>Welcome to Tauri + Solid + Lua</h1>
       <For each={services()}>
-        {({ name, description, author, icon_url, file_name }) => (
-          <div onclick={() => emit("init", file_name)}>
+        {({ name, description, author, icon_url, filename }) => (
+          <div onclick={() => emit("init", filename)}>
             <h2>{name}</h2>
             <p>Description: {description}</p>
             <p>Written by: {author}</p>

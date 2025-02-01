@@ -1,4 +1,6 @@
-use std::path::{Path, PathBuf};
+use serde_json::from_str;
+use std::ffi::OsString;
+use std::rc::Rc;
 use std::{collections::HashMap, fmt::Display};
 
 use tauri::{Event, Listener};
@@ -20,7 +22,7 @@ pub fn emit_listeners(app: &tauri::App) {
 }
 
 fn init_listener(event: Event) {
-    let path = Path::new(event.payload()).to_path_buf();
+    let path: OsString = from_str(event.payload()).unwrap();
     let plugins = load_plugins();
     if let Some(x) = plugins.get(&path) {
         println!("Chosen provider: {:?}", x.info().unwrap())
@@ -36,10 +38,7 @@ pub fn get_plugins() -> Vec<PluginInfo> {
         .filter_map(|(path, plugin)| {
             plugin.info().map_or_else(
                 |e| {
-                    emit_error(format!(
-                        "Failed to run Info() in {}: {e}",
-                        path.file_name().unwrap().to_string_lossy()
-                    ));
+                    emit_error(format!("Failed to run Info() in {:?}: {e}", path));
                     None
                 },
                 Some,
@@ -64,7 +63,7 @@ where
     });
 }
 
-fn load_plugins() -> HashMap<PathBuf, Plugin> {
+fn load_plugins() -> HashMap<Rc<OsString>, Plugin> {
     get_pluginfiles()
         .into_iter()
         .filter_map(|path| {
@@ -73,7 +72,7 @@ fn load_plugins() -> HashMap<PathBuf, Plugin> {
                     emit_error(e.to_string());
                     None
                 },
-                |x| Some((path, x)),
+                |x| Some((x.filename(), x)),
             )
         })
         .collect()

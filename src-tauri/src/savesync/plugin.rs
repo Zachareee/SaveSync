@@ -1,4 +1,4 @@
-use std::{path::PathBuf, rc::Rc, sync::LazyLock};
+use std::{ffi::OsString, path::PathBuf, rc::Rc, sync::LazyLock};
 
 use mlua::{Function, Lua, LuaSerdeExt, Table};
 
@@ -10,10 +10,14 @@ const FIELD_MATCHER: LazyLock<Regex> =
 #[derive(Debug)]
 pub struct Plugin {
     backend: Lua,
-    file_name: Rc<PathBuf>,
+    filename: Rc<OsString>,
 }
 
 impl Plugin {
+    pub fn filename(&self) -> Rc<OsString> {
+        self.filename.clone()
+    }
+
     pub fn info(&self) -> Result<PluginInfo, String> {
         self.backend
             .from_value(mlua::Value::Table(
@@ -32,7 +36,7 @@ impl Plugin {
                         .unwrap())
                 },
                 |mut info: PluginInfo| {
-                    info.file_name = Some(self.file_name.clone());
+                    info.filename = Some(self.filename.clone());
                     Ok(info)
                 },
             )
@@ -45,7 +49,7 @@ pub struct PluginInfo {
     description: String,
     author: String,
     icon_url: Option<String>,
-    file_name: Option<Rc<PathBuf>>,
+    filename: Option<Rc<OsString>>,
 }
 
 pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin, String> {
@@ -60,6 +64,6 @@ pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin, String> {
 
     Ok(Plugin {
         backend,
-        file_name: servicename.clone().into(),
+        filename: servicename.file_name().unwrap().to_os_string().into(),
     })
 }
