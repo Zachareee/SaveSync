@@ -1,7 +1,10 @@
 use std::{
-    env, fs,
+    fs,
     path::{Path, PathBuf},
 };
+
+#[cfg(not(debug_assertions))]
+use std::env;
 
 use crate::commands::emit_error;
 
@@ -13,12 +16,22 @@ pub fn get_pluginfiles() -> Vec<PathBuf> {
         .collect()
 }
 
+#[cfg(not(debug_assertions))]
 fn appdata() -> PathBuf {
     Path::new(&env::var("APPDATA").expect("Unable to find APPDATA environment variable")).into()
 }
 
+#[cfg(debug_assertions)]
+fn appdata() -> PathBuf {
+    Path::new("..").into()
+}
+
 fn config() -> PathBuf {
     create_dir_if_not_exist(appdata().join("SaveSync"))
+}
+
+pub fn creds() -> PathBuf {
+    create_dir_if_not_exist(config().join("credentials"))
 }
 
 fn plugin() -> PathBuf {
