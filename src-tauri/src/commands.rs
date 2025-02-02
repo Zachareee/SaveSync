@@ -1,17 +1,16 @@
-use serde_json::from_str;
 use std::ffi::OsString;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::{collections::HashMap, fmt::Display};
 
-use tauri::{Emitter, Event, Listener, Manager};
+use serde_json::from_str;
+use tauri::{Emitter, Event, Listener};
 
 use crate::{
-    app_handle,
+    app_handle, app_state,
     savesync::{
         config_paths::get_pluginfiles,
         plugin::{load_plugin, Plugin, PluginInfo},
     },
-    AppState,
 };
 
 pub fn emit_listeners(app: &tauri::App) {
@@ -33,13 +32,11 @@ fn init_listener(event: Event) {
 }
 
 fn refresh_listener(_: Event) {
-    let map = load_plugins();
     let handle = app_handle();
-    handle
-        .state::<Mutex<AppState>>()
+    app_state(&handle)
         .lock()
         .expect("Unable to obtain lock to retrieve app state")
-        .plugins = map;
+        .plugins = load_plugins();
     handle
         .emit("plugins", &get_plugins())
         .expect("Failed to emit event");
@@ -47,8 +44,7 @@ fn refresh_listener(_: Event) {
 
 #[tauri::command]
 pub fn get_plugins() -> Vec<PluginInfo> {
-    app_handle()
-        .state::<Mutex<AppState>>()
+    app_state(&app_handle())
         .lock()
         .expect("Unable to obtain lock to retrieve app state")
         .plugins

@@ -9,12 +9,12 @@ use std::{
     ffi::OsString,
     sync::{Arc, Mutex, OnceLock},
 };
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, State};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 
 #[derive(Default)]
-struct AppState {
+pub struct AppState {
     plugins: HashMap<Arc<OsString>, Plugin>,
 }
 
@@ -38,4 +38,8 @@ pub fn run() {
 
 pub fn app_handle() -> AppHandle {
     APP_INSTANCE.get().unwrap().to_owned()
+}
+
+pub fn app_state<'a>(handle: &'a AppHandle) -> State<'a, Mutex<AppState>> {
+    handle.state::<Mutex<AppState>>()
 }
