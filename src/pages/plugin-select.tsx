@@ -2,14 +2,18 @@ import { emit, listen } from "@/utils.ts";
 import { Info } from "@/types.ts";
 import { createSignal, For, Match, onMount, Show, Switch } from "solid-js";
 import { useNavigate } from "@solidjs/router";
+import { Portal } from "solid-js/web";
+import { createStore, reconcile } from "solid-js/store";
+
+const refresh = () => emit("refresh")
 
 export default function PluginSelect() {
-  const [services, setServices] = createSignal<Info[]>([]);
+  const [services, setServices] = createStore<Info[]>([]);
   const [loading, setLoading] = createSignal("")
   const navigate = useNavigate()
 
-  onMount(() => emit("refresh"))
-  listen("plugins", ({ payload: plugins }) => setServices(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name))));
+  onMount(refresh)
+  listen("plugins", ({ payload: plugins }) => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
 
   function init({ name, filename }: Info) {
     setLoading(name)
@@ -21,12 +25,17 @@ export default function PluginSelect() {
     else setLoading("")
   })
 
-  return (
+  return <>
     <main class="container">
+      <Portal mount={document.querySelector("main")!}>
+        <div class="absolute right-0 bottom-0 m-4">
+          <button onclick={refresh}>Refresh</button>
+        </div>
+      </Portal>
       <Switch>
         <Match when={!loading()}>
           <h1>Welcome to Tauri + Solid + Lua</h1>
-          <For each={services()}>
+          <For each={services}>
             {({ name, description, author, icon_url, filename }) => (
               <div onclick={[init, { name, filename }]}>
                 <h2>{name}</h2>
@@ -47,5 +56,5 @@ export default function PluginSelect() {
         </Match>
       </Switch>
     </main>
-  );
+  </>
 }
