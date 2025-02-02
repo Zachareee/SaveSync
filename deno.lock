@@ -1,6 +1,7 @@
 {
   "version": "4",
   "specifiers": {
+    "npm:@solidjs/router@~0.15.3": "0.15.3_solid-js@1.9.4__seroval@1.2.0",
     "npm:@tauri-apps/api@2": "2.2.0",
     "npm:@tauri-apps/cli@2": "2.2.5",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
@@ -304,6 +305,12 @@
     },
     "@rollup/rollup-win32-x64-msvc@4.31.0": {
       "integrity": "sha512-ul8rnCsUumNln5YWwz0ted2ZHFhzhRRnkpBZ+YRuHoRAlUji9KChpOUOndY7uykrPEPXVbHLlsdo6v5yXo/TXw=="
+    },
+    "@solidjs/router@0.15.3_solid-js@1.9.4__seroval@1.2.0": {
+      "integrity": "sha512-iEbW8UKok2Oio7o6Y4VTzLj+KFCmQPGEpm1fS3xixwFBdclFVBvaQVeibl1jys4cujfAK5Kn6+uG2uBm3lxOMw==",
+      "dependencies": [
+        "solid-js"
+      ]
     },
     "@tauri-apps/api@2.2.0": {
       "integrity": "sha512-R8epOeZl1eJEl603aUMIGb4RXlhPjpgxbGVEaqY+0G5JG9vzV/clNlzTeqc+NLYXVqXcn8mb4c5b9pJIUDEyAg=="
@@ -642,6 +649,7 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@solidjs/router@~0.15.3",
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
         "npm:@tauri-apps/plugin-opener@2",
