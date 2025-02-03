@@ -1,60 +1,64 @@
-import { emit, listen } from "@/utils.ts";
+import { emit, listen, invoke } from "@/utils.ts";
 import { Info } from "@/types.ts";
-import { createSignal, For, Match, onMount, Show, Switch } from "solid-js";
+import { createSignal, Index, onCleanup, onMount, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
 
-const refresh = () => emit("refresh")
+const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
 
 export default function PluginSelect() {
   const [services, setServices] = createStore<Info[]>([]);
   const [loading, setLoading] = createSignal("")
   const navigate = useNavigate()
 
-  onMount(refresh)
-  listen("plugins", ({ payload: plugins }) => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
+
+  onMount(() => { refresh(setServices) })
 
   function init({ name, filename }: Info) {
     setLoading(name)
     emit("init", filename)
   }
 
-  listen("init_result", ({ payload }) => {
+  const unlisten = listen("init_result", ({ payload }) => {
     if (loading() && payload) navigate("/folders")
     else setLoading("")
   })
 
+  onCleanup(async () => {
+    (await unlisten)()
+  })
+
   return <>
-    <main class="container">
-      <Portal mount={document.querySelector("main")!}>
+    <main class="container items-center">
+      <Portal>
         <div class="absolute right-0 bottom-0 m-4">
-          <button onclick={refresh}>Refresh</button>
+          <button onclick={[refresh, setServices]}>Refresh</button>
         </div>
       </Portal>
-      <Switch>
-        <Match when={!loading()}>
-          <h1>Welcome to Tauri + Solid + Lua</h1>
-          <For each={services}>
-            {({ name, description, author, icon_url, filename }) => (
-              <div onclick={[init, { name, filename }]}>
-                <h2>{name}</h2>
-                <p>Description: {description}</p>
-                <p>Written by: {author}</p>
-                <p>
-                  <Show when={icon_url} fallback={"No icon"}>
-                    Icon url: {icon_url!}
-                  </Show>
-                </p>
+      <Show when={!loading()} fallback={<>
+        <h1>Now loading: {loading()}</h1>
+        <button onClick={() => setLoading("")}>Cancel loading</button>
+      </>}>
+        <h1>Welcome to Tauri + Solid + Lua</h1>
+        <div class="space-y-5">
+          <Index each={services}>
+            {elem =>
+              // Do not destructure elem to retain reactivity
+              <div onclick={[init, { name: elem().name, filename: elem().filename }]} class="flex border justify-end p-1.5 cursor-pointer rounded-lg">
+                <Show when={elem().icon_url}>
+                  <img src={elem().icon_url} class="max-w-10" />
+                </Show>
+                <div>
+                  <h2>{elem().name}</h2>
+                  <p>Description: {elem().description}</p>
+                  <span>Written by: {elem().author}</span>
+                </div>
               </div>
-            )}
-          </For>
-        </Match>
-        <Match when={loading()}>
-          <h1>Now loading: {loading()}</h1>
-          <button onClick={() => setLoading("")}>Cancel loading</button>
-        </Match>
-      </Switch>
-    </main>
+            }
+          </Index>
+        </div>
+      </Show>
+    </main >
   </>
 }
