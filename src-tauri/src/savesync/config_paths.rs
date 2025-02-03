@@ -26,7 +26,7 @@ fn appdata() -> PathBuf {
     Path::new("..").into()
 }
 
-fn config() -> PathBuf {
+pub fn config() -> PathBuf {
     create_dir_if_not_exist(appdata().join("SaveSync"))
 }
 

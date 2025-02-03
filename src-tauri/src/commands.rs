@@ -6,7 +6,7 @@ use serde_json::from_str;
 use tauri::{Emitter, Event, Listener};
 
 use crate::{
-    app_handle, app_state,
+    app_handle,
     savesync::{
         config_paths::get_pluginfiles,
         plugin::{load_plugin, Plugin, PluginInfo},
@@ -14,7 +14,7 @@ use crate::{
 };
 
 pub fn emit_listeners(app: &tauri::App) {
-    let arr: Vec<(&str, fn(Event))> = vec![("init", init_listener), ("refresh", refresh_listener)];
+    let arr: Vec<(&str, fn(Event))> = vec![("init", init_listener)];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
     });
@@ -31,23 +31,9 @@ fn init_listener(event: Event) {
     }
 }
 
-fn refresh_listener(_: Event) {
-    let handle = app_handle();
-    app_state(&handle)
-        .lock()
-        .expect("Unable to obtain lock to retrieve app state")
-        .plugins = load_plugins();
-    handle
-        .emit("plugins", &get_plugins())
-        .expect("Failed to emit event");
-}
-
 #[tauri::command]
 pub fn get_plugins() -> Vec<PluginInfo> {
-    app_state(&app_handle())
-        .lock()
-        .expect("Unable to obtain lock to retrieve app state")
-        .plugins
+    load_plugins()
         .iter()
         .filter_map(|(path, plugin)| {
             plugin.info().map_or_else(
