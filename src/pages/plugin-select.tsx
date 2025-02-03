@@ -47,7 +47,7 @@ export default function PluginSelect() {
               // Do not destructure elem to retain reactivity
               <div onclick={[init, { name: elem().name, filename: elem().filename }]} class="flex border justify-end p-1.5 cursor-pointer rounded-lg">
                 <Show when={elem().icon_url}>
-                  <img src={elem().icon_url} class="max-w-10" />
+                  <img src={elem().icon_url} class="w-10 mr-4" />
                 </Show>
                 <div>
                   <h2>{elem().name}</h2>
