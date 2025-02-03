@@ -22,6 +22,7 @@ export function listen<T extends keyof ListenTypes>(eventName: T | EventName, ha
  *  value`[`1`]`: output type
  */
 type InvokeTypes = {
+  get_plugins: [undefined, Info[]]
 };
 
 /** 
