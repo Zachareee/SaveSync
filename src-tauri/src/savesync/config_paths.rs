@@ -34,7 +34,7 @@ pub fn creds() -> PathBuf {
     create_dir_if_not_exist(config().join("credentials"))
 }
 
-fn plugin() -> PathBuf {
+pub fn plugin() -> PathBuf {
     create_dir_if_not_exist(config().join("plugins"))
 }
 

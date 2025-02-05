@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
-use mlua::{FromLuaMulti, Function, IntoLuaMulti, Lua, LuaSerdeExt};
+use mlua::{FromLuaMulti, Function, IntoLuaMulti, Lua, LuaOptions, LuaSerdeExt, StdLib};
 
 use regex::Regex;
 
@@ -77,17 +77,34 @@ pub struct PluginInfo {
 }
 
 pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin, String> {
-    let backend = Lua::new();
+    // enable DLL loading
+    let backend = unsafe { Lua::unsafe_new_with(StdLib::ALL_SAFE, LuaOptions::new()) };
 
+    let path = include_path(servicename, "lua");
+    let cpath = include_path(servicename, "dll");
+
+    backend
+        .load(format!(
+            "package.path = '{path};' .. package.path; package.cpath = '{cpath};' .. package.cpath"
+        ))
+        .exec()
+        .map_err(|e| format!("Unable to change package path: {e}"))?;
     backend
         .globals()
         .get::<Function>("dofile")
         .unwrap() // dofile() should always be available in lua runtime
-        .call::<()>(servicename.as_path())
+        .call::<()>(servicename.join("main.lua").as_path())
         .map_err(|e| format!("Error parsing {}: {e}", servicename.to_string_lossy()))?;
 
     Ok(Plugin {
         backend,
         filename: servicename.file_name().unwrap().to_os_string().into(),
     })
+}
+
+fn include_path(servicename: &PathBuf, ext: &str) -> String {
+    servicename
+        .join(["?.", ext].join(""))
+        .to_string_lossy()
+        .replace("\\", "/")
 }

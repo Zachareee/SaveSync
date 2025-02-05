@@ -2,18 +2,19 @@
 mod commands;
 mod savesync;
 
-use commands::{emit_listeners, get_plugins, load_plugins};
-use savesync::{config_paths::config, plugin::Plugin};
+use commands::{emit_listeners, get_plugins};
+use savesync::config_paths::config;
 use std::{
+    ffi::OsString,
     fs,
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Mutex, OnceLock},
 };
 use tauri::{AppHandle, Manager, State};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 
 pub struct AppState {
-    plugin: Plugin,
+    plugin: OsString,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -24,13 +25,10 @@ pub fn run() {
         .setup(|app| {
             emit_listeners(app);
 
-            if let Some(plugin) = fs::read_to_string(config().join("last_plugin.txt"))
-                .ok()
-                .map_or(None, |plugin_name| {
-                    load_plugins().remove(&Arc::new(plugin_name.into()))
-                })
-            {
-                app.manage(Mutex::new(AppState { plugin }));
+            if let Ok(plugin) = fs::read_to_string(config().join("last_plugin.txt")) {
+                app.manage(Mutex::new(AppState {
+                    plugin: plugin.into(),
+                }));
             }
 
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
