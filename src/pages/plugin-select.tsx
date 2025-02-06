@@ -9,20 +9,20 @@ const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invo
 
 export default function PluginSelect() {
   const [services, setServices] = createStore<Info[]>([]);
-  const [loading, setLoading] = createSignal("")
+  const [loading, setLoading] = createSignal<AbortInfo | undefined>()
   const navigate = useNavigate()
 
 
   onMount(() => { refresh(setServices) })
 
-  function init({ name, filename }: Info) {
-    setLoading(name)
-    emit("init", filename)
+  function init(pair: AbortInfo) {
+    setLoading(pair)
+    emit("init", pair.filename)
   }
 
   const unlisten = listen("init_result", ({ payload }) => {
     if (loading() && payload) navigate("/folders")
-    else setLoading("")
+    else setLoading()
   })
 
   onCleanup(async () => {
@@ -37,8 +37,8 @@ export default function PluginSelect() {
         </div>
       </Portal>
       <Show when={!loading()} fallback={<>
-        <h1>Now loading: {loading()}</h1>
-        <button onClick={() => setLoading("")}>Cancel loading</button>
+        <h1>Now loading: {loading()!.name}</h1>
+        <button onClick={() => { emit("abort", loading()!.filename); setLoading() }}>Cancel loading</button>
       </>}>
         <h1>Welcome to Tauri + Solid + Lua</h1>
         <div class="space-y-5">
@@ -62,3 +62,5 @@ export default function PluginSelect() {
     </main >
   </>
 }
+
+type AbortInfo = Pick<Info, "name" | "filename">

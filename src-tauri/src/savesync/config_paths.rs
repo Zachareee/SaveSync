@@ -38,6 +38,10 @@ pub fn plugin() -> PathBuf {
     create_dir_if_not_exist(config().join("plugins"))
 }
 
+pub fn logs() -> PathBuf {
+    create_dir_if_not_exist(config().join("logs"))
+}
+
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {
     if fs::exists(&path).is_ok_and(|x| !x) {
         fs::create_dir(&path).unwrap_or_else(|e| {

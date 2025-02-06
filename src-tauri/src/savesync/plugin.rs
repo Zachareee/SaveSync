@@ -58,6 +58,14 @@ impl Plugin {
             )
     }
 
+    pub fn abort(&self) -> Result<(), String> {
+        self.run_function("Abort", ())
+            .and_then(|msg: Option<String>| match msg {
+                Some(msg) => Err(msg),
+                None => Ok(()),
+            })
+    }
+
     fn run_function<T>(&self, fn_name: &str, args: impl IntoLuaMulti) -> Result<T, String>
     where
         T: FromLuaMulti,

@@ -1,10 +1,13 @@
 use std::ffi::OsString;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::sync::Arc;
 use std::{collections::HashMap, fmt::Display};
 
 use serde_json::from_str;
 use tauri::{Emitter, Event, Listener};
 
+use crate::savesync::config_paths::logs;
 use crate::{
     app_handle,
     savesync::{
@@ -14,7 +17,7 @@ use crate::{
 };
 
 pub fn emit_listeners(app: &tauri::App) {
-    let arr: Vec<(&str, fn(Event))> = vec![("init", init_listener)];
+    let arr: Vec<(&str, fn(Event))> = vec![("init", init_listener), ("abort", abort_listener)];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
     });
@@ -35,6 +38,29 @@ fn init_listener(event: Event) {
         }
         None => {
             emit_error(format!("{path:?} not found"));
+        }
+    }
+}
+
+/// Fails silently, plugin does not need to implement abort()
+/// If a message is returned, it is logged to the logs folder
+fn abort_listener(event: Event) {
+    let mut path: OsString = from_str::<OsString>(event.payload()).unwrap();
+
+    if let Some(mut err) = load_plugins()
+        .get(&path)
+        .map_or(None, |plugin| plugin.abort().err())
+    {
+        path.push(".txt");
+
+        if let Ok(mut file) = OpenOptions::new()
+            .create(true)
+            .write(true)
+            .append(true)
+            .open(logs().join(path))
+        {
+            err.push('\n');
+            let _ = file.write_all(&err.into_bytes());
         }
     }
 }

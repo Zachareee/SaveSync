@@ -30,8 +30,9 @@ type InvokeTypes = {
  *  value: input type
  */
 type EmitTypes = {
-  init: string;
+  init: string
   refresh: undefined
+  abort: string
 };
 
 /** 
