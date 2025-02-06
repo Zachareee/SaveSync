@@ -20,14 +20,22 @@ pub fn emit_listeners(app: &tauri::App) {
     });
 }
 
+// async to prevent UI thread from freezing
 fn init_listener(event: Event) {
     let path: OsString = from_str::<OsString>(event.payload()).unwrap();
-    if let Some(x) = load_plugins().get(&path) {
-        app_handle()
-            .emit("init_result", x.init().map_err(|e| emit_error(e)).is_ok())
-            .expect("Unable to emit event");
-    } else {
-        emit_error(format!("{path:?} not found"));
+
+    match load_plugins().get(&path) {
+        Some(plugin) => {
+            app_handle()
+                .emit(
+                    "init_result",
+                    plugin.init().map_err(|e| emit_error(e)).is_ok(),
+                )
+                .expect("Unable to emit event");
+        }
+        None => {
+            emit_error(format!("{path:?} not found"));
+        }
     }
 }
 
