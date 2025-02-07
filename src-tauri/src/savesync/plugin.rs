@@ -66,6 +66,10 @@ impl Plugin {
             })
     }
 
+    pub fn sync(&self, buffer: &[u8]) {
+        self.run_function::<()>("Sync", buffer);
+    }
+
     fn run_function<T>(&self, fn_name: &str, args: impl IntoLuaMulti) -> Result<T, String>
     where
         T: FromLuaMulti,

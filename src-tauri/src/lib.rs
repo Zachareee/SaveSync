@@ -4,17 +4,20 @@ mod savesync;
 
 use commands::{emit_listeners, get_plugins};
 use savesync::config_paths::config;
+use serde::Serialize;
 use std::{
-    ffi::OsString,
+    collections::HashMap,
     fs,
+    path::PathBuf,
     sync::{Mutex, OnceLock},
 };
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 
 pub struct AppState {
-    plugin: OsString,
+    plugin: PathBuf,
+    path_mapping: HashMap<String, PathBuf>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -28,6 +31,7 @@ pub fn run() {
             if let Ok(plugin) = fs::read_to_string(config().join("last_plugin.txt")) {
                 app.manage(Mutex::new(AppState {
                     plugin: plugin.into(),
+                    path_mapping: HashMap::new(),
                 }));
             }
 
@@ -44,4 +48,13 @@ pub fn app_handle() -> AppHandle {
 
 pub fn app_state<'a>(handle: &'a AppHandle) -> State<'a, Mutex<AppState>> {
     handle.state::<Mutex<AppState>>()
+}
+
+pub fn app_emit<S>(event: &str, payload: S)
+where
+    S: Serialize + Clone,
+{
+    app_handle()
+        .emit(event, payload)
+        .expect("Unable to emit event")
 }

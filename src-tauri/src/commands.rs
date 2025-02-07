@@ -5,8 +5,9 @@ use std::sync::Arc;
 use std::{collections::HashMap, fmt::Display};
 
 use serde_json::from_str;
-use tauri::{Emitter, Event, Listener};
+use tauri::{Event, Listener};
 
+use crate::app_emit;
 use crate::savesync::config_paths::logs;
 use crate::{
     app_handle,
@@ -29,12 +30,10 @@ fn init_listener(event: Event) {
 
     match load_plugins().get(&path) {
         Some(plugin) => {
-            app_handle()
-                .emit(
-                    "init_result",
-                    plugin.init().map_err(|e| emit_error(e)).is_ok(),
-                )
-                .expect("Unable to emit event");
+            app_emit(
+                "init_result",
+                plugin.init().map_err(|e| emit_error(e)).is_ok(),
+            );
         }
         None => {
             emit_error(format!("{path:?} not found"));
@@ -51,6 +50,8 @@ fn abort_listener(event: Event) {
         .get(&path)
         .map_or(None, |plugin| plugin.abort().err())
     {
+        app_emit("abort_result", &err);
+
         path.push(".txt");
 
         if let Ok(mut file) = OpenOptions::new()
