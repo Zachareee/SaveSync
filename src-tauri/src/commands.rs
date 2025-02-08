@@ -1,24 +1,28 @@
 use std::ffi::OsString;
-use std::fs::OpenOptions;
+use std::fs::{read_dir, OpenOptions};
 use std::io::Write;
+use std::path::Path;
 use std::sync::Arc;
 use std::{collections::HashMap, fmt::Display};
 
+use serde::Deserialize;
 use serde_json::from_str;
 use tauri::{Event, Listener};
 
-use crate::app_emit;
-use crate::savesync::config_paths::logs;
-use crate::{
-    app_handle,
-    savesync::{
-        config_paths::get_pluginfiles,
-        plugin::{load_plugin, Plugin, PluginInfo},
-    },
+use crate::savesync::config_paths;
+use crate::savesync::{
+    config_paths::{get_pluginfiles, logs},
+    plugin::{load_plugin, Plugin, PluginInfo},
+    watch::watch_folder,
 };
+use crate::{app_emit, app_handle, app_state};
 
 pub fn emit_listeners(app: &tauri::App) {
-    let arr: Vec<(&str, fn(Event))> = vec![("init", init_listener), ("abort", abort_listener)];
+    let arr: Vec<(&str, fn(Event))> = vec![
+        ("init", init_listener),
+        ("abort", abort_listener),
+        ("sync", sync_listener),
+    ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
     });
@@ -30,10 +34,11 @@ fn init_listener(event: Event) {
 
     match load_plugins().get(&path) {
         Some(plugin) => {
-            app_emit(
-                "init_result",
-                plugin.init().map_err(|e| emit_error(e)).is_ok(),
-            );
+            let res = plugin.init().map_err(|e| emit_error(e)).is_ok();
+            app_emit("init_result", res);
+            if res {
+                app_state(&app_handle()).lock().unwrap().plugin = config_paths::plugin().join(path)
+            }
         }
         None => {
             emit_error(format!("{path:?} not found"));
@@ -66,6 +71,27 @@ fn abort_listener(event: Event) {
     }
 }
 
+#[derive(Deserialize)]
+struct SyncStruct {
+    tag: String,
+    foldername: String,
+}
+
+fn sync_listener(event: Event) {
+    let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
+
+    println!("sync_folder called");
+    watch_folder(
+        app_state(&app_handle())
+            .lock()
+            .unwrap()
+            .path_mapping
+            .get(&tag)
+            .expect("Tag name not found")
+            .join(foldername),
+    );
+}
+
 #[tauri::command]
 pub fn get_plugins() -> Vec<PluginInfo> {
     load_plugins()
@@ -83,6 +109,16 @@ pub fn get_plugins() -> Vec<PluginInfo> {
 }
 
 #[tauri::command]
+pub fn get_fmap() -> HashMap<String, Vec<String>> {
+    app_state(&app_handle())
+        .lock()
+        .unwrap()
+        .path_mapping
+        .iter()
+        .map(|(tag, path)| (tag.clone(), find_folders_in_path(path)))
+        .collect()
+}
+
 pub fn emit_error<T>(e: T)
 where
     T: Display + Sync + Send + 'static,
@@ -109,6 +145,20 @@ pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
                 },
                 |x| Some((x.filename(), x)),
             )
+        })
+        .collect()
+}
+
+pub fn find_folders_in_path<T>(path: T) -> Vec<String>
+where
+    T: AsRef<Path>,
+{
+    read_dir(path)
+        .unwrap()
+        .filter_map(|r| {
+            r.ok()
+                .filter(|entry| entry.file_type().is_ok_and(|filetype| filetype.is_dir()))
+                .map(|entry| entry.file_name().into_string().unwrap())
         })
         .collect()
 }

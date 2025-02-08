@@ -1,8 +1,20 @@
-import { useNavigate } from "@solidjs/router"
+import { useFolderContext } from "@/App"
+import { emit } from "@/utils"
+import { useParams } from "@solidjs/router"
+import { Index } from "solid-js"
+
+const sync_folder = (data: Record<string, string>) => {
+  emit("sync", data)
+}
 
 export default function Folders() {
-  const navigate = useNavigate()
-  return <div>
-    <button onclick={() => navigate("/")}>Back to plugin select</button>
-  </div>
+  const { TAG: tag } = useParams<{ TAG: string }>()
+  const { folders } = useFolderContext()!
+  return <>
+    <Index each={folders[tag]}>
+      {
+        foldername => <button onclick={[sync_folder, { tag, foldername: foldername() }]}>{foldername()}</button>
+      }
+    </Index>
+  </>
 }

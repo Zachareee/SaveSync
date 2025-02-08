@@ -1,4 +1,6 @@
 use std::{
+    collections::HashMap,
+    error::Error,
     fs,
     path::{Path, PathBuf},
 };
@@ -17,29 +19,48 @@ pub fn get_pluginfiles() -> Vec<PathBuf> {
 }
 
 #[cfg(not(debug_assertions))]
-fn appdata() -> PathBuf {
+pub fn appdata() -> PathBuf {
     Path::new(&env::var("APPDATA").expect("Unable to find APPDATA environment variable")).into()
 }
 
+/// PathBuf pointing to %APPDATA%
 #[cfg(debug_assertions)]
-fn appdata() -> PathBuf {
+pub fn appdata() -> PathBuf {
     Path::new("..").into()
 }
 
+/// PathBuf pointing to SaveSync folder in %APPDATA%
 pub fn config() -> PathBuf {
     create_dir_if_not_exist(appdata().join("SaveSync"))
 }
 
+/// PathBuf pointing to credentials folder in SaveSync
 pub fn creds() -> PathBuf {
     create_dir_if_not_exist(config().join("credentials"))
 }
 
+/// PathBuf pointing to plugins folder in SaveSync
 pub fn plugin() -> PathBuf {
     create_dir_if_not_exist(config().join("plugins"))
 }
 
+/// PathBuf pointing to logs folder in SaveSync
 pub fn logs() -> PathBuf {
     create_dir_if_not_exist(config().join("logs"))
+}
+
+pub fn get_tag_paths() -> Result<HashMap<String, PathBuf>, Box<dyn Error>> {
+    let path = config().join("tagmap.json");
+    let str = match fs::read_to_string(&path) {
+        Ok(str) => str,
+        Err(err) => {
+            if err.kind() == std::io::ErrorKind::NotFound {
+                fs::write(&path, "{}").unwrap();
+            }
+            "{}".into()
+        }
+    };
+    serde_json::from_str(&str).map_err(Into::into)
 }
 
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {

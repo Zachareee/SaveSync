@@ -66,8 +66,8 @@ impl Plugin {
             })
     }
 
-    pub fn sync(&self, buffer: &[u8]) {
-        self.run_function::<()>("Sync", buffer);
+    pub fn sync(&self, buffer: Vec<u8>) {
+        self.run_function::<()>("Sync", buffer).unwrap();
     }
 
     fn run_function<T>(&self, fn_name: &str, args: impl IntoLuaMulti) -> Result<T, String>

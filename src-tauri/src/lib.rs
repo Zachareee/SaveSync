@@ -2,8 +2,9 @@
 mod commands;
 mod savesync;
 
-use commands::{emit_listeners, get_plugins};
-use savesync::config_paths::config;
+use commands::{emit_listeners, get_fmap, get_plugins};
+use notify_debouncer_full::{notify::RecommendedWatcher, Debouncer, RecommendedCache};
+use savesync::config_paths::{config, get_tag_paths};
 use serde::Serialize;
 use std::{
     collections::HashMap,
@@ -18,22 +19,24 @@ static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 pub struct AppState {
     plugin: PathBuf,
     path_mapping: HashMap<String, PathBuf>,
+    watchers: HashMap<PathBuf, Debouncer<RecommendedWatcher, RecommendedCache>>,
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_plugins])
+        .invoke_handler(tauri::generate_handler![get_plugins, get_fmap])
         .setup(|app| {
             emit_listeners(app);
 
-            if let Ok(plugin) = fs::read_to_string(config().join("last_plugin.txt")) {
-                app.manage(Mutex::new(AppState {
-                    plugin: plugin.into(),
-                    path_mapping: HashMap::new(),
-                }));
-            }
+            app.manage(Mutex::new(AppState {
+                plugin: fs::read_to_string(config().join("last_plugin.txt"))
+                    .unwrap_or(Default::default())
+                    .into(),
+                path_mapping: get_tag_paths().unwrap_or(Default::default()),
+                watchers: Default::default(),
+            }));
 
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
             Ok(())

@@ -1,6 +1,6 @@
 import { invoke as old_invoke } from "@tauri-apps/api/core";
 import { listen as old_listen, emit as old_emit, EventCallback, Options, EventName } from "@tauri-apps/api/event";
-import { Info } from "./types.ts";
+import { FolderMapping, Info } from "./types.ts";
 
 export function invoke<T extends keyof InvokeTypes>(
   command: T, payload?: InvokeTypes[T][0]
@@ -23,6 +23,8 @@ export function listen<T extends keyof ListenTypes>(eventName: T | EventName, ha
  */
 type InvokeTypes = {
   get_plugins: [undefined, Info[]]
+  get_fmap: [undefined, FolderMapping]
+
 };
 
 /** 
@@ -33,6 +35,7 @@ type EmitTypes = {
   init: string
   refresh: undefined
   abort: string
+  sync: Record<"tag" | "foldername", string>
 };
 
 /** 
@@ -42,4 +45,5 @@ type EmitTypes = {
 type ListenTypes = {
   plugins: Info[];
   init_result: boolean
+  abort_result: string
 }
