@@ -16,6 +16,7 @@ use tauri::{AppHandle, Emitter, Manager, State};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 
+#[allow(dead_code)]
 pub struct AppState {
     plugin: PathBuf,
     path_mapping: HashMap<String, PathBuf>,

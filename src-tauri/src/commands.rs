@@ -73,7 +73,7 @@ fn abort_listener(event: Event) {
 #[derive(Deserialize)]
 struct SyncStruct {
     tag: String,
-    foldername: String,
+    foldername: OsString,
 }
 
 fn sync_listener(event: Event) {

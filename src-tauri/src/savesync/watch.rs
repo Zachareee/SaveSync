@@ -23,9 +23,7 @@ fn file_update_callback(path: &PathBuf) {
             zip.finish_into_readable()
                 .unwrap()
                 .into_inner()
-                .bytes()
-                .filter_map(|r| r.ok())
-                .collect(),
+                .into_inner(),
         );
 }
 
@@ -38,13 +36,11 @@ where
         let filename = entry.file_name();
 
         if entry.file_type().unwrap().is_dir() {
-            recurse_zip_file(
-                zip,
-                &path.join(entry.file_name()),
-                &relative_path.join(filename),
-            );
+            recurse_zip_file(zip, &path.join(&filename), &relative_path.join(&filename));
         } else {
-            zip.start_file_from_path(relative_path.join(filename), SimpleFileOptions::default())
+            zip.start_file_from_path(relative_path.join(&filename), SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(&fs::read(path.join(&filename)).unwrap())
                 .unwrap();
         }
     });
