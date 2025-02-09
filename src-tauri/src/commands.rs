@@ -89,7 +89,7 @@ fn sync_listener(event: Event) {
             .expect("Tag name not found")
             .to_owned()
     };
-    watch_folder(path.join(foldername));
+    watch_folder(&tag, path.join(foldername));
 }
 
 #[tauri::command]

@@ -1,13 +1,16 @@
 use std::{
+    collections::HashMap,
     ffi::OsString,
     fs,
     path::PathBuf,
     sync::{Arc, LazyLock},
+    time::SystemTime,
 };
 
 use mlua::{FromLuaMulti, Function, IntoLuaMulti, Lua, LuaOptions, LuaSerdeExt, StdLib};
 
 use regex::Regex;
+use serde::Deserialize;
 
 const FIELD_MATCHER: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"`(.*)`").expect("Unable to compile regex"));
@@ -16,6 +19,17 @@ const FIELD_MATCHER: LazyLock<Regex> =
 pub struct Plugin {
     backend: Lua,
     filename: Arc<OsString>,
+}
+
+/// Gets file's last modified date
+/// Plugin developers can optionally attach
+/// the file buffer to reduce API calls
+#[derive(Deserialize)]
+struct FileDetails {
+    tag: String,
+    folder_name: String,
+    last_modified: SystemTime,
+    file: Option<Vec<u8>>,
 }
 
 impl Plugin {
@@ -66,9 +80,52 @@ impl Plugin {
             })
     }
 
-    pub fn sync(&self, buffer: Vec<u8>) {
-        self.run_function::<()>("Sync", mlua::BString::from(buffer))
+    pub fn upload(
+        &self,
+        tag: &str,
+        folder_name: OsString,
+        date: SystemTime,
+        buffer: mlua::BString,
+    ) {
+        self.run_function(
+            "Upload",
+            (
+                tag.to_owned(),
+                folder_name,
+                date.duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs(),
+                buffer,
+            ),
+        )
+        .unwrap()
+    }
+
+    pub fn download(&self, tag: &str, folder_name: OsString) -> Vec<u8> {
+        self.run_function::<mlua::BString>("Download", (tag, folder_name))
+            .unwrap()
+            .into()
+    }
+
+    pub fn remove(&self, tag: &str, folder_name: OsString) {
+        self.run_function::<()>("Remove", (tag, folder_name))
             .unwrap();
+    }
+
+    pub fn cloud_details(&self) -> HashMap<String, Vec<FileDetails>> {
+        self.run_function::<HashMap<String, Vec<_>>>("Cloud_details", ())
+            .unwrap()
+            .into_iter()
+            .map(|(key, table_vec)| {
+                (
+                    key,
+                    table_vec
+                        .into_iter()
+                        .map(|table| self.backend.from_value(mlua::Value::Table(table)).unwrap())
+                        .collect(),
+                )
+            })
+            .collect()
     }
 
     fn run_function<T>(&self, fn_name: &str, args: impl IntoLuaMulti) -> Result<T, String>
