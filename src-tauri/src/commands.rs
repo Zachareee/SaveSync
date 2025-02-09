@@ -11,7 +11,6 @@ use tauri::{Event, Listener};
 
 use crate::savesync::config_paths;
 use crate::savesync::{
-    config_paths::{get_pluginfiles, logs},
     plugin::{load_plugin, Plugin, PluginInfo},
     watch::watch_folder,
 };
@@ -49,21 +48,21 @@ fn init_listener(event: Event) {
 /// Fails silently, plugin does not need to implement abort()
 /// If a message is returned, it is logged to the logs folder
 fn abort_listener(event: Event) {
-    let mut path: OsString = from_str::<OsString>(event.payload()).unwrap();
+    let mut filename: OsString = from_str::<OsString>(event.payload()).unwrap();
 
     if let Some(mut err) = load_plugins()
-        .get(&path)
+        .get(&filename)
         .map_or(None, |plugin| plugin.abort().err())
     {
         app_emit("abort_result", &err);
 
-        path.push(".txt");
+        filename.push(".txt");
 
         if let Ok(mut file) = OpenOptions::new()
             .create(true)
             .write(true)
             .append(true)
-            .open(logs().join(path))
+            .open(config_paths::logs().join(filename))
         {
             err.push('\n');
             let _ = file.write_all(&err.into_bytes());
@@ -80,16 +79,17 @@ struct SyncStruct {
 fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    println!("sync_folder called");
-    watch_folder(
+    // drop the mutexguard so watch_folder can access mutex later
+    let path = {
         app_state(&app_handle())
             .lock()
             .unwrap()
             .path_mapping
             .get(&tag)
             .expect("Tag name not found")
-            .join(foldername),
-    );
+            .to_owned()
+    };
+    watch_folder(path.join(foldername));
 }
 
 #[tauri::command]
@@ -109,13 +109,13 @@ pub fn get_plugins() -> Vec<PluginInfo> {
 }
 
 #[tauri::command]
-pub fn get_fmap() -> HashMap<String, Vec<String>> {
+pub fn get_fmap() -> HashMap<String, Vec<OsString>> {
     app_state(&app_handle())
         .lock()
         .unwrap()
         .path_mapping
         .iter()
-        .map(|(tag, path)| (tag.clone(), find_folders_in_path(path)))
+        .map(|(tag, path)| (tag.to_owned(), find_folders_in_path(path)))
         .collect()
 }
 
@@ -135,7 +135,7 @@ where
 }
 
 pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
-    get_pluginfiles()
+    config_paths::get_pluginfiles()
         .into_iter()
         .filter_map(|path| {
             load_plugin(&path).map_or_else(
@@ -149,16 +149,20 @@ pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
         .collect()
 }
 
-pub fn find_folders_in_path<T>(path: T) -> Vec<String>
+fn find_folders_in_path<T>(path: T) -> Vec<OsString>
 where
     T: AsRef<Path>,
 {
     read_dir(path)
         .unwrap()
         .filter_map(|r| {
-            r.ok()
-                .filter(|entry| entry.file_type().is_ok_and(|filetype| filetype.is_dir()))
-                .map(|entry| entry.file_name().into_string().unwrap())
+            r.ok().and_then(|entry| {
+                if entry.file_type().is_ok_and(|filetype| filetype.is_dir()) {
+                    Some(entry.file_name())
+                } else {
+                    None
+                }
+            })
         })
         .collect()
 }

@@ -50,17 +50,7 @@ pub fn logs() -> PathBuf {
 }
 
 pub fn get_tag_paths() -> Result<HashMap<String, PathBuf>, Box<dyn Error>> {
-    let path = config().join("tagmap.json");
-    let str = match fs::read_to_string(&path) {
-        Ok(str) => str,
-        Err(err) => {
-            if err.kind() == std::io::ErrorKind::NotFound {
-                fs::write(&path, "{}").unwrap();
-            }
-            "{}".into()
-        }
-    };
-    serde_json::from_str(&str).map_err(Into::into)
+    serde_json::from_str(&fs::read_to_string(config().join("tagmap.json"))?).map_err(Into::into)
 }
 
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {
