@@ -1,5 +1,5 @@
 import { useFolderContext } from "@/App"
-import { emit } from "@/utils"
+import { emit, osStringToString } from "@/utils"
 import { useParams } from "@solidjs/router"
 import { Index } from "solid-js"
 
@@ -13,7 +13,7 @@ export default function Folders() {
   return <>
     <Index each={folders[tag]}>
       {
-        foldername => <button onclick={[sync_folder, { tag, foldername: foldername() }]}>{foldername()}</button>
+        foldername => <button onclick={[sync_folder, { tag, foldername: foldername() }]}>{osStringToString(foldername())}</button>
       }
     </Index>
   </>
