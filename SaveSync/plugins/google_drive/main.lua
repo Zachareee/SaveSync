@@ -12,3 +12,17 @@ function Init(credentials)
 	print("This is real")
 	print(gdrive.new({}))
 end
+
+--- Sync function
+--- @param tag string Tagname for the folder
+--- @param filename string Filename to upload
+--- @param zipbuffer string Buffer of the zipfile created
+function Upload(tag, filename, zipbuffer)
+	local file = io.open("fake.zip", "wb")
+	if file then
+		file:write(zipbuffer)
+		file:close()
+	end
+end
+
+function Download() end
