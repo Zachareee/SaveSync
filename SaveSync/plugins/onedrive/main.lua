@@ -20,17 +20,11 @@ end
 
 --------------------------
 --- Sync function
---- @param zipbuffer table
+--- @param zipbuffer string
 function Sync(zipbuffer)
-	print("Received Sync call")
-	print(zipbuffer)
-
-	local buffer = string.char(table.unpack(zipbuffer))
-	print(buffer)
-
 	local file = io.open("fake.zip", "wb")
 	if file then
-		file:write(buffer)
+		file:write(zipbuffer)
 		file:close()
 	end
 end
