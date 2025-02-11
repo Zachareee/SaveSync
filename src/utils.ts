@@ -41,6 +41,7 @@ type EmitTypes = {
   refresh: undefined
   abort: string
   sync: Record<"tag" | "foldername", string>
+  unload: undefined
 };
 
 /** 
