@@ -35,7 +35,7 @@ struct InterFileDetails {
     pub tag: String,
     pub folder_name: String,
     pub last_modified: SystemTime,
-    pub data: Option<String>,
+    pub data: Option<bytes::Bytes>,
 }
 
 impl From<InterFileDetails> for FileDetails {
