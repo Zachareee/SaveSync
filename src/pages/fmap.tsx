@@ -1,5 +1,5 @@
 import { useFolderContext } from "@/App"
-import { invoke } from "@/utils"
+import { emit, invoke } from "@/utils"
 import { useNavigate } from "@solidjs/router"
 import { Index } from "solid-js"
 
@@ -15,7 +15,7 @@ export default function Fmap() {
         <p>{elem()[0]}</p>
       </div>}
     </Index><div>
-      <button onclick={() => navigate("/")}>Back to plugin select</button>
+      <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
     </div>
   </main>
 }

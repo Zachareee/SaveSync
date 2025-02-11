@@ -7,11 +7,17 @@ import { createStore, reconcile } from "solid-js/store";
 
 const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
 
+let navigate: ReturnType<typeof useNavigate>
+
+(() => {
+  invoke("saved_plugin").then(bool => { if (bool) navigate("/folders") })
+})()
+
 export default function PluginSelect() {
+  navigate = useNavigate()
+
   const [services, setServices] = createStore<Info[]>([]);
   const [loading, setLoading] = createSignal<AbortInfo | undefined>()
-  const navigate = useNavigate()
-
 
   onMount(() => { refresh(setServices) })
 
@@ -20,13 +26,16 @@ export default function PluginSelect() {
     emit("init", pair.filename)
   }
 
-  const unlisten = listen("init_result", ({ payload }) => {
-    if (loading() && payload) navigate("/folders")
-    else setLoading()
-  })
+  const unlistens = [
+    listen("init_result", ({ payload }) => {
+      if (loading() && payload) navigate("/folders")
+      else setLoading()
+    }),
+    listen("saved_plugin", () => navigate("/folders"))
+  ]
 
   onCleanup(async () => {
-    (await unlisten)()
+    await Promise.all(unlistens.map(async f => (await f)()))
   })
 
   return <>

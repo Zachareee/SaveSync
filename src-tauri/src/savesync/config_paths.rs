@@ -1,6 +1,4 @@
 use std::{
-    collections::HashMap,
-    error::Error,
     fs::{self, DirEntry},
     path::{Path, PathBuf},
 };
@@ -50,10 +48,6 @@ pub fn plugin() -> PathBuf {
 /// PathBuf pointing to logs folder in SaveSync
 pub fn logs() -> PathBuf {
     create_dir_if_not_exist(config().join("logs"))
-}
-
-pub fn get_tag_paths() -> Result<HashMap<String, PathBuf>, Box<dyn Error>> {
-    serde_json::from_str(&fs::read_to_string(config().join("tagmap.json"))?).map_err(Into::into)
 }
 
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {

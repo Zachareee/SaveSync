@@ -24,6 +24,7 @@ pub fn emit_listeners(app: &tauri::App) {
         ("init", init_listener),
         ("abort", abort_listener),
         ("sync", sync_listener),
+        ("unload", unload_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
@@ -98,6 +99,10 @@ fn sync_listener(event: Event) {
     watch_folder(&tag, path.join(foldername));
 }
 
+fn unload_listener(_: Event) {
+    app_state(&app_handle()).lock().unwrap().plugin = Default::default();
+}
+
 #[tauri::command]
 pub fn get_plugins() -> Vec<PluginInfo> {
     load_plugins()
@@ -123,6 +128,11 @@ pub fn get_fmap() -> HashMap<String, Vec<OsString>> {
         .iter()
         .map(|(tag, path)| (tag.to_owned(), find_folders_in_path(path)))
         .collect()
+}
+
+#[tauri::command]
+pub fn saved_plugin() -> bool {
+    app_state(&app_handle()).lock().unwrap().plugin.exists()
 }
 
 pub fn emit_error<T>(e: T)
@@ -170,6 +180,8 @@ fn sync_folders(plugin: &Plugin) {
              last_modified,
              data,
          }| {
+            // TODO: change unwrap to a file selection prompt
+            // https://github.com/Zachareee/SaveSync/issues/3
             let tag_dir = &tagmap.get(&tag).unwrap();
             let timestamp =
                 get_last_modified(&tag_dir.join(&folder_name)).unwrap_or(SystemTime::UNIX_EPOCH);
