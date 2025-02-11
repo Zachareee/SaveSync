@@ -1,71 +1,23 @@
 use notify_debouncer_full::{new_debouncer, notify::*};
 use std::{
-    fs,
-    io::{Cursor, Seek, Write},
-    path::PathBuf,
-    time::{Duration, SystemTime, UNIX_EPOCH},
+    path::{Path, PathBuf},
+    time::Duration,
 };
-use zip::{write::SimpleFileOptions, ZipWriter};
 
 use crate::{app_handle, app_state};
 
-use super::plugin::load_plugin;
+use super::{plugin::load_plugin, zip_utils::zip_dir};
 
-fn file_update_callback(tag: &str, path: &PathBuf) {
-    let buffer = Cursor::new(vec![]);
-    let mut zip = ZipWriter::new(buffer);
+fn file_update_callback<P>(tag: &str, path: P)
+where
+    P: AsRef<Path>,
+{
+    let path = path.as_ref();
 
-    let date = recurse_zip_file(&mut zip, path, &PathBuf::new());
-
+    let (zipbuffer, date) = zip_dir(path);
     load_plugin(&app_state(&app_handle()).try_lock().unwrap().plugin.clone())
         .unwrap()
-        .upload(
-            tag,
-            path.as_os_str().to_owned(),
-            date,
-            zip.finish_into_readable()
-                .unwrap()
-                .into_inner()
-                .into_inner()
-                .into(),
-        );
-}
-
-fn recurse_zip_file<T>(
-    zip: &mut ZipWriter<T>,
-    path: &PathBuf,
-    relative_path: &PathBuf,
-) -> SystemTime
-where
-    T: Write + Seek,
-{
-    fs::read_dir(path)
-        .unwrap()
-        .into_iter()
-        .fold(UNIX_EPOCH, |accum, f| {
-            let entry = f.unwrap();
-            let filename = entry.file_name();
-
-            let date = if entry.file_type().unwrap().is_dir() {
-                recurse_zip_file(zip, &path.join(&filename), &relative_path.join(&filename));
-                UNIX_EPOCH
-            } else {
-                zip.start_file_from_path(
-                    relative_path.join(&filename),
-                    SimpleFileOptions::default(),
-                )
-                .unwrap();
-                zip.write_all(&fs::read(path.join(&filename)).unwrap())
-                    .unwrap();
-                entry.metadata().unwrap().modified().unwrap()
-            };
-
-            if accum < date {
-                date
-            } else {
-                accum
-            }
-        })
+        .upload(tag, path.as_os_str().to_owned(), date, zipbuffer.into());
 }
 
 pub fn watch_folder(tag: &str, path: PathBuf) {

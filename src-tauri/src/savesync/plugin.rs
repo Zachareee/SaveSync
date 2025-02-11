@@ -1,6 +1,5 @@
 use std::{
-    collections::HashMap,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fs,
     path::PathBuf,
     sync::{Arc, LazyLock},
@@ -24,12 +23,37 @@ pub struct Plugin {
 /// Gets file's last modified date
 /// Plugin developers can optionally attach
 /// the file buffer to reduce API calls
+pub struct FileDetails {
+    pub tag: String,
+    pub folder_name: String,
+    pub last_modified: SystemTime,
+    pub data: Option<Vec<u8>>,
+}
+
 #[derive(Deserialize)]
-struct FileDetails {
-    tag: String,
-    folder_name: String,
-    last_modified: SystemTime,
-    file: Option<Vec<u8>>,
+struct InterFileDetails {
+    pub tag: String,
+    pub folder_name: String,
+    pub last_modified: SystemTime,
+    pub data: Option<String>,
+}
+
+impl From<InterFileDetails> for FileDetails {
+    fn from(
+        InterFileDetails {
+            tag,
+            folder_name,
+            last_modified,
+            data,
+        }: InterFileDetails,
+    ) -> Self {
+        Self {
+            tag,
+            folder_name,
+            last_modified,
+            data: data.map(|s| s.into()),
+        }
+    }
 }
 
 impl Plugin {
@@ -101,29 +125,28 @@ impl Plugin {
         .unwrap()
     }
 
-    pub fn download(&self, tag: &str, folder_name: OsString) -> Vec<u8> {
+    pub fn download(&self, tag: &str, folder_name: &str) -> Vec<u8> {
+        println!("Download called");
         self.run_function::<mlua::BString>("Download", (tag, folder_name))
             .unwrap()
             .into()
     }
 
-    pub fn remove(&self, tag: &str, folder_name: OsString) {
+    pub fn remove(&self, tag: &str, folder_name: &OsStr) {
         self.run_function::<()>("Remove", (tag, folder_name))
             .unwrap();
     }
 
-    pub fn cloud_details(&self) -> HashMap<String, Vec<FileDetails>> {
-        self.run_function::<HashMap<String, Vec<_>>>("Cloud_details", ())
+    pub fn read_cloud(&self) -> Vec<FileDetails> {
+        println!("Read_cloud called");
+        self.run_function::<Vec<_>>("Read_cloud", ())
             .unwrap()
             .into_iter()
-            .map(|(key, table_vec)| {
-                (
-                    key,
-                    table_vec
-                        .into_iter()
-                        .map(|table| self.backend.from_value(mlua::Value::Table(table)).unwrap())
-                        .collect(),
-                )
+            .map(|table| {
+                self.backend
+                    .from_value::<InterFileDetails>(mlua::Value::Table(table))
+                    .unwrap()
+                    .into()
             })
             .collect()
     }

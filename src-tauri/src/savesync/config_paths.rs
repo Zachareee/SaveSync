@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     error::Error,
-    fs,
+    fs::{self, DirEntry},
     path::{Path, PathBuf},
 };
 
@@ -10,11 +10,14 @@ use std::env;
 
 use crate::commands::emit_error;
 
+use super::fs_utils::FolderItems;
+
 pub fn get_pluginfiles() -> Vec<PathBuf> {
     let path = plugin();
-    fs::read_dir(&path)
+    path.get_folders()
         .expect(&format!("Unable to read {}", path.to_string_lossy()))
-        .filter_map(|dir| dir.ok().map(|result| result.path()))
+        .iter()
+        .map(DirEntry::path)
         .collect()
 }
 

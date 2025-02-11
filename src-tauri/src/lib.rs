@@ -33,9 +33,9 @@ pub fn run() {
 
             app.manage(Mutex::new(AppState {
                 plugin: fs::read_to_string(config().join("last_plugin.txt"))
-                    .unwrap_or(Default::default())
+                    .unwrap_or_default()
                     .into(),
-                path_mapping: get_tag_paths().unwrap_or(Default::default()),
+                path_mapping: get_tag_paths().unwrap_or_default(),
                 watchers: Default::default(),
             }));
 

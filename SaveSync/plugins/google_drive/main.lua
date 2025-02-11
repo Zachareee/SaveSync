@@ -16,13 +16,12 @@ end
 --- Sync function
 --- @param tag string Tagname for the folder
 --- @param filename string Filename to upload
+--- @param date_modified number Last modified date
 --- @param zipbuffer string Buffer of the zipfile created
-function Upload(tag, filename, zipbuffer)
+function Upload(tag, filename, date_modified, zipbuffer)
 	local file = io.open("fake.zip", "wb")
 	if file then
 		file:write(zipbuffer)
 		file:close()
 	end
 end
-
-function Download() end
