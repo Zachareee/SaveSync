@@ -3,16 +3,18 @@ mod commands;
 mod savesync;
 
 use commands::{emit_listeners, get_fmap, get_plugins, saved_plugin};
-use savesync::state::{read_state, save_state, AppState};
+use savesync::state::AppStore;
 use serde::Serialize;
-use std::sync::{Mutex, OnceLock};
-use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
+use std::sync::{Arc, OnceLock};
+use tauri::{AppHandle, Emitter, Manager, RunEvent};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
+static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_plugins,
@@ -22,7 +24,7 @@ pub fn run() {
         .setup(|app| {
             emit_listeners(app);
 
-            app.manage(Mutex::new(read_state()));
+            let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
 
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
             Ok(())
@@ -31,7 +33,7 @@ pub fn run() {
         .expect("Error while building tauri application")
         .run(|_handle, event| match event {
             RunEvent::ExitRequested { .. } => {
-                save_state();
+                app_store().save().unwrap();
             }
             _ => (),
         })
@@ -41,8 +43,8 @@ pub fn app_handle() -> AppHandle {
     APP_INSTANCE.get().unwrap().to_owned()
 }
 
-pub fn app_state<'a>(handle: &'a AppHandle) -> State<'a, Mutex<AppState>> {
-    handle.state::<Mutex<AppState>>()
+pub fn app_store() -> Arc<AppStore> {
+    APP_STORE.get().unwrap().clone()
 }
 
 pub fn app_emit<S>(event: &str, payload: S)

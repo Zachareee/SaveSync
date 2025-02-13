@@ -1,50 +1,92 @@
-use std::{collections::HashMap, error::Error, fs, path::PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
-use notify_debouncer_full::{notify::RecommendedWatcher, Debouncer, RecommendedCache};
+use serde_json::{json, Value};
+use tauri::{Manager, Wry};
+use tauri_plugin_store::{Result, Store, StoreBuilder};
 
-use crate::{app_handle, app_state};
-
-use super::config_paths;
-
-#[allow(dead_code)]
-pub struct AppState {
-    pub plugin: PathBuf,
-    pub path_mapping: HashMap<String, PathBuf>,
-    pub watchers: HashMap<PathBuf, Debouncer<RecommendedWatcher, RecommendedCache>>,
+pub struct AppStore {
+    store: Arc<Store<Wry>>,
 }
 
-pub fn read_state() -> AppState {
-    AppState {
-        plugin: fs::read_to_string(config_paths::config().join("last_plugin.txt"))
-            .unwrap_or_default()
-            .into(),
-        path_mapping: get_tag_paths().unwrap_or_default(),
-        watchers: Default::default(),
+impl Clone for AppStore {
+    fn clone(&self) -> Self {
+        Self {
+            store: self.store.clone(),
+        }
     }
 }
 
-pub fn save_state() {
-    let handle = &app_handle();
-    let binding = app_state(&handle);
-    let state = binding.lock().unwrap();
-    let plugin = &state.plugin;
-    let path_mapping = &state.path_mapping;
+impl AppStore {
+    pub fn new<M>(app: &M) -> AppStore
+    where
+        M: Manager<Wry>,
+    {
+        AppStore {
+            store: StoreBuilder::new(app, "store.json")
+                .default("plugin", "")
+                .default("path_mapping", json!({}))
+                .default("last_sync", 0)
+                .auto_save(Duration::from_secs(60))
+                .build()
+                .unwrap(),
+        }
+    }
 
-    fs::write(tagmap_loc(), serde_json::to_string(&path_mapping).unwrap()).unwrap();
-    fs::write(plugin_loc(), plugin.as_os_str().as_encoded_bytes()).unwrap()
-}
+    pub fn plugin(&self) -> Option<PathBuf> {
+        self.store
+            .get("plugin")
+            .unwrap()
+            .as_str()
+            .map(|s| Path::new(s).to_owned())
+            .filter(|p| p.exists())
+    }
 
-fn tagmap_loc() -> PathBuf {
-    config_paths::config().join("tagmap.json")
-}
+    pub fn path_mapping(&self) -> HashMap<String, PathBuf> {
+        self.store
+            .get("path_mapping")
+            .unwrap()
+            .as_object()
+            .unwrap()
+            .to_owned()
+            .into_iter()
+            .map(|(k, v)| (k, Path::new(v.as_str().unwrap()).to_path_buf()))
+            .collect()
+    }
 
-fn plugin_loc() -> PathBuf {
-    config_paths::config().join("last_plugin.txt")
-}
+    pub fn set_plugin(&self, plugin: impl AsRef<Path>) {
+        self.store.set("plugin", plugin.as_ref().to_str().unwrap());
+    }
 
-fn get_tag_paths() -> Result<HashMap<String, PathBuf>, Box<dyn Error>> {
-    serde_json::from_str(&fs::read_to_string(
-        config_paths::config().join("tagmap.json"),
-    )?)
-    .map_err(Into::into)
+    pub fn save(&self) -> Result<()> {
+        self.store.set(
+            "last_sync",
+            SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap()
+                .as_secs(),
+        );
+        self.store.save()
+    }
+
+    fn mapping(&self) -> Value {
+        self.store.get("path_mapping").unwrap()
+    }
+
+    pub fn last_sync(&self) -> SystemTime {
+        SystemTime::UNIX_EPOCH
+            + Duration::from_secs(self.store.get("last_sync").unwrap().as_u64().unwrap())
+    }
+
+    pub fn get_mapping(&self, key: &str) -> Option<PathBuf> {
+        self.mapping()
+            .as_object()
+            .unwrap()
+            .get(key)
+            .and_then(|s| Some(Path::new(s.as_str().unwrap()).into()))
+    }
 }
