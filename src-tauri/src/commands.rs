@@ -1,7 +1,7 @@
 use std::ffi::OsString;
 use std::fs::{read_dir, OpenOptions};
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
 use std::{collections::HashMap, fmt::Display};
@@ -17,13 +17,14 @@ use crate::savesync::{
     plugin::{load_plugin, Plugin, PluginInfo},
     watch::watch_folder,
 };
-use crate::{app_emit, app_handle, app_state};
+use crate::{app_emit, app_handle, app_store};
 
 pub fn emit_listeners(app: &tauri::App) {
     let arr: Vec<(&str, fn(Event))> = vec![
         ("init", init_listener),
         ("abort", abort_listener),
         ("sync", sync_listener),
+        ("unload", unload_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
@@ -42,8 +43,8 @@ fn init_listener(event: Event) {
                 return;
             }
 
-            sync_folders(&plugin);
-            app_state(&app_handle()).lock().unwrap().plugin = config_paths::plugin().join(path)
+            init_download_folders(&plugin);
+            app_store().set_plugin(config_paths::plugin().join(path));
         }
         None => {
             emit_error(format!("{path:?} not found"));
@@ -87,15 +88,17 @@ fn sync_listener(event: Event) {
 
     // drop the mutexguard so watch_folder can access mutex later
     let path = {
-        app_state(&app_handle())
-            .lock()
-            .unwrap()
-            .path_mapping
+        app_store()
+            .path_mapping()
             .get(&tag)
             .expect("Tag name not found")
             .to_owned()
     };
     watch_folder(&tag, path.join(foldername));
+}
+
+fn unload_listener(_: Event) {
+    app_store().set_plugin(PathBuf::new());
 }
 
 #[tauri::command]
@@ -116,13 +119,16 @@ pub fn get_plugins() -> Vec<PluginInfo> {
 
 #[tauri::command]
 pub fn get_fmap() -> HashMap<String, Vec<OsString>> {
-    app_state(&app_handle())
-        .lock()
-        .unwrap()
-        .path_mapping
+    app_store()
+        .path_mapping()
         .iter()
         .map(|(tag, path)| (tag.to_owned(), find_folders_in_path(path)))
         .collect()
+}
+
+#[tauri::command]
+pub fn saved_plugin() -> bool {
+    app_store().plugin().is_some_and(|p| p.exists())
 }
 
 pub fn emit_error<T>(e: T)
@@ -155,30 +161,32 @@ pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
         .collect()
 }
 
-fn sync_folders(plugin: &Plugin) {
-    let tagmap = {
-        app_state(&app_handle())
-            .lock()
-            .unwrap()
-            .path_mapping
-            .clone()
-    };
+fn init_download_folders(plugin: &Plugin) {
+    let last_sync = app_store().last_sync();
     plugin.read_cloud().into_iter().for_each(
         |FileDetails {
              tag,
              folder_name,
-             last_modified,
+             last_modified: cloud_date,
              data,
          }| {
-            let tag_dir = &tagmap.get(&tag).unwrap();
-            let timestamp =
-                get_last_modified(&tag_dir.join(&folder_name)).unwrap_or(SystemTime::UNIX_EPOCH);
-            if timestamp < last_modified {
-                zip_utils::extract(
-                    tag_dir.join(&folder_name),
-                    data.unwrap_or_else(|| plugin.download(&tag, &folder_name)),
-                )
+            // TODO: change unwrap to a file selection prompt
+            // https://github.com/Zachareee/SaveSync/issues/3
+            let path = app_store().get_mapping(&tag).unwrap().join(&folder_name);
+            let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
+
+            if last_sync < cloud_date {
+                if local_date < cloud_date {
+                    zip_utils::extract(
+                        &path,
+                        data.unwrap_or_else(|| plugin.download(&tag, &folder_name)),
+                    )
+                } else {
+                    // TODO: alert the user to the conflicting data
+                    // https://github.com/Zachareee/SaveSync/issues/9
+                }
             }
+            watch_folder(&tag, path);
         },
     );
 }

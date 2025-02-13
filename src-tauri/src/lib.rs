@@ -2,56 +2,49 @@
 mod commands;
 mod savesync;
 
-use commands::{emit_listeners, get_fmap, get_plugins};
-use notify_debouncer_full::{notify::RecommendedWatcher, Debouncer, RecommendedCache};
-use savesync::config_paths::{config, get_tag_paths};
+use commands::{emit_listeners, get_fmap, get_plugins, saved_plugin};
+use savesync::state::AppStore;
 use serde::Serialize;
-use std::{
-    collections::HashMap,
-    fs,
-    path::PathBuf,
-    sync::{Mutex, OnceLock},
-};
-use tauri::{AppHandle, Emitter, Manager, State};
+use std::sync::{Arc, OnceLock};
+use tauri::{AppHandle, Emitter, Manager, RunEvent};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
-
-#[allow(dead_code)]
-pub struct AppState {
-    plugin: PathBuf,
-    path_mapping: HashMap<String, PathBuf>,
-    watchers: HashMap<PathBuf, Debouncer<RecommendedWatcher, RecommendedCache>>,
-}
+static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_plugins, get_fmap])
+        .invoke_handler(tauri::generate_handler![
+            get_plugins,
+            get_fmap,
+            saved_plugin
+        ])
         .setup(|app| {
             emit_listeners(app);
 
-            app.manage(Mutex::new(AppState {
-                plugin: fs::read_to_string(config().join("last_plugin.txt"))
-                    .unwrap_or_default()
-                    .into(),
-                path_mapping: get_tag_paths().unwrap_or_default(),
-                watchers: Default::default(),
-            }));
+            let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
 
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("Error while building tauri application")
+        .run(|_handle, event| match event {
+            RunEvent::ExitRequested { .. } => {
+                app_store().save().unwrap();
+            }
+            _ => (),
+        })
 }
 
 pub fn app_handle() -> AppHandle {
     APP_INSTANCE.get().unwrap().to_owned()
 }
 
-pub fn app_state<'a>(handle: &'a AppHandle) -> State<'a, Mutex<AppState>> {
-    handle.state::<Mutex<AppState>>()
+pub fn app_store() -> Arc<AppStore> {
+    APP_STORE.get().unwrap().clone()
 }
 
 pub fn app_emit<S>(event: &str, payload: S)

@@ -6,6 +6,7 @@
     "npm:@tauri-apps/api@2": "2.2.0",
     "npm:@tauri-apps/cli@2": "2.2.5",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
+    "npm:@tauri-apps/plugin-store@2.2": "2.2.0",
     "npm:postcss@^8.5.1": "8.5.1",
     "npm:solid-js@^1.9.3": "1.9.4_seroval@1.2.0",
     "npm:tailwindcss@^4.0.3": "4.0.3",
@@ -436,6 +437,12 @@
         "@tauri-apps/api"
       ]
     },
+    "@tauri-apps/plugin-store@2.2.0": {
+      "integrity": "sha512-hJTRtuJis4w5fW1dkcgftsYxKXK0+DbAqurZ3CURHG5WkAyyZgbxpeYctw12bbzF9ZbZREXZklPq8mocCC3Sgg==",
+      "dependencies": [
+        "@tauri-apps/api"
+      ]
+    },
     "@types/babel__core@7.20.5": {
       "integrity": "sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==",
       "dependencies": [
@@ -802,6 +809,7 @@
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
         "npm:@tauri-apps/plugin-opener@2",
+        "npm:@tauri-apps/plugin-store@2.2",
         "npm:solid-js@^1.9.3",
         "npm:tailwindcss@^4.0.3",
         "npm:typescript@~5.6.2",

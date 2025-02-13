@@ -28,6 +28,7 @@ export function listen<T extends keyof ListenTypes>(eventName: T | EventName, ha
 type InvokeTypes = {
   get_plugins: [undefined, Info[]]
   get_fmap: [undefined, FolderMapping]
+  saved_plugin: [undefined, boolean]
 
 };
 
@@ -40,6 +41,7 @@ type EmitTypes = {
   refresh: undefined
   abort: string
   sync: Record<"tag" | "foldername", string>
+  unload: undefined
 };
 
 /** 
