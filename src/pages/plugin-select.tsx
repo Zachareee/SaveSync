@@ -4,6 +4,9 @@ import { createSignal, Index, onCleanup, onMount, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+
+new WebviewWindow("error", { focus: true, visible: true, title: "error", url: "/error/help" }).once("tauri://error", console.log)
 
 const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
 

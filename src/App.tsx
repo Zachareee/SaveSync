@@ -13,6 +13,7 @@ function App() {
     <Router>
       <Route path={"/folders"} component={Fmap} />
       <Route path={"/folders/:TAG"} component={Folders} />
+      <Route path={"/error/:ERROR"} component={() => <div>Help</div>} />
       <Route path={"*"} component={PluginSelect} />
     </Router>
   </FolderContext.Provider>
