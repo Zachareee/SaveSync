@@ -155,7 +155,9 @@ pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
 
 fn init_download_folders(plugin: &Plugin) {
     let last_sync = app_store().last_sync();
-    plugin.read_cloud().into_iter().for_each(
+
+    // TODO: change unwrap to handle error
+    plugin.read_cloud().unwrap().into_iter().for_each(
         |FileDetails {
              tag,
              folder_name,
@@ -171,7 +173,8 @@ fn init_download_folders(plugin: &Plugin) {
                 if local_date < cloud_date {
                     zip_utils::extract(
                         &path,
-                        data.unwrap_or_else(|| plugin.download(&tag, &folder_name)),
+                        // TODO: change unwrap to handle error
+                        data.unwrap_or_else(|| plugin.download(&tag, &folder_name).unwrap()),
                     )
                 } else {
                     // TODO: alert the user to the conflicting data

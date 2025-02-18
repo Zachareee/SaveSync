@@ -61,7 +61,7 @@ impl Plugin {
         self.filename.clone()
     }
 
-    pub fn info(&self) -> Result<PluginInfo, String> {
+    pub fn info(&self) -> PluginResult<PluginInfo> {
         self.backend
             .from_value(mlua::Value::Table(self.run_function("Info", ())?))
             .map_or_else(
@@ -78,7 +78,7 @@ impl Plugin {
             )
     }
 
-    pub fn init(&self) -> Result<(), String> {
+    pub fn init(&self) -> PluginResult<()> {
         let mut filename = self.filename.to_os_string();
         filename.push(".auth");
 
@@ -96,7 +96,7 @@ impl Plugin {
             )
     }
 
-    pub fn abort(&self) -> Result<(), String> {
+    pub fn abort(&self) -> PluginResult<()> {
         self.run_function("Abort", ())
             .and_then(|msg: Option<String>| match msg {
                 Some(msg) => Err(msg),
@@ -110,7 +110,7 @@ impl Plugin {
         folder_name: OsString,
         date: SystemTime,
         buffer: mlua::BString,
-    ) {
+    ) -> PluginResult<()> {
         self.run_function(
             "Upload",
             (
@@ -122,36 +122,32 @@ impl Plugin {
                 buffer,
             ),
         )
-        .unwrap()
     }
 
-    pub fn download(&self, tag: &str, folder_name: &str) -> Vec<u8> {
+    pub fn download(&self, tag: &str, folder_name: &str) -> PluginResult<Vec<u8>> {
         println!("Download called");
         self.run_function::<mlua::BString>("Download", (tag, folder_name))
-            .unwrap()
-            .into()
+            .map(Into::into)
     }
 
-    pub fn remove(&self, tag: &str, folder_name: &OsStr) {
-        self.run_function::<()>("Remove", (tag, folder_name))
-            .unwrap();
+    pub fn remove(&self, tag: &str, folder_name: &OsStr) -> PluginResult<()> {
+        self.run_function("Remove", (tag, folder_name))
     }
 
-    pub fn read_cloud(&self) -> Vec<FileDetails> {
+    pub fn read_cloud(&self) -> PluginResult<Vec<FileDetails>> {
         println!("Read_cloud called");
-        self.run_function::<Vec<_>>("Read_cloud", ())
-            .unwrap()
+        self.run_function::<Vec<_>>("Read_cloud", ())?
             .into_iter()
             .map(|table| {
                 self.backend
                     .from_value::<InterFileDetails>(mlua::Value::Table(table))
-                    .unwrap()
-                    .into()
+                    .map(Into::into)
+                    .map_err(|e| e.to_string())
             })
             .collect()
     }
 
-    fn run_function<T>(&self, fn_name: &str, args: impl IntoLuaMulti) -> Result<T, String>
+    fn run_function<T>(&self, fn_name: &str, args: impl IntoLuaMulti) -> PluginResult<T>
     where
         T: FromLuaMulti,
     {
@@ -205,3 +201,5 @@ fn include_path(servicename: &PathBuf, ext: &str) -> String {
         .to_string_lossy()
         .replace("\\", "/")
 }
+
+pub type PluginResult<T> = Result<T, String>;

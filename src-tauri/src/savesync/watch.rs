@@ -21,12 +21,10 @@ where
     let path = path.as_ref();
 
     let (zipbuffer, date) = zip_dir(path);
-    load_plugin(&app_store().plugin().unwrap()).unwrap().upload(
-        tag,
-        path.as_os_str().to_owned(),
-        date,
-        zipbuffer.into(),
-    );
+    load_plugin(&app_store().plugin().unwrap())
+        .unwrap()
+        .upload(tag, path.as_os_str().to_owned(), date, zipbuffer.into())
+        .unwrap();
 }
 
 pub fn watch_folder(tag: &str, path: PathBuf) {
