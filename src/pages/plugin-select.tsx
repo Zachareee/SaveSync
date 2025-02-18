@@ -9,6 +9,7 @@ const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invo
 
 let navigate: ReturnType<typeof useNavigate>
 
+// run on app boot
 (() => {
   invoke("saved_plugin").then(bool => { if (bool) navigate("/folders") })
 })()

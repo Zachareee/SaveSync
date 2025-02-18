@@ -6,8 +6,6 @@ use std::{
 #[cfg(not(debug_assertions))]
 use std::env;
 
-use crate::commands::emit_error;
-
 use super::fs_utils::FolderItems;
 
 pub fn get_pluginfiles() -> Vec<PathBuf> {
@@ -52,9 +50,7 @@ pub fn logs() -> PathBuf {
 
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {
     if fs::exists(&path).is_ok_and(|x| !x) {
-        fs::create_dir(&path).unwrap_or_else(|e| {
-            emit_error(e.to_string());
-        })
+        fs::create_dir(&path).unwrap()
     }
     path
 }

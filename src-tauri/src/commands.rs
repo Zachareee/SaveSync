@@ -1,23 +1,23 @@
+use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs::{read_dir, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
-use std::{collections::HashMap, fmt::Display};
 
 use serde::Deserialize;
 use serde_json::from_str;
 use tauri::{Event, Listener};
 
-use crate::savesync::fs_utils::FolderItems;
-use crate::savesync::plugin::FileDetails;
 use crate::savesync::{config_paths, zip_utils};
 use crate::savesync::{
-    plugin::{load_plugin, Plugin, PluginInfo},
+    emitter::emit_plugin_error,
+    fs_utils::FolderItems,
+    plugin::{load_plugin, FileDetails, Plugin, PluginInfo},
     watch::watch_folder,
 };
-use crate::{app_emit, app_handle, app_store};
+use crate::{app_emit, app_store};
 
 pub fn emit_listeners(app: &tauri::App) {
     let arr: Vec<(&str, fn(Event))> = vec![
@@ -33,11 +33,15 @@ pub fn emit_listeners(app: &tauri::App) {
 
 // async to prevent UI thread from freezing
 fn init_listener(event: Event) {
-    let path: OsString = from_str::<OsString>(event.payload()).unwrap();
+    let path: OsString = from_str(event.payload()).unwrap();
+    let pathstr = path.to_string_lossy();
 
     match load_plugins().get(&path) {
         Some(plugin) => {
-            let res = plugin.init().map_err(|e| emit_error(e)).is_ok();
+            let res = plugin
+                .init()
+                .map_err(|e| emit_plugin_error(&pathstr, &e))
+                .is_ok();
             app_emit("init_result", res);
             if !res {
                 return;
@@ -47,7 +51,7 @@ fn init_listener(event: Event) {
             app_store().set_plugin(config_paths::plugin().join(path));
         }
         None => {
-            emit_error(format!("{path:?} not found"));
+            emit_plugin_error(&pathstr, &format!("{path:?} not found"));
         }
     }
 }
@@ -108,7 +112,10 @@ pub fn get_plugins() -> Vec<PluginInfo> {
         .filter_map(|(path, plugin)| {
             plugin.info().map_or_else(
                 |e| {
-                    emit_error(format!("Failed to run Info() in {:?}: {e}", path));
+                    emit_plugin_error(
+                        &path.to_string_lossy(),
+                        &format!("Failed to run Info() in {:?}: {e}", path),
+                    );
                     None
                 },
                 Some,
@@ -131,28 +138,13 @@ pub fn saved_plugin() -> bool {
     app_store().plugin().is_some_and(|p| p.exists())
 }
 
-pub fn emit_error<T>(e: T)
-where
-    T: Display + Sync + Send + 'static,
-{
-    std::thread::spawn(move || {
-        let _ = tauri::WebviewWindowBuilder::new(
-            &app_handle(),
-            "error",
-            tauri::WebviewUrl::App(format!("error.html?msg={e}").into()),
-        )
-        .title("Error")
-        .build();
-    });
-}
-
 pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
     config_paths::get_pluginfiles()
         .into_iter()
         .filter_map(|path| {
             load_plugin(&path).map_or_else(
                 |e| {
-                    emit_error(e.to_string());
+                    emit_plugin_error(&path.to_string_lossy(), &e.to_string());
                     None
                 },
                 |x| Some((x.filename(), x)),

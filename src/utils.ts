@@ -49,7 +49,8 @@ type EmitTypes = {
  *  value: output type
  */
 type ListenTypes = {
-  plugins: Info[];
+  plugins: Info[]
   init_result: boolean
   abort_result: string
+  plugin_error: [string, string]
 }
