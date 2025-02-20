@@ -138,6 +138,15 @@ pub fn saved_plugin() -> bool {
     app_store().plugin().is_some_and(|p| p.exists())
 }
 
+#[tauri::command]
+pub fn get_mapping() -> HashMap<String, OsString> {
+    app_store()
+        .path_mapping()
+        .into_iter()
+        .map(|(k, v)| (k, v.into()))
+        .collect()
+}
+
 pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
     config_paths::get_pluginfiles()
         .into_iter()

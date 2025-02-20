@@ -2,8 +2,8 @@
 mod commands;
 mod savesync;
 
-use commands::{emit_listeners, get_filetree, get_plugins, saved_plugin};
-use savesync::state::AppStore;
+use commands::{emit_listeners, get_filetree, get_mapping, get_plugins, saved_plugin};
+use savesync::store::AppStore;
 use serde::Serialize;
 use std::sync::{Arc, OnceLock};
 use tauri::{AppHandle, Emitter, Manager, RunEvent};
@@ -19,7 +19,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_plugins,
             get_filetree,
-            saved_plugin
+            saved_plugin,
+            get_mapping
         ])
         .setup(|app| {
             emit_listeners(app);

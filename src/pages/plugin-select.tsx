@@ -1,10 +1,12 @@
-import { emit, listen, invoke } from "@/logic/backend.ts";
+import { emit, listen, } from "@/logic/main-backend";
+import { invoke } from "@/logic/all-backend";
 import { Info } from "@/types.ts";
 import { createSignal, Index, onCleanup, onMount, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
-import { menuStatus, setWindowMenu } from "@/logic/menu";
+import { menuStatus } from "@/logic/menu";
+import { Window } from "@tauri-apps/api/window";
 
 const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
 
@@ -12,12 +14,13 @@ let navigate: ReturnType<typeof useNavigate>
 
 // run on app boot
 (() => {
-  invoke("saved_plugin").then(bool => { if (bool) navigate("/folders") })
+  if (Window.getCurrent().label == "main")
+    invoke("saved_plugin").then(bool => { if (bool) navigate("/folders") })
 })()
 
 export default function PluginSelect() {
-  setWindowMenu()
-  menuStatus(false)
+  // TODO: change to false after testing is done
+  menuStatus(true)
 
   navigate = useNavigate()
 

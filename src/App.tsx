@@ -7,9 +7,7 @@ import ErrorPage from "./pages/error-page";
 import { createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { FileTree } from "@/types";
-import { listen } from "@/logic/backend.ts";
 import Mapping from "./pages/mapping";
-import { createWindow } from "./logic/window";
 
 function App() {
   const [folders, setFolders] = createStore<FileTree>()
@@ -24,7 +22,6 @@ function App() {
   </FolderContext.Provider>
 }
 
-listen("plugin_error", ({ payload: [title, description] }) => createWindow(title, {url: `/error/${description}`}))
 
 type Stores = {
   folders: FileTree
