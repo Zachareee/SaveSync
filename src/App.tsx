@@ -9,8 +9,15 @@ import { createStore } from "solid-js/store";
 import { FolderMapping } from "@/types";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen } from "./utils";
+import { Menu, Submenu } from "@tauri-apps/api/menu";
 
-listen("plugin_error", ({ payload: [title, description] }) => new WebviewWindow(title, { focus: true, visible: true, title, url: `/error/${description}` }).once("tauri://error", console.log))
+export const mainMenu = await Menu.new({
+  items: await Promise.all([
+    Submenu.new({ text: "File" })
+  ])
+})
+
+mainMenu.setAsAppMenu()
 
 function App() {
   const [folders, setFolders] = createStore<FolderMapping>()
@@ -23,6 +30,8 @@ function App() {
     </Router>
   </FolderContext.Provider>
 }
+
+listen("plugin_error", ({ payload: [title, description] }) => new WebviewWindow(title, { focus: true, visible: true, title, url: `/error/${description}` }).once("tauri://error", console.log))
 
 type Stores = {
   folders: FolderMapping
