@@ -31,7 +31,7 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("Error while building tauri application")
-        .run(|_handle, event| match event {
+        .run(|_, event| match event {
             RunEvent::ExitRequested { .. } => {
                 app_store().save().unwrap();
             }
