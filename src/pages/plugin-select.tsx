@@ -1,9 +1,10 @@
-import { emit, listen, invoke } from "@/utils.ts";
+import { emit, listen, invoke } from "@/logic/backend.ts";
 import { Info } from "@/types.ts";
 import { createSignal, Index, onCleanup, onMount, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
+import { menuStatus, setWindowMenu } from "@/logic/menu";
 
 const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
 
@@ -15,12 +16,13 @@ let navigate: ReturnType<typeof useNavigate>
 })()
 
 export default function PluginSelect() {
+  setWindowMenu()
+  menuStatus(false)
+
   navigate = useNavigate()
 
   const [services, setServices] = createStore<Info[]>([]);
   const [loading, setLoading] = createSignal<AbortInfo | undefined>()
-
-  onMount(() => { refresh(setServices) })
 
   function init(pair: AbortInfo) {
     setLoading(pair)
@@ -35,6 +37,7 @@ export default function PluginSelect() {
     listen("saved_plugin", () => navigate("/folders"))
   ]
 
+  onMount(() => { refresh(setServices) })
   onCleanup(async () => {
     await Promise.all(unlistens.map(async f => (await f)()))
   })

@@ -1,5 +1,5 @@
 import { useFolderContext } from "@/App"
-import { emit, osStringToString } from "@/utils"
+import { emit, osStringToString } from "@/logic/backend.ts"
 import { useParams } from "@solidjs/router"
 import { Index } from "solid-js"
 

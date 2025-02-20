@@ -2,7 +2,7 @@
 mod commands;
 mod savesync;
 
-use commands::{emit_listeners, get_fmap, get_plugins, saved_plugin};
+use commands::{emit_listeners, get_filetree, get_plugins, saved_plugin};
 use savesync::state::AppStore;
 use serde::Serialize;
 use std::sync::{Arc, OnceLock};
@@ -18,7 +18,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_plugins,
-            get_fmap,
+            get_filetree,
             saved_plugin
         ])
         .setup(|app| {

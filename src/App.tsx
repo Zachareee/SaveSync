@@ -6,35 +6,28 @@ import Fmap from "./pages/fmap";
 import ErrorPage from "./pages/error-page";
 import { createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
-import { FolderMapping } from "@/types";
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { listen } from "./utils";
-import { Menu, Submenu } from "@tauri-apps/api/menu";
-
-export const mainMenu = await Menu.new({
-  items: await Promise.all([
-    Submenu.new({ text: "File" })
-  ])
-})
-
-mainMenu.setAsAppMenu()
+import { FileTree } from "@/types";
+import { listen } from "@/logic/backend.ts";
+import Mapping from "./pages/mapping";
+import { createWindow } from "./logic/window";
 
 function App() {
-  const [folders, setFolders] = createStore<FolderMapping>()
+  const [folders, setFolders] = createStore<FileTree>()
   return <FolderContext.Provider value={{ folders, setFolders }}>
     <Router>
       <Route path={"/folders"} component={Fmap} />
       <Route path={"/folders/:TAG"} component={Folders} />
       <Route path={"/error/:ERROR"} component={ErrorPage} />
+      <Route path={"/mapping"} component={Mapping} />
       <Route path={"*"} component={PluginSelect} />
     </Router>
   </FolderContext.Provider>
 }
 
-listen("plugin_error", ({ payload: [title, description] }) => new WebviewWindow(title, { focus: true, visible: true, title, url: `/error/${description}` }).once("tauri://error", console.log))
+listen("plugin_error", ({ payload: [title, description] }) => createWindow(title, {url: `/error/${description}`}))
 
 type Stores = {
-  folders: FolderMapping
+  folders: FileTree
 }
 
 type StoresWithSetters = Stores & {

@@ -125,7 +125,7 @@ pub fn get_plugins() -> Vec<PluginInfo> {
 }
 
 #[tauri::command]
-pub fn get_fmap() -> HashMap<String, Vec<OsString>> {
+pub fn get_filetree() -> HashMap<String, Vec<OsString>> {
     app_store()
         .path_mapping()
         .iter()
