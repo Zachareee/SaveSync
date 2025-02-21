@@ -1,22 +1,22 @@
-import { invoke, osStringToString, stringToOsString } from "@/logic/all-backend"
-import { EnvMapping, FolderMapping } from "@/types"
-import { Index, Show } from "solid-js"
+import { invoke, osStringToString } from "@/logic/all-backend"
+import { Index } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { open } from "@tauri-apps/plugin-dialog"
 
-type MappingArray = ReturnType<typeof Object.entries<FolderMapping[string]>>
+type MappingArray = [string, [string, string]][]
 
 const createAddPath = (setMapping: ReturnType<typeof createStore<MappingArray>>[1]) =>
-  () => setMapping(mapping => [...mapping, ["", ["", { Windows: [] }]]])
+  () => setMapping(mapping => [...mapping, ["", ["", ""]] as const])
 const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray>>[1]) =>
   (idx: number) => setMapping(mapping => mapping.toSpliced(idx, 1))
 
 export default function Mapping() {
-  const [envs, setEnvs] = createStore<EnvMapping>()
+  const [envs, setEnvs] = createStore<Record<string, string>>()
   const [mapping, setMapping] = createStore<MappingArray>([])
-  invoke("get_mapping").then(m => setMapping(Object.entries(m)))
-  invoke("get_envpaths").then(setEnvs)
+
+  invoke("get_mapping").then(m => setMapping(Object.entries(m).map(e => [e[0], [e[1][0], osStringToString(e[1][1])]])))
+  invoke("get_envpaths").then(e => setEnvs(Object.fromEntries(Object.entries(e).map(([name, path]) => [name, osStringToString(path)]))))
 
   const addPath = createAddPath(setMapping)
   const removePath = createRemovePath(setMapping)
@@ -39,15 +39,15 @@ export default function Mapping() {
                   }
                 </Index>
               </select>
-              <input value={osStringToString(elem()[1][1])} disabled />
+              <input value={elem()[1][1]} disabled />
               <button
-                onclick={() => open({ directory: true, multiple: false, defaultPath: osStringToString(envs[elem()[1][0]]) }).then(path => {
+                onclick={() => open({ directory: true, multiple: false, defaultPath: envs[elem()[1][0]] }).then(path => {
                   if (path)
-                    setMapping(idx, 1, 1, stringToOsString(path.replace(`${osStringToString(envs[elem()[1][0]])}\\`, "")))
+                    setMapping(idx, 1, 1, path.replace(RegExp(`${envs[elem()[1][0]]}\\?`.replace(/\\/g, "\\\\"), "g"), ""))
                 })}
               >Browse</button>
             </div>
-            <span>Path: {`${osStringToString(envs[elem()[1][0]])}\\${osStringToString(elem()[1][1])}`}</span>
+            <span>Path: {`${envs[elem()[1][0]]}\\${elem()[1][1]}`}</span>
           </div>
           <button onclick={[removePath, idx]}>Delete mapping</button>
         </div>}
