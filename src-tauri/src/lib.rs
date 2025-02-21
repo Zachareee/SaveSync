@@ -3,7 +3,7 @@ mod commands;
 mod savesync;
 
 use commands::{
-    emit_listeners, get_envpaths, get_filetree, get_mapping, get_plugins, saved_plugin,
+    emit_listeners, get_envpaths, get_filetree, get_mapping, get_plugins, saved_plugin, set_mapping,
 };
 use savesync::store::AppStore;
 use serde::Serialize;
@@ -16,6 +16,7 @@ static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
@@ -23,6 +24,7 @@ pub fn run() {
             get_filetree,
             saved_plugin,
             get_mapping,
+            set_mapping,
             get_envpaths
         ])
         .setup(|app| {

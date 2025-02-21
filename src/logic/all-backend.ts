@@ -7,6 +7,10 @@ export function invoke<T extends keyof InvokeTypes>(
   return old_invoke(command, payload);
 }
 
-export function osStringToString(osString: OsString) {
-  return String.fromCharCode(...osString.Windows)
+export function osStringToString(osString?: OsString) {
+  return osString ? String.fromCharCode(...osString.Windows) : ""
+}
+
+export function stringToOsString(str: string): OsString {
+  return { Windows: str.split('').map(s => s.charCodeAt(0)) }
 }

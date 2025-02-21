@@ -11,6 +11,7 @@ use serde::Deserialize;
 use serde_json::from_str;
 use tauri::{Event, Listener};
 
+use crate::savesync::store::PathMapping;
 use crate::savesync::{config_paths, zip_utils};
 use crate::savesync::{
     emitter::emit_plugin_error,
@@ -91,15 +92,17 @@ struct SyncStruct {
 fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    // drop the mutexguard so watch_folder can access mutex later
-    let path = {
+    let (env, path) = {
         app_store()
             .path_mapping()
             .get(&tag)
             .expect("Tag name not found")
             .to_owned()
     };
-    watch_folder(&tag, path.join(foldername));
+    watch_folder(
+        &tag,
+        Path::new(&env_resolve(&env)).join(path).join(foldername),
+    );
 }
 
 fn unload_listener(_: Event) {
@@ -130,7 +133,7 @@ pub fn get_filetree() -> HashMap<String, Vec<OsString>> {
     app_store()
         .path_mapping()
         .iter()
-        .map(|(tag, path)| (tag.to_owned(), find_folders_in_path(path)))
+        .map(|(tag, (env, path))| (tag.to_owned(), find_folders_in_path(env, path)))
         .collect()
 }
 
@@ -140,12 +143,13 @@ pub fn saved_plugin() -> bool {
 }
 
 #[tauri::command]
-pub fn get_mapping() -> HashMap<String, OsString> {
-    app_store()
-        .path_mapping()
-        .into_iter()
-        .map(|(k, v)| (k, v.into()))
-        .collect()
+pub fn get_mapping() -> PathMapping {
+    app_store().path_mapping()
+}
+
+#[tauri::command]
+pub fn set_mapping(map: PathMapping) {
+    app_store().set_mapping(map)
 }
 
 #[tauri::command]
@@ -224,14 +228,19 @@ where
     })
 }
 
-fn find_folders_in_path<T>(path: T) -> Vec<OsString>
+fn find_folders_in_path<T>(env: &str, path: T) -> Vec<OsString>
 where
     T: AsRef<Path>,
 {
-    path.as_ref()
+    Path::new(&env_resolve(env))
+        .join(path)
         .get_folders()
         .unwrap()
         .into_iter()
         .map(|e| e.file_name())
         .collect()
+}
+
+fn env_resolve(key: &str) -> OsString {
+    std::env::var_os(key).unwrap()
 }

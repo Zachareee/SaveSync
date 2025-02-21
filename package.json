@@ -13,6 +13,7 @@
   "dependencies": {
     "@solidjs/router": "^0.15.3",
     "@tailwindcss/vite": "^4.0.3",
+    "@tauri-apps/plugin-dialog": "~2.2.0",
     "@tauri-apps/plugin-store": "~2.2.0",
     "solid-js": "^1.9.3",
     "@tauri-apps/api": "^2",

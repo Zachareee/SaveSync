@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    ffi::OsString,
     path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, SystemTime},
@@ -46,7 +47,7 @@ impl AppStore {
             .filter(|p| p.exists())
     }
 
-    pub fn path_mapping(&self) -> HashMap<String, PathBuf> {
+    pub fn path_mapping(&self) -> HashMap<String, (String, OsString)> {
         self.store
             .get("path_mapping")
             .unwrap()
@@ -54,7 +55,7 @@ impl AppStore {
             .unwrap()
             .to_owned()
             .into_iter()
-            .map(|(k, v)| (k, Path::new(v.as_str().unwrap()).to_path_buf()))
+            .map(|(k, v)| (k, serde_json::from_value(v).unwrap()))
             .collect()
     }
 
@@ -71,6 +72,11 @@ impl AppStore {
                 .as_secs(),
         );
         self.store.save()
+    }
+
+    pub fn set_mapping(&self, map: PathMapping) {
+        self.store
+            .set("path_mapping", serde_json::to_value(map).unwrap())
     }
 
     fn mapping(&self) -> Value {
@@ -90,3 +96,5 @@ impl AppStore {
             .and_then(|s| Some(Path::new(s.as_str().unwrap()).into()))
     }
 }
+
+pub type PathMapping = HashMap<String, (String, OsString)>;
