@@ -2,7 +2,9 @@
 mod commands;
 mod savesync;
 
-use commands::{emit_listeners, get_filetree, get_mapping, get_plugins, saved_plugin};
+use commands::{
+    emit_listeners, get_envpaths, get_filetree, get_mapping, get_plugins, saved_plugin,
+};
 use savesync::store::AppStore;
 use serde::Serialize;
 use std::sync::{Arc, OnceLock};
@@ -20,7 +22,8 @@ pub fn run() {
             get_plugins,
             get_filetree,
             saved_plugin,
-            get_mapping
+            get_mapping,
+            get_envpaths
         ])
         .setup(|app| {
             emit_listeners(app);

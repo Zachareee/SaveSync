@@ -5,6 +5,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::SystemTime;
+use std::{env, path};
 
 use serde::Deserialize;
 use serde_json::from_str;
@@ -144,6 +145,18 @@ pub fn get_mapping() -> HashMap<String, OsString> {
         .path_mapping()
         .into_iter()
         .map(|(k, v)| (k, v.into()))
+        .collect()
+}
+
+#[tauri::command]
+pub fn get_envpaths() -> HashMap<String, OsString> {
+    env::vars()
+        .filter_map(|(k, v)| {
+            path::absolute(&v)
+                .ok()
+                .filter(|p| p.exists())
+                .map(|p| (k, p.into_os_string()))
+        })
         .collect()
 }
 
