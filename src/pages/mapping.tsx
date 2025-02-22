@@ -1,5 +1,5 @@
-import { invoke, osStringToString } from "@/logic/all-backend"
-import { Index } from "solid-js"
+import { invoke, osStringToString, stringToOsString } from "@/logic/all-backend"
+import { Index, onCleanup } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { open } from "@tauri-apps/plugin-dialog"
@@ -20,6 +20,10 @@ export default function Mapping() {
 
   const addPath = createAddPath(setMapping)
   const removePath = createRemovePath(setMapping)
+
+  onCleanup(() => {
+    invoke("set_mapping", Object.fromEntries(mapping.map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])))
+  })
 
   return <>
     <div>

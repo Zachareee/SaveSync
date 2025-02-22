@@ -1,3 +1,5 @@
+export type OptionalParameter<T> = undefined extends T ? [p?: T] : [p: T]
+
 /** 
  *  key: command
  *  value`[`0`]`: input type
@@ -9,6 +11,7 @@ export type InvokeTypes = {
   saved_plugin: [undefined, boolean]
   get_mapping: [undefined, FolderMapping]
   get_envpaths: [undefined, EnvMapping]
+  set_mapping: [FolderMapping, undefined]
 };
 
 /** 
