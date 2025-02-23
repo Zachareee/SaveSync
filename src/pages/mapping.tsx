@@ -21,8 +21,8 @@ export default function Mapping() {
   const [envs, setEnvs] = createStore<Record<string, string>>()
   const [mapping, setMapping] = createStore<MappingArray>([])
 
-  invoke("get_mapping").then(m => setMapping(Object.entries(m).map(e => [e[0], [e[1][0], osStringToString(e[1][1])]])))
   invoke("get_envpaths").then(e => setEnvs(Object.fromEntries(Object.entries(e).map(([name, path]) => [name, osStringToString(path)]))))
+  invoke("get_mapping").then(m => setMapping(Object.entries(m).map(e => [e[0], [e[1][0], osStringToString(e[1][1])]])))
 
   const addPath = createAddPath(setMapping)
   const removePath = createRemovePath(setMapping)
