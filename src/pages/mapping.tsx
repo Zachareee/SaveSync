@@ -4,6 +4,7 @@ import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { confirm, open } from "@tauri-apps/plugin-dialog"
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
+import lo from "lodash"
 
 type MappingArray = [string, [string, string]][]
 
@@ -14,25 +15,25 @@ const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray
 
 const window = WebviewWindow.getCurrent()
 function saveAndClose(mapping: MappingArray) {
-  invoke("set_mapping", { map: Object.fromEntries(mapping.map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])) }).then(() => window.destroy())
+  invoke("set_mapping", { map: Object.fromEntries(mapping.filter(e => e[0] && e[1][0]).map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])) }).then(() => window.destroy())
 }
 
 export default function Mapping() {
   const [envs, setEnvs] = createStore<Record<string, string>>()
   const [mapping, setMapping] = createStore<MappingArray>([])
+  const [oMapping, setOMapping] = createStore<MappingArray>([])
 
   invoke("get_envpaths").then(e => setEnvs(Object.fromEntries(Object.entries(e).map(([name, path]) => [name, osStringToString(path)]))))
-  invoke("get_mapping").then(m => setMapping(Object.entries(m).map(e => [e[0], [e[1][0], osStringToString(e[1][1])]])))
+  invoke("get_mapping").then(m => [setMapping, setOMapping].forEach(f => f(Object.entries(m).map(e => [e[0], [e[1][0], osStringToString(e[1][1])]]))))
 
   const addPath = createAddPath(setMapping)
   const removePath = createRemovePath(setMapping)
 
-  window.onCloseRequested(e =>
-    confirm("Unsaved changes will be lost").then(b => b
-      ? window.destroy()
-      : e.preventDefault()
-    )
-  )
+  window.onCloseRequested(async e => {
+    if (lo.isEqual(mapping, oMapping) || await confirm("Unsaved changes will be lost"))
+      return window.destroy()
+    e.preventDefault()
+  })
 
   return <>
     <div>
