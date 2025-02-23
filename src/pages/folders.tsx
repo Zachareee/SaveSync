@@ -1,7 +1,6 @@
 import { useFolderContext } from "@/App"
-import { osStringToString } from "@/logic/all-backend"
 import { createWindow } from "@/logic/window";
-import { emit, listen } from "@/logic/main-backend"
+import { emit, listen, osStringToString } from "@/logic/backend"
 import { useParams } from "@solidjs/router"
 import { Index, onCleanup } from "solid-js"
 

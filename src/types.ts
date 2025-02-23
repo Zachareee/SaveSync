@@ -11,7 +11,7 @@ export type InvokeTypes = {
   saved_plugin: [undefined, boolean]
   get_mapping: [undefined, FolderMapping]
   get_envpaths: [undefined, EnvMapping]
-  set_mapping: [FolderMapping, undefined]
+  set_mapping: [{ map: FolderMapping }, undefined]
 };
 
 /** 

@@ -1,9 +1,8 @@
 import { useFolderContext } from "@/App"
-import { emit } from "@/logic/main-backend"
+import { emit, invoke } from "@/logic/backend"
 import { useNavigate } from "@solidjs/router"
 import { Index } from "solid-js"
 import { menuStatus } from "@/logic/menu"
-import { invoke } from "@/logic/all-backend"
 
 export default function Fmap() {
   menuStatus(true)

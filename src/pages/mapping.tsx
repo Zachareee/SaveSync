@@ -1,8 +1,9 @@
-import { invoke, osStringToString, stringToOsString } from "@/logic/all-backend"
-import { Index, onCleanup } from "solid-js"
+import { invoke, osStringToString, stringToOsString } from "@/logic/backend"
+import { Index } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
-import { open } from "@tauri-apps/plugin-dialog"
+import { confirm, open } from "@tauri-apps/plugin-dialog"
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
 
 type MappingArray = [string, [string, string]][]
 
@@ -10,6 +11,11 @@ const createAddPath = (setMapping: ReturnType<typeof createStore<MappingArray>>[
   () => setMapping(mapping => [...mapping, ["", ["", ""]] as const])
 const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray>>[1]) =>
   (idx: number) => setMapping(mapping => mapping.toSpliced(idx, 1))
+
+const window = WebviewWindow.getCurrent()
+function saveAndClose(mapping: MappingArray) {
+  invoke("set_mapping", { map: Object.fromEntries(mapping.map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])) }).then(() => window.destroy())
+}
 
 export default function Mapping() {
   const [envs, setEnvs] = createStore<Record<string, string>>()
@@ -21,9 +27,12 @@ export default function Mapping() {
   const addPath = createAddPath(setMapping)
   const removePath = createRemovePath(setMapping)
 
-  onCleanup(() => {
-    invoke("set_mapping", Object.fromEntries(mapping.map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])))
-  })
+  window.onCloseRequested(e =>
+    confirm("Unsaved changes will be lost").then(b => b
+      ? window.destroy()
+      : e.preventDefault()
+    )
+  )
 
   return <>
     <div>
@@ -34,7 +43,7 @@ export default function Mapping() {
             <div>
               <select id={`${idx}`}
                 value={elem()[1][0]}
-                onchange={e => setMapping(idx, 1, 0, e.target.value)}
+                onchange={e => setMapping(idx, 1, 0, e.currentTarget.value)}
                 class="border-white border-2 rounded-lg"
               >
                 <Index each={Object.entries(envs).sort()}>
@@ -57,8 +66,11 @@ export default function Mapping() {
         </div>}
       </Index>
       <Portal>
-        <div class="absolute right-0 bottom-0 m-4">
+        <div class="absolute left-0 bottom-0 m-4">
           <button onclick={addPath}>Add mapping</button>
+        </div>
+        <div class="absolute right-0 bottom-0 m-4">
+          <button onclick={[saveAndClose, mapping]}>Save and quit</button>
         </div>
       </Portal>
     </div>

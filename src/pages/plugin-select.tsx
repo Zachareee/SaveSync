@@ -1,5 +1,4 @@
-import { emit, listen, } from "@/logic/main-backend";
-import { invoke } from "@/logic/all-backend";
+import { emit, listen, invoke } from "@/logic/backend";
 import { Info } from "@/types.ts";
 import { createSignal, Index, onCleanup, onMount, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";

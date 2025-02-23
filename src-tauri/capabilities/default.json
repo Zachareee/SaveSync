@@ -3,13 +3,10 @@
   "identifier": "default",
   "description": "Capability for the main window",
   "windows": [
-    "main", "/mapping"
+    "main"
   ],
   "permissions": [
     "core:default",
-    "opener:default",
-    "store:default",
-    "core:webview:allow-create-webview-window",
-    "dialog:default"
+    "core:webview:allow-create-webview-window"
   ]
 }
