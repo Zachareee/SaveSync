@@ -15,7 +15,15 @@ const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray
 
 const window = WebviewWindow.getCurrent()
 function saveAndClose(mapping: MappingArray) {
-  invoke("set_mapping", { map: Object.fromEntries(mapping.filter(e => e[0] && e[1][0]).map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])) }).then(() => window.destroy())
+  invoke("set_mapping", {
+    map: Object.fromEntries(
+      mapping.filter(validEntry).map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])
+    )
+  }).then(() => window.destroy())
+}
+
+function validEntry(entry: MappingArray[number]): string {
+  return entry[0] && entry[1][0]
 }
 
 export default function Mapping() {
@@ -30,7 +38,7 @@ export default function Mapping() {
   const removePath = createRemovePath(setMapping)
 
   window.onCloseRequested(async e => {
-    if (lo.isEqual(mapping, oMapping) || await confirm("Unsaved changes will be lost"))
+    if (lo.isEqual(mapping.filter(validEntry), oMapping) || await confirm("Unsaved changes will be lost"))
       return window.destroy()
     e.preventDefault()
   })
@@ -39,7 +47,7 @@ export default function Mapping() {
     <div>
       <Index each={mapping}>
         {(elem, idx) => <div class="flex">
-          <input value={elem()[0]} onchange={e => setMapping(idx, 0, e.target.value)} />
+          <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} />
           <div>
             <div>
               <select id={`${idx}`}
@@ -47,6 +55,7 @@ export default function Mapping() {
                 onchange={e => setMapping(idx, 1, 0, e.currentTarget.value)}
                 class="border-white border-2 rounded-lg"
               >
+                <option class="bg-black"></option>
                 <Index each={Object.entries(envs).sort()}>
                   {
                     option => <option class="bg-black"> {option()[0]} </option>

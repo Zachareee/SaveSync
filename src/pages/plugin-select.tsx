@@ -19,7 +19,7 @@ let navigate: ReturnType<typeof useNavigate>
 
 export default function PluginSelect() {
   // TODO: change to false after testing is done
-  menuStatus(true)
+  menuStatus(false)
 
   navigate = useNavigate()
 

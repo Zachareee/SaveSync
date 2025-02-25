@@ -3,7 +3,8 @@ mod commands;
 mod savesync;
 
 use commands::{
-    emit_listeners, get_envpaths, get_filetree, get_mapping, get_plugins, saved_plugin, set_mapping,
+    emit_listeners, get_envpaths, get_filetree, get_ignoredtags, get_mapping, get_plugins,
+    saved_plugin, set_mapping,
 };
 use savesync::store::AppStore;
 use serde::Serialize;
@@ -25,7 +26,8 @@ pub fn run() {
             saved_plugin,
             get_mapping,
             set_mapping,
-            get_envpaths
+            get_envpaths,
+            get_ignoredtags
         ])
         .setup(|app| {
             emit_listeners(app);

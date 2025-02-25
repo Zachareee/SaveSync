@@ -164,6 +164,11 @@ pub fn get_envpaths() -> HashMap<String, OsString> {
         .collect()
 }
 
+#[tauri::command]
+pub fn get_ignoredtags() -> Vec<String> {
+    app_store().get_ignored()
+}
+
 pub fn load_plugins() -> HashMap<Arc<OsString>, Plugin> {
     config_paths::get_pluginfiles()
         .into_iter()

@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use serde_json::{json, Value};
+use serde_json::{from_value, json, to_value, Value};
 use tauri::{Manager, Wry};
 use tauri_plugin_store::{Result, Store, StoreBuilder};
 
@@ -30,6 +30,7 @@ impl AppStore {
         AppStore {
             store: StoreBuilder::new(app, "store.json")
                 .default("plugin", "")
+                .default("ignored", json!([]))
                 .default("path_mapping", json!({}))
                 .default("last_sync", 0)
                 .auto_save(Duration::from_secs(60))
@@ -75,8 +76,7 @@ impl AppStore {
     }
 
     pub fn set_mapping(&self, map: PathMapping) {
-        self.store
-            .set("path_mapping", serde_json::to_value(map).unwrap())
+        self.store.set("path_mapping", to_value(map).unwrap())
     }
 
     fn mapping(&self) -> Value {
@@ -94,6 +94,10 @@ impl AppStore {
             .unwrap()
             .get(key)
             .and_then(|s| Some(Path::new(s.as_str().unwrap()).into()))
+    }
+
+    pub fn get_ignored(&self) -> Vec<String> {
+        from_value(self.store.get("ignored").unwrap()).unwrap()
     }
 }
 
