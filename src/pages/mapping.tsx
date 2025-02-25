@@ -5,6 +5,7 @@ import { Portal } from "solid-js/web"
 import { confirm, open } from "@tauri-apps/plugin-dialog"
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
 import lo from "lodash"
+import { IgnoreList } from "@/types"
 
 type MappingArray = [string, [string, string]][]
 
@@ -30,9 +31,13 @@ export default function Mapping() {
   const [envs, setEnvs] = createStore<Record<string, string>>()
   const [mapping, setMapping] = createStore<MappingArray>([])
   const [oMapping, setOMapping] = createStore<MappingArray>([])
+  const [ignoreList, setIgnoreList] = createStore<IgnoreList>([])
 
   invoke("get_envpaths").then(e => setEnvs(Object.fromEntries(Object.entries(e).map(([name, path]) => [name, osStringToString(path)]))))
-  invoke("get_mapping").then(m => [setMapping, setOMapping].forEach(f => f(Object.entries(m).map(e => [e[0], [e[1][0], osStringToString(e[1][1])]]))))
+  invoke("get_mapping").then(({ mapping, ignored }) => {
+    [setMapping, setOMapping].forEach(f => f(Object.entries(mapping).map(e => [e[0], [e[1][0], osStringToString(e[1][1])]])))
+    setIgnoreList(ignored)
+  })
 
   const addPath = createAddPath(setMapping)
   const removePath = createRemovePath(setMapping)
@@ -55,7 +60,7 @@ export default function Mapping() {
                 onchange={e => setMapping(idx, 1, 0, e.currentTarget.value)}
                 class="border-white border-2 rounded-lg"
               >
-                <option class="bg-black"></option>
+                <option class="bg-black" />
                 <Index each={Object.entries(envs).sort()}>
                   {
                     option => <option class="bg-black"> {option()[0]} </option>
@@ -76,6 +81,10 @@ export default function Mapping() {
           </div>
           <button onclick={[removePath, idx]}>Delete mapping</button>
         </div>}
+      </Index>
+      <h2> Ignored tags list </h2>
+      <Index each={ignoreList}>
+        {e => <span>{e()}</span>}
       </Index>
       <Portal>
         <div class="absolute left-0 bottom-0 m-4">

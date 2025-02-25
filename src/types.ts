@@ -9,7 +9,7 @@ export type InvokeTypes = {
   get_plugins: [undefined, Info[]]
   get_filetree: [undefined, FileTree]
   saved_plugin: [undefined, boolean]
-  get_mapping: [undefined, FolderMapping]
+  get_mapping: [undefined, { mapping: FolderMapping, ignored: IgnoreList }]
   get_envpaths: [undefined, EnvMapping]
   set_mapping: [{ map: FolderMapping }, undefined]
 };
@@ -45,3 +45,4 @@ export type Info = Record<"name" | "description" | "author" | "filename", string
 export type FileTree = Record<string, OsString[]>
 export type FolderMapping = Record<string, [string, OsString]>
 export type EnvMapping = Record<string, OsString>
+export type IgnoreList = string[]

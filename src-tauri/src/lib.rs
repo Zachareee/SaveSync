@@ -1,11 +1,10 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod commands;
+mod listeners;
 mod savesync;
 
-use commands::{
-    emit_listeners, get_envpaths, get_filetree, get_ignoredtags, get_mapping, get_plugins,
-    saved_plugin, set_mapping,
-};
+use commands::{get_envpaths, get_filetree, get_mapping, get_plugins, saved_plugin, set_mapping};
+use listeners::emit_listeners;
 use savesync::store::AppStore;
 use serde::Serialize;
 use std::sync::{Arc, OnceLock};
@@ -27,7 +26,6 @@ pub fn run() {
             get_mapping,
             set_mapping,
             get_envpaths,
-            get_ignoredtags
         ])
         .setup(|app| {
             emit_listeners(app);
