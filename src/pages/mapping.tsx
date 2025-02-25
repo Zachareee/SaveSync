@@ -1,5 +1,5 @@
 import { invoke, osStringToString, stringToOsString } from "@/logic/backend"
-import { Index } from "solid-js"
+import { Index, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { confirm, open } from "@tauri-apps/plugin-dialog"
@@ -61,7 +61,9 @@ export default function Mapping() {
                 })}
               >Browse</button>
             </div>
-            <span>Path: {`${envs[elem()[1][0]]}\\${elem()[1][1]}`}</span>
+            <Show when={envs[elem()[1][0]]}>
+              <span>Path: {`${envs[elem()[1][0]]}\\${elem()[1][1]}`}</span>
+            </Show>
           </div>
           <button onclick={[removePath, idx]}>Delete mapping</button>
         </div>}
