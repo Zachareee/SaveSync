@@ -12,8 +12,6 @@ export default function Folders() {
   const { TAG: tag } = useParams<{ TAG: string }>()
   const { folders } = useFolderContext()!
 
-  const unlisten = listen("plugin_error", ({ payload: [title, description] }) => createWindow(title, { url: `/error/${description}` }))
-  onCleanup(() => unlisten.then(e => e()))
   return <>
     <Index each={folders[tag]}>
       {

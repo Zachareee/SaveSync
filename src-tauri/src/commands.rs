@@ -44,11 +44,6 @@ pub fn get_filetree() -> HashMap<String, Vec<OsString>> {
         .collect()
 }
 
-#[tauri::command]
-pub fn saved_plugin() -> bool {
-    app_store().plugin().is_some_and(|p| p.exists())
-}
-
 #[derive(Deserialize, Serialize)]
 pub struct Mappings {
     mapping: PathMapping,
@@ -62,8 +57,6 @@ pub fn get_mapping() -> Mappings {
         .into_iter()
         .filter(|t| !mapping.contains_key(t))
         .collect();
-    println!("{:?}", required_tags());
-    println!("{ignored:?}");
     Mappings {
         mapping: mapping.clone(),
         ignored,

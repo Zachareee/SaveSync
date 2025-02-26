@@ -3,11 +3,11 @@ mod commands;
 mod listeners;
 mod savesync;
 
-use commands::{get_envpaths, get_filetree, get_mapping, get_plugins, saved_plugin, set_mapping};
+use commands::{get_envpaths, get_filetree, get_mapping, get_plugins, set_mapping};
 use listeners::emit_listeners;
 use savesync::store::AppStore;
 use serde::Serialize;
-use std::sync::{Arc, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock};
 use tauri::{AppHandle, Emitter, Manager, RunEvent};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
@@ -22,7 +22,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_plugins,
             get_filetree,
-            saved_plugin,
             get_mapping,
             set_mapping,
             get_envpaths,
@@ -31,6 +30,8 @@ pub fn run() {
             emit_listeners(app);
 
             let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
+
+            app.manage(Mutex::new(Vec::<String>::new()));
 
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
             Ok(())

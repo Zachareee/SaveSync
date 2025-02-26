@@ -24,6 +24,7 @@ export type EmitTypes = {
   abort: string
   sync: Record<"tag" | "foldername", string>
   unload: undefined
+  saved_plugin: undefined
 };
 
 /** 

@@ -14,7 +14,7 @@ let navigate: ReturnType<typeof useNavigate>
 // run on app boot
 (() => {
   if (Window.getCurrent().label == "main")
-    invoke("saved_plugin").then(bool => { if (bool) navigate("/folders") })
+    emit("saved_plugin")
 })()
 
 export default function PluginSelect() {
@@ -36,7 +36,7 @@ export default function PluginSelect() {
       if (loading() && payload) navigate("/folders")
       else setLoading()
     }),
-    listen("saved_plugin", () => navigate("/folders"))
+    listen("saved_result", () => navigate("/folders"))
   ]
 
   onMount(() => { refresh(setServices) })

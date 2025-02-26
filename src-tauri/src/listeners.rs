@@ -1,5 +1,5 @@
 use crate::{
-    app_emit, app_store,
+    app_emit, app_handle, app_store,
     commands::{env_resolve, load_plugins},
     savesync::{
         config_paths,
@@ -12,24 +12,25 @@ use crate::{
 use serde::Deserialize;
 use serde_json::from_str;
 use std::{
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fs::{read_dir, OpenOptions},
     io::Write,
     path::{Path, PathBuf},
-    sync::{LazyLock, Mutex},
+    sync::Mutex,
     time::SystemTime,
 };
-use tauri::{Event, Listener};
-
-const REQUIRED_TAGS: LazyLock<Mutex<Vec<String>>> = LazyLock::new(|| Mutex::new(Vec::new()));
+use tauri::{Event, Listener, Manager};
 
 pub fn required_tags() -> Vec<String> {
-    REQUIRED_TAGS.lock().unwrap().clone()
+    app_handle()
+        .state::<Mutex<Vec<String>>>()
+        .lock()
+        .unwrap()
+        .to_owned()
 }
 
 fn set_required_tags(tags: Vec<String>) {
-    println!("{tags:?}");
-    *REQUIRED_TAGS.lock().unwrap() = tags;
+    *app_handle().state::<Mutex<Vec<String>>>().lock().unwrap() = tags;
 }
 
 pub fn emit_listeners(app: &tauri::App) {
@@ -38,24 +39,31 @@ pub fn emit_listeners(app: &tauri::App) {
         ("abort", abort_listener),
         ("sync", sync_listener),
         ("unload", unload_listener),
+        ("saved_plugin", saved_plugin_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
     });
 }
 
-// async to prevent UI thread from freezing
+// wrapper function
 fn init_listener(event: Event) {
-    let path: OsString = from_str(event.payload()).unwrap();
+    init_func(&from_str::<OsString>(event.payload()).unwrap());
+}
+
+// async to prevent UI thread from freezing
+pub fn init_func(path: &OsStr) {
     let pathstr = path.to_string_lossy();
 
-    match load_plugins().get(&path) {
+    match load_plugins().get(&path.to_os_string()) {
         Some(plugin) => {
+            println!("Plugin found, {plugin:?}");
             let res = plugin
                 .init()
-                .map_err(|e| emit_plugin_error(&pathstr, &e))
+                .map_err(|e| emit_plugin_error(&pathstr, &String::from(e)))
                 .is_ok();
             app_emit("init_result", res);
+            println!("Result, {res:?}");
             if !res {
                 return;
             }
@@ -66,6 +74,8 @@ fn init_listener(event: Event) {
         }
         None => {
             emit_plugin_error(&pathstr, &format!("{path:?} not found"));
+            println!("{pathstr} had issues");
+            println!("{:?}", load_plugins());
         }
     }
 }
@@ -183,4 +193,15 @@ fn sync_listener(event: Event) {
 
 fn unload_listener(_: Event) {
     app_store().set_plugin(PathBuf::new());
+}
+
+fn saved_plugin_listener(_: Event) {
+    if let Some(ref path) = app_store().plugin() {
+        println!("{path:?}");
+        if path.exists() {
+            println!("THE PATH EXISTS");
+            init_func(path.file_name().unwrap());
+            app_emit("saved_result", ());
+        }
+    }
 }

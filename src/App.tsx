@@ -8,6 +8,13 @@ import { createContext, useContext } from "solid-js";
 import { createStore } from "solid-js/store";
 import { FileTree } from "@/types";
 import Mapping from "./pages/mapping";
+import { Window } from "@tauri-apps/api/window";
+import { listen } from "@/logic/backend";
+import { createWindow } from "./logic/window";
+
+(() => {
+  if (Window.getCurrent().label == "main") listen("plugin_error", ({ payload: [title, description] }) => createWindow(title, { url: `/error/${description}` }))
+})()
 
 function App() {
   const [folders, setFolders] = createStore<FileTree>()
