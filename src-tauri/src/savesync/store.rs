@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use serde_json::{json, to_value, Value};
+use serde_json::{from_value, json, to_value, Value};
 use tauri::{Manager, Wry};
 use tauri_plugin_store::{Result, Store, StoreBuilder};
 
@@ -38,13 +38,8 @@ impl AppStore {
         }
     }
 
-    pub fn plugin(&self) -> Option<PathBuf> {
-        self.store
-            .get("plugin")
-            .unwrap()
-            .as_str()
-            .map(|s| Path::new(s).to_owned())
-            .filter(|p| p.exists())
+    pub fn plugin(&self) -> Option<OsString> {
+        from_value(self.store.get("plugin").unwrap()).unwrap()
     }
 
     pub fn path_mapping(&self) -> HashMap<String, (String, OsString)> {
@@ -55,7 +50,7 @@ impl AppStore {
             .unwrap()
             .to_owned()
             .into_iter()
-            .map(|(k, v)| (k, serde_json::from_value(v).unwrap()))
+            .map(|(k, v)| (k, from_value(v).unwrap()))
             .collect()
     }
 

@@ -1,6 +1,6 @@
 use crate::{
     app_emit, app_handle, app_store,
-    commands::{env_resolve, load_plugins},
+    commands::env_resolve,
     savesync::{
         config_paths,
         emitter::emit_plugin_error,
@@ -48,36 +48,33 @@ pub fn emit_listeners(app: &tauri::App) {
 
 // wrapper function
 fn init_listener(event: Event) {
-    init_func(&from_str::<OsString>(event.payload()).unwrap());
+    app_emit(
+        "init_result",
+        init_func(&from_str::<OsString>(event.payload()).unwrap()),
+    );
 }
 
 // async to prevent UI thread from freezing
-pub fn init_func(path: &OsStr) {
+pub fn init_func(path: &OsStr) -> bool {
     let pathstr = path.to_string_lossy();
 
-    match load_plugins().get(&path.to_os_string()) {
-        Some(plugin) => {
-            println!("Plugin found, {plugin:?}");
-            let res = plugin
+    Plugin::new(&path.to_os_string()).map_or_else(
+        |e| {
+            emit_plugin_error(&pathstr, &e);
+            false
+        },
+        |plugin| {
+            plugin
                 .init()
                 .map_err(|e| emit_plugin_error(&pathstr, &String::from(e)))
-                .is_ok();
-            app_emit("init_result", res);
-            println!("Result, {res:?}");
-            if !res {
-                return;
-            }
-
-            if let Ok(_) = init_download_folders(&plugin) {
-                app_store().set_plugin(config_paths::plugin().join(path))
-            }
-        }
-        None => {
-            emit_plugin_error(&pathstr, &format!("{path:?} not found"));
-            println!("{pathstr} had issues");
-            println!("{:?}", load_plugins());
-        }
-    }
+                .map(|_| {
+                    if let Ok(_) = init_download_folders(&plugin) {
+                        app_store().set_plugin(config_paths::plugin().join(path))
+                    }
+                })
+                .is_ok()
+        },
+    )
 }
 
 fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
@@ -111,17 +108,24 @@ fn process_cloud_details(
 
         if last_sync < cloud_date {
             if local_date < cloud_date {
-                zip_utils::extract(
-                    &path,
-                    // TODO: change unwrap to handle error
-                    data.unwrap_or_else(|| plugin.download(&tag, &folder_name).unwrap()),
-                )
+                match data
+                    .ok_or(|| ())
+                    .or_else(|_| plugin.download(&tag, &folder_name))
+                {
+                    Ok(buf) => {
+                        zip_utils::extract(
+                            &path, // TODO: change unwrap to handle error
+                            buf,
+                        );
+                        watch_folder(&tag, path);
+                    }
+                    Err(e) => emit_plugin_error("Download", &e),
+                }
             } else {
                 // TODO: alert the user to the conflicting data
                 // https://github.com/Zachareee/SaveSync/issues/9
             }
         }
-        watch_folder(&tag, path);
     }
     tag
 }
@@ -145,12 +149,9 @@ where
 /// Fails silently, plugin does not need to implement abort()
 /// If a message is returned, it is logged to the logs folder
 fn abort_listener(event: Event) {
-    let mut filename: OsString = from_str::<OsString>(event.payload()).unwrap();
+    let mut filename: OsString = from_str(event.payload()).unwrap();
 
-    if let Some(mut err) = load_plugins()
-        .get(&filename)
-        .map_or(None, |plugin| plugin.abort().err())
-    {
+    if let Some(mut err) = Plugin::new(&filename).map_or(None, |plugin| plugin.abort().err()) {
         app_emit("abort_result", &err);
 
         filename.push(".txt");
@@ -194,12 +195,11 @@ fn unload_listener(_: Event) {
 }
 
 fn saved_plugin_listener(_: Event) {
-    if let Some(ref path) = app_store().plugin() {
-        println!("{path:?}");
-        if path.exists() {
-            println!("THE PATH EXISTS");
-            init_func(path.file_name().unwrap());
-            app_emit("saved_result", ());
-        }
-    }
+    app_store()
+        .plugin()
+        .filter(|p| config_paths::plugin().join(p).exists())
+        .map(|p| {
+            init_func(&p);
+            app_emit("saved_result", ())
+        });
 }

@@ -1,15 +1,15 @@
+use mlua::{FromLuaMulti, Function, IntoLuaMulti, Lua, LuaOptions, LuaSerdeExt, StdLib};
+use regex::Regex;
+use serde::{Deserialize, Serialize};
 use std::{
     ffi::{OsStr, OsString},
     fs,
-    path::PathBuf,
+    path::Path,
     sync::{Arc, LazyLock},
     time::SystemTime,
 };
 
-use mlua::{FromLuaMulti, Function, IntoLuaMulti, Lua, LuaOptions, LuaSerdeExt, StdLib};
-
-use regex::Regex;
-use serde::Deserialize;
+use super::config_paths;
 
 const FIELD_MATCHER: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"`(.*)`").expect("Unable to compile regex"));
@@ -21,8 +21,8 @@ pub struct Plugin {
 }
 
 /// Gets file's last modified date
-/// Plugin developers can optionally attach
-/// the file buffer to reduce API calls
+/// Plugin developers can optionally attach the
+/// file buffer to reduce API calls where possible
 pub struct FileDetails {
     pub tag: String,
     pub folder_name: String,
@@ -61,19 +61,53 @@ impl Plugin {
         self.filename.clone()
     }
 
+    pub fn new(servicename: &OsStr) -> PluginResult<Plugin> {
+        let backend = unsafe { Lua::unsafe_new_with(StdLib::ALL_SAFE, LuaOptions::new()) };
+
+        let servicepath = config_paths::plugin().join(servicename);
+        let path = include_path(&servicepath, "lua");
+        let cpath = include_path(&servicepath, "dll");
+
+        backend
+            .load(format!(
+            "package.path = '{path};' .. package.path; package.cpath = '{cpath};' .. package.cpath"
+        ))
+            .exec()
+            .map_err(|e| format!("Unable to change package path: {e}"))?;
+        backend
+            .globals()
+            .get::<Function>("dofile")
+            .unwrap() // dofile() should always be available in lua runtime
+            .call::<()>(servicepath.join("main.lua").as_path())
+            .map_err(|e| format!("Error parsing {}: {e}", servicepath.to_string_lossy()))?;
+
+        Ok(Plugin {
+            backend,
+            filename: Arc::new(servicename.to_owned()),
+        })
+    }
+
     pub fn info(&self) -> PluginResult<PluginInfo> {
         self.backend
             .from_value(mlua::Value::Table(self.run_function("Info", ())?))
-            .map_or_else(
-                |e| {
-                    Err(FIELD_MATCHER
-                        .captures(&e.to_string())
-                        .map(|cap| format!("Plugin {} was not found", cap.extract::<1>().1[0]))
-                        .unwrap())
-                },
-                |mut info: PluginInfo| {
-                    info.filename = Some(self.filename());
-                    Ok(info)
+            .map_err(|e| {
+                FIELD_MATCHER
+                    .captures(&e.to_string())
+                    .map(|cap| format!("Plugin {} was not found", cap.extract::<1>().1[0]))
+                    .unwrap()
+            })
+            .map(
+                |InterPluginInfo {
+                     name,
+                     description,
+                     author,
+                     icon_url,
+                 }| PluginInfo {
+                    filename: self.filename(),
+                    name,
+                    description,
+                    author,
+                    icon_url,
                 },
             )
     }
@@ -107,7 +141,7 @@ impl Plugin {
     pub fn upload(
         &self,
         tag: &str,
-        folder_name: OsString,
+        folder_name: &OsStr,
         date: SystemTime,
         buffer: mlua::BString,
     ) -> PluginResult<()> {
@@ -160,43 +194,29 @@ impl Plugin {
     }
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
+#[derive(Deserialize)]
+struct InterPluginInfo {
+    name: String,
+    description: String,
+    author: String,
+    icon_url: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PluginInfo {
     name: String,
     description: String,
     author: String,
     icon_url: Option<String>,
-    filename: Option<Arc<OsString>>,
+    filename: Arc<OsString>,
 }
 
-pub fn load_plugin(servicename: &PathBuf) -> Result<Plugin, String> {
-    // enable DLL loading
-    let backend = unsafe { Lua::unsafe_new_with(StdLib::ALL_SAFE, LuaOptions::new()) };
-
-    let path = include_path(servicename, "lua");
-    let cpath = include_path(servicename, "dll");
-
-    backend
-        .load(format!(
-            "package.path = '{path};' .. package.path; package.cpath = '{cpath};' .. package.cpath"
-        ))
-        .exec()
-        .map_err(|e| format!("Unable to change package path: {e}"))?;
-    backend
-        .globals()
-        .get::<Function>("dofile")
-        .unwrap() // dofile() should always be available in lua runtime
-        .call::<()>(servicename.join("main.lua").as_path())
-        .map_err(|e| format!("Error parsing {}: {e}", servicename.to_string_lossy()))?;
-
-    Ok(Plugin {
-        backend,
-        filename: servicename.file_name().unwrap().to_os_string().into(),
-    })
-}
-
-fn include_path(servicename: &PathBuf, ext: &str) -> String {
+fn include_path<T>(servicename: T, ext: &str) -> String
+where
+    T: AsRef<Path>,
+{
     servicename
+        .as_ref()
         .join(["?.", ext].join(""))
         .to_string_lossy()
         .replace("\\", "/")

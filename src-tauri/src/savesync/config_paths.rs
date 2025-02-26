@@ -1,24 +1,23 @@
 use std::{
+    ffi::OsString,
     fs::{self, DirEntry},
     path::{Path, PathBuf},
 };
 
-#[cfg(not(debug_assertions))]
-use std::env;
-
 use super::fs_utils::FolderItems;
 
-pub fn get_pluginfiles() -> Vec<PathBuf> {
+pub fn get_pluginfiles() -> Vec<OsString> {
     let path = plugin();
     path.get_folders()
         .expect(&format!("Unable to read {}", path.to_string_lossy()))
         .iter()
-        .map(DirEntry::path)
+        .map(DirEntry::file_name)
         .collect()
 }
 
 #[cfg(not(debug_assertions))]
 pub fn appdata() -> PathBuf {
+    use std::env;
     Path::new(&env::var("APPDATA").expect("Unable to find APPDATA environment variable")).into()
 }
 

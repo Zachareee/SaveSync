@@ -8,7 +8,7 @@ use std::{
 
 use crate::app_store;
 
-use super::{plugin::load_plugin, zip_utils::zip_dir};
+use super::{plugin::Plugin, zip_utils::zip_dir};
 
 static WATCHERS: LazyLock<
     Mutex<HashMap<PathBuf, Debouncer<RecommendedWatcher, RecommendedCache>>>,
@@ -21,9 +21,9 @@ where
     let path = path.as_ref();
 
     let (zipbuffer, date) = zip_dir(path);
-    load_plugin(&app_store().plugin().unwrap())
+    Plugin::new(&app_store().plugin().unwrap())
         .unwrap()
-        .upload(tag, path.as_os_str().to_owned(), date, zipbuffer.into())
+        .upload(tag, path.as_os_str(), date, zipbuffer.into())
         .unwrap();
 }
 
