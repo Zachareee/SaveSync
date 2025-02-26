@@ -28,4 +28,5 @@ zip = "2.2.2"
 notify-debouncer-full = "0.5.0"
 bytes = "1.10.0"
 tauri-plugin-store = "2"
+tauri-plugin-dialog = "2"
 

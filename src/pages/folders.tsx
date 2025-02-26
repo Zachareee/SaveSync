@@ -1,7 +1,8 @@
 import { useFolderContext } from "@/App"
-import { emit, osStringToString } from "@/utils"
+import { createWindow } from "@/logic/window";
+import { emit, listen, osStringToString } from "@/logic/backend"
 import { useParams } from "@solidjs/router"
-import { Index } from "solid-js"
+import { Index, onCleanup } from "solid-js"
 
 const sync_folder = (data: Record<string, string>) => {
   emit("sync", data)
@@ -10,6 +11,7 @@ const sync_folder = (data: Record<string, string>) => {
 export default function Folders() {
   const { TAG: tag } = useParams<{ TAG: string }>()
   const { folders } = useFolderContext()!
+
   return <>
     <Index each={folders[tag]}>
       {

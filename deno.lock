@@ -5,8 +5,11 @@
     "npm:@tailwindcss/vite@^4.0.3": "4.0.3_vite@6.0.11_lightningcss@1.29.1",
     "npm:@tauri-apps/api@2": "2.2.0",
     "npm:@tauri-apps/cli@2": "2.2.5",
+    "npm:@tauri-apps/plugin-dialog@2.2": "2.2.0",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
     "npm:@tauri-apps/plugin-store@2.2": "2.2.0",
+    "npm:@types/lodash@^4.17.15": "4.17.15",
+    "npm:lodash@^4.17.21": "4.17.21",
     "npm:postcss@^8.5.1": "8.5.1",
     "npm:solid-js@^1.9.3": "1.9.4_seroval@1.2.0",
     "npm:tailwindcss@^4.0.3": "4.0.3",
@@ -431,6 +434,12 @@
         "@tauri-apps/cli-win32-x64-msvc"
       ]
     },
+    "@tauri-apps/plugin-dialog@2.2.0": {
+      "integrity": "sha512-6bLkYK68zyK31418AK5fNccCdVuRnNpbxquCl8IqgFByOgWFivbiIlvb79wpSXi0O+8k8RCSsIpOquebusRVSg==",
+      "dependencies": [
+        "@tauri-apps/api"
+      ]
+    },
     "@tauri-apps/plugin-opener@2.2.5": {
       "integrity": "sha512-hHsJ9RPWpZvZEPVFaL+d25gABMUMOf/A6ESXnvf/ii9guTukj58WXsAE/SOysXRIhej7kseRCxnOnIMpSCdUsQ==",
       "dependencies": [
@@ -474,6 +483,9 @@
     },
     "@types/estree@1.0.6": {
       "integrity": "sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw=="
+    },
+    "@types/lodash@4.17.15": {
+      "integrity": "sha512-w/P33JFeySuhN6JLkysYUK2gEmy9kHHFN7E8ro0tkfmlDOgxBDzWEZ/J8cWA+fHqFevpswDTFZnDx+R9lbL6xw=="
     },
     "babel-plugin-jsx-dom-expressions@0.39.6_@babel+core@7.26.0": {
       "integrity": "sha512-HMkTn5A3NyydEgG7HKmm48YcnsQQyqeT6SKNWh2TrS6nn5rOLeHDfg5hPbrRUCFUqaT9WGn5NInQfMc3qne3Dg==",
@@ -643,6 +655,9 @@
         "lightningcss-win32-x64-msvc"
       ]
     },
+    "lodash@4.17.21": {
+      "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg=="
+    },
     "lru-cache@5.1.1": {
       "integrity": "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==",
       "dependencies": [
@@ -808,8 +823,11 @@
         "npm:@tailwindcss/vite@^4.0.3",
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
+        "npm:@tauri-apps/plugin-dialog@2.2",
         "npm:@tauri-apps/plugin-opener@2",
         "npm:@tauri-apps/plugin-store@2.2",
+        "npm:@types/lodash@^4.17.15",
+        "npm:lodash@^4.17.21",
         "npm:solid-js@^1.9.3",
         "npm:tailwindcss@^4.0.3",
         "npm:typescript@~5.6.2",

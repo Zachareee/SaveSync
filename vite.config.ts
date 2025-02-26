@@ -6,7 +6,7 @@ import solid from "vite-plugin-solid";
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig({
   plugins: [solid(), tailwindcss()],
 
   resolve: {
@@ -36,4 +36,8 @@ export default defineConfig(async () => ({
       ignored: ["**/src-tauri/**"],
     },
   },
-}));
+
+  build: {
+    target: "esnext"
+  }
+});
