@@ -13,7 +13,8 @@ import { listen } from "@/logic/backend";
 import { createWindow } from "./logic/window";
 
 (() => {
-  if (Window.getCurrent().label == "main") listen("plugin_error", ({ payload: [title, description] }) => createWindow(title, { url: `/error/${description}` }))
+  if (Window.getCurrent().label == "main")
+    listen("plugin_error", ({ payload: [title, description] }) => createWindow(title, { url: `/error/${description}` }))
 })()
 
 function App() {

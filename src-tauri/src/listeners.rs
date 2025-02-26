@@ -105,8 +105,6 @@ fn process_cloud_details(
     last_sync: SystemTime,
     plugin: &Plugin,
 ) -> String {
-    // TODO: change unwrap to a file selection prompt
-    // https://github.com/Zachareee/SaveSync/issues/3
     if let Some(path) = app_store().get_mapping(&tag) {
         let path = path.join(&folder_name);
         let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
