@@ -39,7 +39,7 @@ impl AppStore {
     }
 
     pub fn plugin(&self) -> Option<OsString> {
-        from_value(self.store.get("plugin").unwrap()).unwrap()
+        from_value(self.store.get("plugin").unwrap()).ok()
     }
 
     pub fn path_mapping(&self) -> HashMap<String, (String, OsString)> {
@@ -55,7 +55,7 @@ impl AppStore {
     }
 
     pub fn set_plugin(&self, plugin: impl AsRef<Path>) {
-        self.store.set("plugin", plugin.as_ref().to_str().unwrap());
+        self.store.set("plugin", to_value(plugin.as_ref()).unwrap());
     }
 
     pub fn save(&self) -> Result<()> {

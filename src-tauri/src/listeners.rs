@@ -1,9 +1,8 @@
 use crate::{
-    app_emit, app_handle, app_store,
+    app_handle, app_store,
     commands::env_resolve,
     savesync::{
-        config_paths,
-        emitter::emit_plugin_error,
+        config_paths, emitter,
         plugin::{FileDetails, Plugin},
         watch::watch_folder,
         zip_utils,
@@ -48,25 +47,22 @@ pub fn emit_listeners(app: &tauri::App) {
 
 // wrapper function
 fn init_listener(event: Event) {
-    app_emit(
-        "init_result",
-        init_func(&from_str::<OsString>(event.payload()).unwrap()),
-    );
+    emitter::init_result(init_func(&from_str::<OsString>(event.payload()).unwrap()));
 }
 
 // async to prevent UI thread from freezing
 pub fn init_func(path: &OsStr) -> bool {
     let pathstr = path.to_string_lossy();
 
-    Plugin::new(&path.to_os_string()).map_or_else(
+    Plugin::new(path).map_or_else(
         |e| {
-            emit_plugin_error(&pathstr, &e);
+            emitter::plugin_error(&pathstr, &e);
             false
         },
         |plugin| {
             plugin
                 .init()
-                .map_err(|e| emit_plugin_error(&pathstr, &String::from(e)))
+                .map_err(|e| emitter::plugin_error(&pathstr, &String::from(e)))
                 .map(|_| {
                     if let Ok(_) = init_download_folders(&plugin) {
                         app_store().set_plugin(config_paths::plugin().join(path))
@@ -89,7 +85,7 @@ fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
                 .collect();
             set_required_tags(tags);
         })
-        .map_err(|e| emit_plugin_error("read_cloud", &e))
+        .map_err(|e| emitter::plugin_error("read_cloud", &e))
 }
 
 fn process_cloud_details(
@@ -119,7 +115,7 @@ fn process_cloud_details(
                         );
                         watch_folder(&tag, path);
                     }
-                    Err(e) => emit_plugin_error("Download", &e),
+                    Err(e) => emitter::plugin_error("Download", &e),
                 }
             } else {
                 // TODO: alert the user to the conflicting data
@@ -152,7 +148,7 @@ fn abort_listener(event: Event) {
     let mut filename: OsString = from_str(event.payload()).unwrap();
 
     if let Some(mut err) = Plugin::new(&filename).map_or(None, |plugin| plugin.abort().err()) {
-        app_emit("abort_result", &err);
+        emitter::abort_result(&err);
 
         filename.push(".txt");
 
@@ -199,7 +195,6 @@ fn saved_plugin_listener(_: Event) {
         .plugin()
         .filter(|p| config_paths::plugin().join(p).exists())
         .map(|p| {
-            init_func(&p);
-            app_emit("saved_result", ())
+            emitter::init_result(init_func(&p));
         });
 }

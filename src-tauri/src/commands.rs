@@ -8,8 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::app_store;
 use crate::listeners::required_tags;
 use crate::savesync::{
-    config_paths,
-    emitter::emit_plugin_error,
+    config_paths, emitter,
     fs_utils::FolderItems,
     plugin::{Plugin, PluginInfo},
     store::PathMapping,
@@ -22,13 +21,13 @@ pub fn get_plugins() -> Vec<PluginInfo> {
         .filter_map(|path| {
             Plugin::new(&path).map_or_else(
                 |e| {
-                    emit_plugin_error(&path.to_string_lossy(), &e.to_string());
+                    emitter::plugin_error(&path.to_string_lossy(), &e.to_string());
                     None
                 },
                 |x| {
                     x.info()
                         .map_err(|e| {
-                            emit_plugin_error(
+                            emitter::plugin_error(
                                 &path.to_string_lossy(),
                                 &format!("Failed to run Info() in {:?}: {e}", path),
                             )

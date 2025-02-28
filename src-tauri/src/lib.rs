@@ -6,9 +6,8 @@ mod savesync;
 use commands::{get_envpaths, get_filetree, get_mapping, get_plugins, set_mapping};
 use listeners::emit_listeners;
 use savesync::store::AppStore;
-use serde::Serialize;
 use std::sync::{Arc, Mutex, OnceLock};
-use tauri::{AppHandle, Emitter, Manager, RunEvent};
+use tauri::{AppHandle, Manager, RunEvent};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
@@ -52,13 +51,4 @@ pub fn app_handle() -> AppHandle {
 
 pub fn app_store() -> Arc<AppStore> {
     APP_STORE.get().unwrap().clone()
-}
-
-pub fn app_emit<S>(event: &str, payload: S)
-where
-    S: Serialize + Clone,
-{
-    app_handle()
-        .emit(event, payload)
-        .expect("Unable to emit event")
 }

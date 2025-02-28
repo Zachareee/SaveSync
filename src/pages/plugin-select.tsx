@@ -5,20 +5,16 @@ import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
 import { menuStatus } from "@/logic/menu";
-import { Window } from "@tauri-apps/api/window";
 
 const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
 
 let navigate: ReturnType<typeof useNavigate>
 
-// run on app boot
-(() => {
-  if (Window.getCurrent().label == "main")
-    emit("saved_plugin")
-})()
-
 export default function PluginSelect() {
   menuStatus(false)
+
+  // run on app boot
+  emit("saved_plugin")
 
   navigate = useNavigate()
 
