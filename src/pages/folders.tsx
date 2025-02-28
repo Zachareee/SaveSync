@@ -1,8 +1,7 @@
 import { useFolderContext } from "@/App"
-import { createWindow } from "@/logic/window";
-import { emit, listen, osStringToString } from "@/logic/backend"
+import { emit, osStringToString } from "@/logic/backend"
 import { useParams } from "@solidjs/router"
-import { Index, onCleanup } from "solid-js"
+import { Index } from "solid-js"
 
 const sync_folder = (data: Record<string, string>) => {
   emit("sync", data)
