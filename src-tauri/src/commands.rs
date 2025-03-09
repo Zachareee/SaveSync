@@ -64,19 +64,17 @@ where
 #[derive(Deserialize, Serialize)]
 pub struct Mappings {
     mapping: PathMapping,
-    ignored: Vec<String>,
+    pub ignored: Vec<String>,
 }
 
 #[tauri::command]
 pub fn get_mapping() -> Mappings {
     let mapping = app_store().path_mapping();
-    Mappings {
-        mapping: mapping.clone(),
-        ignored: required_tags()
-            .into_iter()
-            .filter(|t| !mapping.contains_key(t))
-            .collect(),
-    }
+    let ignored = required_tags()
+        .into_iter()
+        .filter(|t| !&mapping.contains_key(t))
+        .collect();
+    Mappings { mapping, ignored }
 }
 
 #[tauri::command]

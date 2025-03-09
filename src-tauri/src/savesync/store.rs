@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, SystemTime},
@@ -54,8 +54,8 @@ impl AppStore {
             .collect()
     }
 
-    pub fn set_plugin(&self, plugin: impl AsRef<Path>) {
-        self.store.set("plugin", to_value(plugin.as_ref()).unwrap());
+    pub fn set_plugin(&self, plugin: &OsStr) {
+        self.store.set("plugin", to_value(plugin).unwrap());
     }
 
     pub fn save(&self) -> Result<()> {

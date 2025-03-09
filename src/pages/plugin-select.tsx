@@ -13,9 +13,6 @@ let navigate: ReturnType<typeof useNavigate>
 export default function PluginSelect() {
   menuStatus(false)
 
-  // run on app boot
-  emit("saved_plugin")
-
   navigate = useNavigate()
 
   const [services, setServices] = createStore<Info[]>([]);
@@ -33,6 +30,9 @@ export default function PluginSelect() {
     }),
     listen("saved_result", () => navigate("/folders"))
   ]
+
+  // run on app boot
+  emit("saved_plugin")
 
   onMount(() => { refresh(setServices) })
   onCleanup(async () => {

@@ -37,6 +37,7 @@ export type ListenTypes = {
   abort_result: string
   plugin_error: [string, string]
   saved_result: undefined
+  ignored_tags: undefined
 }
 
 export type OsString = { Windows: number[] }

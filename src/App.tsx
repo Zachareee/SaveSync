@@ -10,7 +10,8 @@ import { FileTree } from "@/types";
 import Mapping from "./pages/mapping";
 import { Window } from "@tauri-apps/api/window";
 import { listen } from "@/logic/backend";
-import { createWindow } from "./logic/window";
+import { createWindow } from "@/logic/window";
+import { Toaster } from "solid-toast";
 
 (() => {
   if (Window.getCurrent().label == "main")
@@ -20,10 +21,11 @@ import { createWindow } from "./logic/window";
 function App() {
   const [folders, setFolders] = createStore<FileTree>()
   return <FolderContext.Provider value={{ folders, setFolders }}>
+    <Toaster />
     <Router>
       <Route path={"/folders"} component={Fmap} />
       <Route path={"/folders/:TAG"} component={Folders} />
-      <Route path={"/error/:ERROR"} component={ErrorPage} />
+      <Route path={"/error/*ERROR"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
       <Route path={"*"} component={PluginSelect} />
     </Router>

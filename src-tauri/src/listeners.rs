@@ -1,6 +1,6 @@
 use crate::{
     app_handle, app_store,
-    commands::env_resolve,
+    commands::{env_resolve, get_mapping},
     savesync::{
         config_paths, emitter,
         plugin::{FileDetails, Plugin},
@@ -14,7 +14,7 @@ use std::{
     ffi::{OsStr, OsString},
     fs::{read_dir, OpenOptions},
     io::Write,
-    path::{Path, PathBuf},
+    path::Path,
     sync::Mutex,
     time::SystemTime,
 };
@@ -47,7 +47,10 @@ pub fn emit_listeners(app: &tauri::App) {
 
 // wrapper function
 fn init_listener(event: Event) {
-    emitter::init_result(init_func(&from_str::<OsString>(event.payload()).unwrap()));
+    if init_func(&from_str::<OsString>(event.payload()).unwrap()) {
+        emitter::init_result(true);
+        send_missing_tags();
+    }
 }
 
 // async to prevent UI thread from freezing
@@ -65,7 +68,7 @@ pub fn init_func(path: &OsStr) -> bool {
                 .map_err(|e| emitter::plugin_error(&pathstr, &String::from(e)))
                 .map(|_| {
                     if let Ok(_) = init_download_folders(&plugin) {
-                        app_store().set_plugin(config_paths::plugin().join(path))
+                        app_store().set_plugin(path)
                     }
                 })
                 .is_ok()
@@ -109,10 +112,7 @@ fn process_cloud_details(
                     .or_else(|_| plugin.download(&tag, &folder_name))
                 {
                     Ok(buf) => {
-                        zip_utils::extract(
-                            &path, // TODO: change unwrap to handle error
-                            buf,
-                        );
+                        zip_utils::extract(&path, buf);
                         watch_folder(&tag, path);
                     }
                     Err(e) => emitter::plugin_error("Download", &e),
@@ -187,14 +187,23 @@ fn sync_listener(event: Event) {
 }
 
 fn unload_listener(_: Event) {
-    app_store().set_plugin(PathBuf::new());
+    app_store().set_plugin(OsStr::new(""));
 }
 
 fn saved_plugin_listener(_: Event) {
     app_store()
         .plugin()
-        .filter(|p| config_paths::plugin().join(p).exists())
+        .filter(|p| !p.is_empty() && config_paths::plugin().join(p).exists())
         .map(|p| {
-            emitter::init_result(init_func(&p));
+            if init_func(&p) {
+                emitter::saved_result();
+                send_missing_tags();
+            }
         });
+}
+
+fn send_missing_tags() {
+    if get_mapping().ignored.len() == 0 {
+        emitter::ignored_tags()
+    }
 }

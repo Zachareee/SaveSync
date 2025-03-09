@@ -19,6 +19,10 @@ pub fn saved_result() {
     app_emit("saved_result", ())
 }
 
+pub fn ignored_tags() {
+    app_emit("ignored_tags", ());
+}
+
 fn app_emit<S>(event: &str, payload: S)
 where
     S: Serialize + Clone,
