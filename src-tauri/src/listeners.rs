@@ -1,6 +1,6 @@
 use crate::{
     app_handle, app_store,
-    commands::{env_resolve, get_mapping},
+    commands::env_resolve,
     savesync::{
         config_paths, emitter,
         plugin::{FileDetails, Plugin},

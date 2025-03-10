@@ -10,6 +10,8 @@ use serde_json::{from_value, json, to_value, Value};
 use tauri::{Manager, Wry};
 use tauri_plugin_store::{Result, Store, StoreBuilder};
 
+use crate::commands::env_resolve;
+
 pub struct AppStore {
     store: Arc<Store<Wry>>,
 }
@@ -42,7 +44,7 @@ impl AppStore {
         from_value(self.store.get("plugin").unwrap()).ok()
     }
 
-    pub fn path_mapping(&self) -> HashMap<String, (String, OsString)> {
+    pub fn path_mapping(&self) -> PathMapping {
         self.store
             .get("path_mapping")
             .unwrap()
@@ -87,7 +89,11 @@ impl AppStore {
             .as_object()
             .unwrap()
             .get(key)
-            .and_then(|s| Some(Path::new(s.as_str().unwrap()).into()))
+            .cloned()
+            .map(|s| {
+                let (envvar, folder): (String, OsString) = from_value(s).unwrap();
+                Path::new(&env_resolve(&envvar)).join(folder).into()
+            })
     }
 }
 
