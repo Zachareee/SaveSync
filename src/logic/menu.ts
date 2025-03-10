@@ -3,7 +3,8 @@ import { createWindow } from "./window";
 import { Window } from "@tauri-apps/api/window";
 
 export const mainMenu = await (async () => {
-  if (Window.getCurrent().label == "main") {
+  const parent = Window.getCurrent()
+  if (parent.label == "main") {
     const menu = await Menu.new({
       items: await Promise.all([
         Submenu.new({
@@ -13,7 +14,7 @@ export const mainMenu = await (async () => {
               id: "mapping",
               enabled: false,
               action() {
-                createWindow("/mapping", { title: "Mapping", parent: "main" })
+                createWindow("/mapping", { title: "Mapping", parent })
               }
             }
           ]
@@ -26,5 +27,15 @@ export const mainMenu = await (async () => {
 })()
 
 export async function menuStatus(active: boolean) {
-  return mainMenu!.get("file").then(m => (m as Submenu).get("mapping")).then(i => (i as MenuItem).setEnabled(active))
+  Object.entries(toggleMenuOptions).forEach(
+    ([key, options]) => mainMenu!.get(key).then(
+      m => options.forEach(
+        o => (m as Submenu).get(o).then(i => (i as MenuItem).setEnabled(active))
+      )
+    )
+  )
+}
+
+const toggleMenuOptions: Record<string, string[]> = {
+  file: ["mapping"]
 }

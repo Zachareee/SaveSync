@@ -1,7 +1,6 @@
 import { Route, Router } from "@solidjs/router";
 import "./App.css";
 import PluginSelect from "./pages/plugin-select";
-import Folders from "./pages/folders";
 import Fmap from "./pages/fmap";
 import ErrorPage from "./pages/error-page";
 import { createContext, useContext } from "solid-js";
@@ -14,17 +13,17 @@ import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
 
 (() => {
-  if (Window.getCurrent().label == "main")
-    listen("plugin_error", ({ payload: [title, description] }) => createWindow(title, { url: `/error/${description}` }))
+  const parent = Window.getCurrent()
+  if (parent.label == "main")
+    listen("plugin_error", ({ payload: [title, description] }) => createWindow(`/error/${description}`, { title, parent }))
 })()
 
 function App() {
   const [folders, setFolders] = createStore<FileTree>()
   return <FolderContext.Provider value={{ folders, setFolders }}>
-    <Toaster />
+    <Toaster position="bottom-right" />
     <Router>
       <Route path={"/folders"} component={Fmap} />
-      <Route path={"/folders/:TAG"} component={Folders} />
       <Route path={"/error/*ERROR"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
       <Route path={"*"} component={PluginSelect} />
