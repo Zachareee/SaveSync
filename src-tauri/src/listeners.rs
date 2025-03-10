@@ -49,7 +49,6 @@ pub fn emit_listeners(app: &tauri::App) {
 fn init_listener(event: Event) {
     if init_func(&from_str::<OsString>(event.payload()).unwrap()) {
         emitter::init_result(true);
-        send_missing_tags();
     }
 }
 
@@ -197,13 +196,6 @@ fn saved_plugin_listener(_: Event) {
         .map(|p| {
             if init_func(&p) {
                 emitter::saved_result();
-                send_missing_tags();
             }
         });
-}
-
-fn send_missing_tags() {
-    if get_mapping().ignored.len() == 0 {
-        emitter::ignored_tags()
-    }
 }

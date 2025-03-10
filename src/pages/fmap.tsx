@@ -1,7 +1,7 @@
 import { useFolderContext } from "@/App"
-import { emit, invoke, listen } from "@/logic/backend"
+import { emit, invoke } from "@/logic/backend"
 import { useNavigate } from "@solidjs/router"
-import { Index, onCleanup } from "solid-js"
+import { Index } from "solid-js"
 import { menuStatus } from "@/logic/menu"
 import toast from "solid-toast"
 
@@ -12,11 +12,11 @@ export default function Fmap() {
   const { folders, setFolders } = useFolderContext()!
 
   invoke("get_filetree").then(setFolders)
-  const unlisten = listen("ignored_tags", () => {
-    toast.error("Some folders were not synced, please check File -> Mappings")
-  })
 
-  onCleanup(async () => (await unlisten)())
+  invoke("get_mapping").then(({ ignored }) => {
+    if (ignored.length)
+      toast.error("Some folders were not synced, please check File -> Mappings")
+  })
 
   return <main class="container">
     <Index each={Object.entries(folders)}>
