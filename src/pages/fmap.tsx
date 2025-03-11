@@ -1,13 +1,13 @@
-import { useFolderContext } from "@/App"
 import { emit, invoke, listen, osStringToString, stringToOsString, unlisten } from "@/logic/backend"
 import { useNavigate } from "@solidjs/router"
-import { createSignal, Index, Show } from "solid-js"
+import { createSignal, For, Index, Show } from "solid-js"
 import { menuStatus } from "@/logic/menu"
 import toast from "solid-toast"
 import lo from "lodash"
 import { FileTree, OsString } from "@/types"
 import { Portal } from "solid-js/web"
 import DivButton from "@/components/DivButton"
+import { createStore, reconcile } from "solid-js/store"
 
 const sync_folder = (data: { tag: string, foldername: OsString }) => {
   emit("sync", data)
@@ -16,7 +16,7 @@ const sync_folder = (data: { tag: string, foldername: OsString }) => {
 export default function Fmap() {
   menuStatus(true)
   const [currentFolder, setCurrentFolder] = createSignal("")
-  const { folders, setFolders } = useFolderContext()!
+  const [folders, setFolders] = createStore<FileTree>()
 
   unlisten([
     listen("sync_result", ({ payload: [tag, folder, bool] }) => {
@@ -25,7 +25,7 @@ export default function Fmap() {
     listen("filetree_result", ({ payload }) => {
       setCurrentFolder("")
       invoke("get_watched_folders").then(watched => {
-        setFolders(Object.fromEntries(
+        setFolders(reconcile(Object.fromEntries(
           Object.entries(payload).map(
             ([k, v]) => [k, Object.fromEntries(v.map(e =>
               [osStringToString(e), watched.some(
@@ -33,16 +33,15 @@ export default function Fmap() {
               )]
             ))]
           )
-        ))
+        )))
       })
-
     })
   ])()
 
   emit("filetree")
 
-  invoke("get_mapping").then(({ ignored }) => {
-    if (ignored.length)
+  invoke("get_mapping").then(({ mapping, required }) => {
+    if (!lo.isEqual(required, Object.entries(mapping).map(([key]) => key)))
       toast.error("Some folders were not synced, please check File -> Mappings")
   })
 
@@ -56,12 +55,13 @@ export default function Fmap() {
 
 function TagList(props: { folders: FileTree, setCurrentFolder: CurrentFolderSetter }) {
   const navigate = useNavigate()
+
   return <div class="flex justify-center">
-    <Index each={Object.entries(props.folders)}>
-      {elem => <div class="border-white m-4" onclick={[props.setCurrentFolder, elem()[0]]}>
-        <p>{elem()[0]}</p>
+    <For each={Object.entries(props.folders)}>
+      {elem => <div class="border-white m-4" onclick={[props.setCurrentFolder, elem[0]]}>
+        <p>{elem[0]}</p>
       </div>}
-    </Index>
+    </For>
     <Portal>
       <div class="fixed right-0 bottom-0 m-4">
         <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>

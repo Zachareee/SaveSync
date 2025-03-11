@@ -77,7 +77,7 @@ pub fn init_func(path: &OsStr) -> bool {
     )
 }
 
-fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
+pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
     let last_sync = app_store().last_sync();
 
     plugin
@@ -104,11 +104,10 @@ fn process_cloud_details(
 ) -> String {
     if let Some(path) = app_store().get_mapping(&tag) {
         let path = path.join(&folder_name);
+
+        let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
         if last_sync < cloud_date {
-            match get_last_modified(&path)
-                .unwrap_or(SystemTime::UNIX_EPOCH)
-                .partial_cmp(&cloud_date)
-            {
+            match local_date.partial_cmp(&cloud_date) {
                 Some(std::cmp::Ordering::Less) => match data
                     .ok_or(|| ())
                     .or_else(|_| plugin.download(&tag, &folder_name))
@@ -127,7 +126,7 @@ fn process_cloud_details(
                 }
             }
         }
-        watch_folder(&tag, &folder_name.into(), true);
+        watch_folder(&tag, &folder_name.into(), local_date < cloud_date);
     }
     tag
 }

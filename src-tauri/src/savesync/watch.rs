@@ -29,13 +29,18 @@ pub fn watch_folder(tag: &str, path: &OsString, initial: bool) -> bool {
     let mut map = WATCHERS.lock().unwrap();
     let key = (tag.to_owned(), path.to_owned());
 
-    match map.contains_key(&key) {
-        true => {
+    // !exist, !initial => add
+    // !exist, initial => add
+    // exist, !initial => remove
+    // exist, initial => nothing
+
+    match (map.contains_key(&key), initial) {
+        (true, false) => {
             map.remove(&key);
             current_plugin().remove(tag, path).unwrap();
             false
         }
-        false => {
+        (false, b) => {
             let (tag, path) = key.clone();
 
             let mut debouncer =
@@ -44,19 +49,22 @@ pub fn watch_folder(tag: &str, path: &OsString, initial: bool) -> bool {
                     Err(err) => println!("{err:?}"),
                 })
                 .unwrap();
+
+            let (tag, path) = key.clone();
             debouncer
                 .watch(
-                    &app_store().get_mapping(&key.0).unwrap().join(&key.1),
+                    &app_store().get_mapping(&tag).unwrap().join(&path),
                     RecursiveMode::Recursive,
                 )
                 .unwrap();
 
-            if !initial {
-                file_update_callback(&key.0, &key.1)
+            if !b {
+                file_update_callback(&tag, &path)
             }
             map.insert(key, debouncer);
             true
         }
+        _ => true,
     }
 }
 
@@ -75,4 +83,11 @@ pub fn watched_folders() -> Vec<(String, OsString)> {
 
 pub fn dump_watchers() {
     WATCHERS.lock().unwrap().clear();
+}
+
+pub fn drop_watchers(watchers: Vec<(String, OsString)>) {
+    let mut map = WATCHERS.lock().unwrap();
+    watchers.iter().for_each(|k| {
+        map.remove(k);
+    });
 }

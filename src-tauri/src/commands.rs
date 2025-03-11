@@ -5,8 +5,8 @@ use std::{env, path};
 use serde::{Deserialize, Serialize};
 
 use crate::app_store;
-use crate::listeners::required_tags;
-use crate::savesync::watch::watched_folders;
+use crate::listeners::{init_download_folders, required_tags};
+use crate::savesync::watch::{drop_watchers, watched_folders};
 use crate::savesync::{
     config_paths, emitter,
     plugin::{Plugin, PluginInfo},
@@ -38,25 +38,30 @@ pub fn get_plugins() -> Vec<PluginInfo> {
         .collect()
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Mappings {
     mapping: PathMapping,
-    pub ignored: Vec<String>,
+    required: Vec<String>,
 }
 
 #[tauri::command]
 pub fn get_mapping() -> Mappings {
-    let mapping = app_store().path_mapping();
-    let ignored = required_tags()
-        .into_iter()
-        .filter(|t| !&mapping.contains_key(t))
-        .collect();
-    Mappings { mapping, ignored }
+    Mappings {
+        mapping: app_store().path_mapping(),
+        required: required_tags(),
+    }
 }
 
 #[tauri::command]
 pub fn set_mapping(map: PathMapping) {
-    app_store().set_mapping(map)
+    drop_watchers(
+        watched_folders()
+            .into_iter()
+            .filter(|(k, _)| !map.contains_key(k))
+            .collect(),
+    );
+    app_store().set_mapping(map);
+    init_download_folders(&Plugin::new(&app_store().plugin().unwrap()).unwrap()).unwrap()
 }
 
 #[tauri::command]

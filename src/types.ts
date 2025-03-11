@@ -9,7 +9,7 @@ export namespace IPCtypes {
   export type InvokeTypes = {
     get_plugins: [undefined, Info[]]
     saved_plugin: [undefined, boolean]
-    get_mapping: [undefined, { mapping: FolderMapping, ignored: IgnoreList }]
+    get_mapping: [undefined, { mapping: FolderMapping, required: RequiredList }]
     get_envpaths: [undefined, EnvMapping]
     set_mapping: [{ map: FolderMapping }, undefined]
     get_watched_folders: [undefined, [string, OsString][]]
@@ -52,4 +52,4 @@ export type Info = Record<"name" | "description" | "author" | "filename", string
 export type FileTree = Record<string, Record<string, boolean>>
 export type FolderMapping = Record<string, [string, OsString]>
 export type EnvMapping = Record<string, OsString>
-export type IgnoreList = string[]
+export type RequiredList = string[]
