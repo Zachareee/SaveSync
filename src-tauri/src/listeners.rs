@@ -3,8 +3,9 @@ use crate::{
     commands::env_resolve,
     savesync::{
         config_paths, emitter,
+        fs_utils::FolderItems,
         plugin::{FileDetails, Plugin},
-        watch::watch_folder,
+        watch::{dump_watchers, watch_folder},
         zip_utils,
     },
 };
@@ -39,6 +40,7 @@ pub fn emit_listeners(app: &tauri::App) {
         ("sync", sync_listener),
         ("unload", unload_listener),
         ("saved_plugin", saved_plugin_listener),
+        ("filetree", filetree_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
@@ -102,25 +104,30 @@ fn process_cloud_details(
 ) -> String {
     if let Some(path) = app_store().get_mapping(&tag) {
         let path = path.join(&folder_name);
-        let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
-
         if last_sync < cloud_date {
-            if local_date < cloud_date {
-                match data
+            match get_last_modified(&path)
+                .unwrap_or(SystemTime::UNIX_EPOCH)
+                .partial_cmp(&cloud_date)
+            {
+                Some(std::cmp::Ordering::Less) => match data
                     .ok_or(|| ())
                     .or_else(|_| plugin.download(&tag, &folder_name))
                 {
-                    Ok(buf) => {
-                        zip_utils::extract(&path, buf);
-                        watch_folder(&tag, path);
+                    Ok(buf) => zip_utils::extract(&path, buf),
+                    Err(e) => {
+                        println!("{e}");
+                        emitter::plugin_error("Download", &e);
+                        return tag;
                     }
-                    Err(e) => emitter::plugin_error("Download", &e),
+                },
+                _ => {
+                    // TODO: alert the user to the conflicting data
+                    // https://github.com/Zachareee/SaveSync/issues/9
+                    println!("In else branch")
                 }
-            } else {
-                // TODO: alert the user to the conflicting data
-                // https://github.com/Zachareee/SaveSync/issues/9
             }
         }
+        watch_folder(&tag, &folder_name.into(), true);
     }
     tag
 }
@@ -172,21 +179,12 @@ struct SyncStruct {
 fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    let (env, path) = {
-        app_store()
-            .path_mapping()
-            .get(&tag)
-            .expect("Tag name not found")
-            .to_owned()
-    };
-    watch_folder(
-        &tag,
-        Path::new(&env_resolve(&env)).join(path).join(foldername),
-    );
+    emitter::sync_result(&tag, &foldername, watch_folder(&tag, &foldername, false));
 }
 
 fn unload_listener(_: Event) {
     app_store().set_plugin(OsStr::new(""));
+    dump_watchers();
 }
 
 fn saved_plugin_listener(_: Event) {
@@ -198,4 +196,27 @@ fn saved_plugin_listener(_: Event) {
                 emitter::saved_result();
             }
         });
+}
+
+fn filetree_listener(_: Event) {
+    emitter::filetree_result(
+        app_store()
+            .path_mapping()
+            .into_iter()
+            .map(|(tag, (env, path))| (tag, find_folders_in_path(&env, path)))
+            .collect(),
+    )
+}
+
+fn find_folders_in_path<T>(env: &str, path: T) -> Vec<OsString>
+where
+    T: AsRef<Path>,
+{
+    Path::new(&env_resolve(env))
+        .join(path)
+        .get_folders()
+        .unwrap()
+        .into_iter()
+        .map(|e| e.file_name())
+        .collect()
 }

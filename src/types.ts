@@ -1,21 +1,21 @@
 export type OptionalParameter<T> = undefined extends T ? [p?: T] : [p: T]
 
 export namespace IPCtypes {
-  /** 
+  /**
    *  key: command
    *  value`[`0`]`: input type
    *  value`[`1`]`: output type
    */
   export type InvokeTypes = {
     get_plugins: [undefined, Info[]]
-    get_filetree: [undefined, FileTree]
     saved_plugin: [undefined, boolean]
     get_mapping: [undefined, { mapping: FolderMapping, ignored: IgnoreList }]
     get_envpaths: [undefined, EnvMapping]
     set_mapping: [{ map: FolderMapping }, undefined]
+    get_watched_folders: [undefined, [string, OsString][]]
   };
 
-  /** 
+  /**
    *  key: command
    *  value: input type
    */
@@ -23,12 +23,13 @@ export namespace IPCtypes {
     init: string
     refresh: undefined
     abort: string
-    sync: Record<"tag" | "foldername", string>
+    sync: { tag: string, foldername: OsString }
     unload: undefined
     saved_plugin: undefined
+    filetree: undefined
   };
 
-  /** 
+  /**
    *  key: command
    *  value: output type
    */
@@ -38,6 +39,8 @@ export namespace IPCtypes {
     abort_result: string
     plugin_error: [string, string]
     saved_result: undefined
+    sync_result: [string, OsString, boolean]
+    filetree_result: Record<string, OsString[]>
   }
 }
 
@@ -46,7 +49,7 @@ export type Info = Record<"name" | "description" | "author" | "filename", string
   Record<"icon_url", string>
 >
 
-export type FileTree = Record<string, OsString[]>
+export type FileTree = Record<string, Record<string, boolean>>
 export type FolderMapping = Record<string, [string, OsString]>
 export type EnvMapping = Record<string, OsString>
 export type IgnoreList = string[]

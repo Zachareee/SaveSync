@@ -1,4 +1,4 @@
-import { invoke, osStringToString, stringToOsString } from "@/logic/backend"
+import { emit, invoke, osStringToString, stringToOsString } from "@/logic/backend"
 import { Index, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
@@ -20,7 +20,10 @@ function saveAndClose(mapping: MappingArray) {
     map: Object.fromEntries(
       mapping.filter(validEntry).map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])
     )
-  }).then(() => window.destroy())
+  }).then(() => {
+    emit("filetree")
+    window.destroy()
+  })
 }
 
 function validEntry(entry: MappingArray[number]): string {
@@ -87,10 +90,10 @@ export default function Mapping() {
         {e => <span>{e()}</span>}
       </Index>
       <Portal>
-        <div class="absolute left-0 bottom-0 m-4">
+        <div class="fixed left-0 bottom-0 m-4">
           <button onclick={addPath}>Add mapping</button>
         </div>
-        <div class="absolute right-0 bottom-0 m-4">
+        <div class="fixed right-0 bottom-0 m-4">
           <button onclick={[saveAndClose, mapping]}>Save and quit</button>
         </div>
       </Portal>

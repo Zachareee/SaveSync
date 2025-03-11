@@ -1,3 +1,8 @@
+use std::{
+    collections::HashMap,
+    ffi::{OsStr, OsString},
+};
+
 use serde::Serialize;
 use tauri::Emitter;
 
@@ -17,6 +22,14 @@ pub fn abort_result(err: &str) {
 
 pub fn saved_result() {
     app_emit("saved_result", ())
+}
+
+pub fn sync_result(tag: &String, foldername: &OsStr, synced: bool) {
+    app_emit("sync_result", (tag, foldername, synced));
+}
+
+pub fn filetree_result(map: HashMap<String, Vec<OsString>>) {
+    app_emit("filetree_result", map);
 }
 
 fn app_emit<S>(event: &str, payload: S)

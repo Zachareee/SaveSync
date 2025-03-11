@@ -1,15 +1,14 @@
 use std::collections::HashMap;
 use std::ffi::OsString;
-use std::path::Path;
 use std::{env, path};
 
 use serde::{Deserialize, Serialize};
 
 use crate::app_store;
 use crate::listeners::required_tags;
+use crate::savesync::watch::watched_folders;
 use crate::savesync::{
     config_paths, emitter,
-    fs_utils::FolderItems,
     plugin::{Plugin, PluginInfo},
     store::PathMapping,
 };
@@ -36,28 +35,6 @@ pub fn get_plugins() -> Vec<PluginInfo> {
                 },
             )
         })
-        .collect()
-}
-
-#[tauri::command]
-pub fn get_filetree() -> HashMap<String, Vec<OsString>> {
-    app_store()
-        .path_mapping()
-        .into_iter()
-        .map(|(tag, (env, path))| (tag, find_folders_in_path(&env, path)))
-        .collect()
-}
-
-fn find_folders_in_path<T>(env: &str, path: T) -> Vec<OsString>
-where
-    T: AsRef<Path>,
-{
-    Path::new(&env_resolve(env))
-        .join(path)
-        .get_folders()
-        .unwrap()
-        .into_iter()
-        .map(|e| e.file_name())
         .collect()
 }
 
@@ -92,6 +69,11 @@ pub fn get_envpaths() -> HashMap<String, OsString> {
                 .map(|p| (k, p.into_os_string()))
         })
         .collect()
+}
+
+#[tauri::command]
+pub fn get_watched_folders() -> Vec<(String, OsString)> {
+    watched_folders()
 }
 
 pub fn env_resolve(key: &str) -> OsString {

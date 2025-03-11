@@ -3,7 +3,7 @@ mod commands;
 mod listeners;
 mod savesync;
 
-use commands::{get_envpaths, get_filetree, get_mapping, get_plugins, set_mapping};
+use commands::{get_envpaths, get_mapping, get_plugins, get_watched_folders, set_mapping};
 use listeners::emit_listeners;
 use savesync::store::AppStore;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -20,10 +20,10 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             get_plugins,
-            get_filetree,
             get_mapping,
             set_mapping,
             get_envpaths,
+            get_watched_folders
         ])
         .setup(|app| {
             emit_listeners(app);

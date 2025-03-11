@@ -1,6 +1,6 @@
-import { emit, listen, invoke } from "@/logic/backend";
+import { emit, listen, invoke, unlisten } from "@/logic/backend";
 import { Info } from "@/types.ts";
-import { createSignal, Index, onCleanup, onMount, Show } from "solid-js";
+import { createSignal, Index, onMount, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
@@ -23,26 +23,23 @@ export default function PluginSelect() {
     emit("init", pair.filename)
   }
 
-  const unlistens = [
+  unlisten([
     listen("init_result", ({ payload }) => {
       if (loading() && payload) navigate("/folders")
       else setLoading()
     }),
     listen("saved_result", () => navigate("/folders"))
-  ]
+  ])()
 
   // run on app boot
   emit("saved_plugin")
 
   onMount(() => { refresh(setServices) })
-  onCleanup(async () => {
-    await Promise.all(unlistens.map(async f => (await f)()))
-  })
 
   return <>
     <main class="container items-center">
       <Portal>
-        <div class="absolute right-0 bottom-0 m-4">
+        <div class="fixed right-0 bottom-0 m-4">
           <button onclick={[refresh, setServices]}>Refresh</button>
         </div>
       </Portal>

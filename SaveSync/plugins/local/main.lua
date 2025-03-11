@@ -31,6 +31,10 @@ function Upload(tag, filename, date_modified, zipbuffer)
 	end
 end
 
+function Remove(tag, filename)
+	print(os.remove(FILEMAPS[tag] .. "/" .. filename .. ".zip"))
+end
+
 ---comment
 ---@return {tag: string, filename: string, last_modified: {secs_since_epoch: number, nanos_since_epoch: string}, data: string?}[]?
 function Read_cloud()
@@ -45,13 +49,11 @@ function Read_cloud()
 		file:close()
 	end
 
-	print(type(content))
-
 	return {
 		{
 			tag = "FAKE",
 			folder_name = "fake",
-			last_modified = { secs_since_epoch = 1739197694, nanos_since_epoch = 0 },
+			last_modified = { secs_since_epoch = os.time(), nanos_since_epoch = 0 },
 			-- last_modified = { secs_since_epoch = 0, nanos_since_epoch = 0 },
 			data = content,
 		},
@@ -60,11 +62,13 @@ end
 
 function Download(tag, filename)
 	local file = io.open("fake_folder/fake.zip", "rb")
+	print(file)
 	if not file then
 		return nil
 	end
 
 	local content = file:read("*a")
 	file:close()
+	print("Content is", content)
 	return content
 end

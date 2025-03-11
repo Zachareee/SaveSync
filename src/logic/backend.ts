@@ -1,6 +1,7 @@
 import { IPCtypes, OptionalParameter, OsString } from "@/types";
 import { invoke as old_invoke } from "@tauri-apps/api/core";
-import { listen as old_listen, emit as old_emit, EventCallback, Options, EventName } from "@tauri-apps/api/event";
+import { listen as old_listen, emit as old_emit, EventCallback, Options, EventName, UnlistenFn } from "@tauri-apps/api/event";
+import { onCleanup } from "solid-js";
 
 
 export function invoke<T extends keyof IPCtypes.InvokeTypes>(
@@ -23,4 +24,8 @@ export function osStringToString(osString?: OsString) {
 
 export function stringToOsString(str: string): OsString {
   return { Windows: str.split('').map(s => s.charCodeAt(0)) }
+}
+
+export function unlisten(unlistens: Promise<UnlistenFn>[]) {
+  return () => onCleanup(async () => await Promise.all(unlistens.map(async f => (await f)())))
 }
