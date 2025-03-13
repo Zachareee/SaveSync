@@ -1,9 +1,9 @@
 import { useParams } from "@solidjs/router"
 
 export default function ErrorPage() {
-  const params = useParams()
+  const { ERROR } = useParams()
 
   return <div>
-    <p>Error found: {decodeURIComponent(params.ERROR)}</p>
+    <p>Error found: {decodeURIComponent(ERROR)}</p>
   </div>
 }

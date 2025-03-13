@@ -24,7 +24,7 @@ export default function PluginSelect() {
   }
 
   unlisten([
-    listen("init_result", ({ payload }) => {
+    listen("init_result", (payload) => {
       if (loading() && payload) navigate("/folders")
       else setLoading()
     }),

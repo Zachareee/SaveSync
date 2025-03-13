@@ -1,6 +1,6 @@
 import { IPCtypes, OptionalParameter, OsString } from "@/types";
 import { invoke as old_invoke } from "@tauri-apps/api/core";
-import { listen as old_listen, emit as old_emit, EventCallback, Options, EventName, UnlistenFn } from "@tauri-apps/api/event";
+import { listen as old_listen, emit as old_emit, Options, EventName, UnlistenFn } from "@tauri-apps/api/event";
 import { onCleanup } from "solid-js";
 
 
@@ -14,8 +14,8 @@ export function emit<T extends keyof IPCtypes.EmitTypes>(eventName: T, ...payloa
   return old_emit(eventName, ...payload)
 }
 
-export function listen<T extends keyof IPCtypes.ListenTypes>(eventName: T | EventName, handler: EventCallback<IPCtypes.ListenTypes[T]>, option?: Options) {
-  return old_listen(eventName, handler, option)
+export function listen<T extends keyof IPCtypes.ListenTypes>(eventName: T | EventName, handler: (param: IPCtypes.ListenTypes[T]) => void, option?: Options) {
+  return old_listen<IPCtypes.ListenTypes[T]>(eventName, ({ payload }) => handler(payload), option)
 }
 
 export function osStringToString(osString?: OsString) {

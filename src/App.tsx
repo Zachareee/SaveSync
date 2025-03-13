@@ -12,7 +12,7 @@ import { Toaster } from "solid-toast";
 (() => {
   const parent = Window.getCurrent()
   if (parent.label == "main")
-    listen("plugin_error", ({ payload: [title, description] }) => createWindow(`/error/${description}`, { title, parent }))
+    listen("plugin_error", ([title, description]) => createWindow(`/error/${description}`, { title, parent }))
 })()
 
 function App() {
