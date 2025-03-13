@@ -27,6 +27,7 @@ export namespace IPCtypes {
     unload: undefined
     saved_plugin: undefined
     filetree: undefined
+    conflict_resolve: [string, string, string]
   };
 
   /**
@@ -41,6 +42,7 @@ export namespace IPCtypes {
     saved_result: undefined
     sync_result: [string, OsString, boolean]
     filetree_result: Record<string, OsString[]>
+    conflicting_files: [string, string]
   }
 }
 

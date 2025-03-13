@@ -2,16 +2,19 @@ use crate::{
     app_handle, app_store,
     commands::env_resolve,
     savesync::{
-        config_paths, emitter,
+        config_paths,
+        conflict_files::{resolve_conflict, store_buffer},
+        emitter,
         fs_utils::FolderItems,
         plugin::{FileDetails, Plugin},
-        watch::{dump_watchers, watch_folder},
+        watch::{dump_watchers, upload_file, watch_folder},
         zip_utils,
     },
 };
 use serde::Deserialize;
 use serde_json::from_str;
 use std::{
+    cmp::Ordering::{Equal, Greater, Less},
     ffi::{OsStr, OsString},
     fs::{read_dir, OpenOptions},
     io::Write,
@@ -41,6 +44,7 @@ pub fn emit_listeners(app: &tauri::App) {
         ("unload", unload_listener),
         ("saved_plugin", saved_plugin_listener),
         ("filetree", filetree_listener),
+        ("conflict_resolve", conflict_resolve_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
@@ -106,27 +110,40 @@ fn process_cloud_details(
         let path = path.join(&folder_name);
 
         let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
-        if last_sync < cloud_date {
-            match local_date.partial_cmp(&cloud_date) {
-                Some(std::cmp::Ordering::Less) => match data
-                    .ok_or(|| ())
-                    .or_else(|_| plugin.download(&tag, &folder_name))
-                {
-                    Ok(buf) => zip_utils::extract(&path, buf),
-                    Err(e) => {
-                        println!("{e}");
-                        emitter::plugin_error("Download", &e);
+
+        // 6 permutations
+        // local < syncd < cloud (Download)
+        // cloud < syncd < local (Upload)
+        // syncd < local < cloud (Conflict)
+        // syncd < cloud < local (Conflict)
+        //
+        // cloud < local < syncd (Shouldn't be possible)
+        // local < cloud < syncd (Shouldn't be possible)
+
+        match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
+            (Equal, _) | (_, Equal) | (Greater, Greater) => (),
+            (k, Less) => match data
+                .ok_or(|| ())
+                .or_else(|_| plugin.download(&tag, &folder_name))
+            {
+                Ok(buf) => match k {
+                    Greater => zip_utils::extract(&path, buf),
+                    Less => {
+                        store_buffer(&tag, &folder_name, buf);
+                        emitter::conflicting_files(&tag, &folder_name);
                         return tag;
                     }
+                    _ => (),
                 },
-                _ => {
-                    // TODO: alert the user to the conflicting data
-                    // https://github.com/Zachareee/SaveSync/issues/9
-                    println!("In else branch")
+                Err(e) => {
+                    println!("{e}");
+                    emitter::plugin_error("Download", &e);
+                    return tag;
                 }
-            }
+            },
+            (Less, Greater) => upload_file(&tag, path),
         }
-        watch_folder(&tag, &folder_name.into(), local_date < cloud_date);
+        watch_folder(&tag, &folder_name);
     }
     tag
 }
@@ -178,7 +195,8 @@ struct SyncStruct {
 fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    emitter::sync_result(&tag, &foldername, watch_folder(&tag, &foldername, false));
+    upload_file(&tag, &foldername);
+    emitter::sync_result(&tag, &foldername, watch_folder(&tag, &foldername));
 }
 
 fn unload_listener(_: Event) {
@@ -218,4 +236,8 @@ where
         .into_iter()
         .map(|e| e.file_name())
         .collect()
+}
+
+fn conflict_resolve_listener(e: Event) {
+    resolve_conflict(from_str(e.payload()).unwrap());
 }

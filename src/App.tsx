@@ -8,6 +8,7 @@ import { Window } from "@tauri-apps/api/window";
 import { listen } from "@/logic/backend";
 import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
+import Conflicting from "./pages/conflicting";
 
 (() => {
   const parent = Window.getCurrent()
@@ -22,6 +23,7 @@ function App() {
       <Route path={"/folders"} component={Fmap} />
       <Route path={"/error/*ERROR"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
+      <Route path={"/conflicting/FOLDERNAME/*TAG"} component={Conflicting} />
       <Route path={"*"} component={PluginSelect} />
     </Router>
   </>

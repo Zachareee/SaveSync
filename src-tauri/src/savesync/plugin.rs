@@ -25,7 +25,7 @@ pub struct Plugin {
 /// file buffer to reduce API calls where possible
 pub struct FileDetails {
     pub tag: String,
-    pub folder_name: String,
+    pub folder_name: OsString,
     pub last_modified: SystemTime,
     pub data: Option<Vec<u8>>,
 }
@@ -49,7 +49,7 @@ impl From<InterFileDetails> for FileDetails {
     ) -> Self {
         Self {
             tag,
-            folder_name,
+            folder_name: folder_name.into(),
             last_modified,
             data: data.map(|s| s.into()),
         }
@@ -158,7 +158,7 @@ impl Plugin {
         )
     }
 
-    pub fn download(&self, tag: &str, folder_name: &str) -> PluginResult<Vec<u8>> {
+    pub fn download(&self, tag: &str, folder_name: &OsStr) -> PluginResult<Vec<u8>> {
         println!("Download called");
         self.run_function::<mlua::BString>("Download", (tag, folder_name))
             .map(Into::into)
