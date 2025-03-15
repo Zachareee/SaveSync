@@ -23,7 +23,7 @@ function App() {
       <Route path={"/folders"} component={Fmap} />
       <Route path={"/error/*ERROR"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
-      <Route path={"/conflicting/FOLDERNAME/*TAG"} component={Conflicting} />
+      <Route path={"/conflicting/:FOLDERNAME/:LOCAL/:CLOUD/*TAG"} component={Conflicting} />
       <Route path={"*"} component={PluginSelect} />
     </Router>
   </>

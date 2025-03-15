@@ -87,11 +87,10 @@ pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
     plugin
         .read_cloud()
         .map(|details| {
-            let tags = details
+            set_required_tags(details.iter().map(|f| f.tag.clone()).collect());
+            details
                 .into_iter()
-                .map(|f| process_cloud_details(f, last_sync, plugin))
-                .collect();
-            set_required_tags(tags);
+                .for_each(|f| process_cloud_details(f, last_sync, plugin));
         })
         .map_err(|e| emitter::plugin_error("read_cloud", &e))
 }
@@ -105,7 +104,7 @@ fn process_cloud_details(
     }: FileDetails,
     last_sync: SystemTime,
     plugin: &Plugin,
-) -> String {
+) {
     if let Some(path) = app_store().get_mapping(&tag) {
         let path = path.join(&folder_name);
 
@@ -130,22 +129,21 @@ fn process_cloud_details(
                     Greater => zip_utils::extract(&path, buf),
                     Less => {
                         store_buffer(&tag, &folder_name, buf);
-                        emitter::conflicting_files(&tag, &folder_name);
-                        return tag;
+                        emitter::conflicting_files(&tag, &folder_name, (local_date, cloud_date));
+                        return;
                     }
                     _ => (),
                 },
                 Err(e) => {
                     println!("{e}");
                     emitter::plugin_error("Download", &e);
-                    return tag;
+                    return;
                 }
             },
             (Less, Greater) => upload_file(&tag, path),
         }
         watch_folder(&tag, &folder_name);
     }
-    tag
 }
 
 fn get_last_modified<T>(path: T) -> std::io::Result<SystemTime>

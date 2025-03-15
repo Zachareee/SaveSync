@@ -42,7 +42,7 @@ export namespace IPCtypes {
     saved_result: undefined
     sync_result: [string, OsString, boolean]
     filetree_result: Record<string, OsString[]>
-    conflicting_files: [string, string]
+    conflicting_files: [string, string, [number, number]]
   }
 }
 
