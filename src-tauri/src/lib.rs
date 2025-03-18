@@ -6,11 +6,29 @@ mod savesync;
 use commands::{get_envpaths, get_mapping, get_plugins, get_watched_folders, set_mapping};
 use listeners::emit_listeners;
 use savesync::store::AppStore;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::{
+    collections::HashMap,
+    ffi::OsString,
+    sync::{Arc, Mutex, OnceLock},
+};
 use tauri::{AppHandle, Manager, RunEvent};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
+
+struct AppState {
+    pub tags: Vec<String>,
+    pub buffers: HashMap<(String, OsString), Vec<u8>>,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        AppState {
+            tags: Vec::new(),
+            buffers: HashMap::new(),
+        }
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -30,7 +48,7 @@ pub fn run() {
 
             let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
 
-            app.manage(Mutex::new(Vec::<String>::new()));
+            app.manage(Mutex::new(AppState::default()));
 
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
             Ok(())

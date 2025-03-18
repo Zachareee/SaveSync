@@ -10,6 +10,7 @@ use crate::{
         watch::{dump_watchers, upload_file, watch_folder},
         zip_utils,
     },
+    AppState,
 };
 use serde::Deserialize;
 use serde_json::from_str;
@@ -26,14 +27,15 @@ use tauri::{Event, Listener, Manager};
 
 pub fn required_tags() -> Vec<String> {
     app_handle()
-        .state::<Mutex<Vec<String>>>()
+        .state::<Mutex<AppState>>()
         .lock()
         .unwrap()
-        .to_owned()
+        .tags
+        .clone()
 }
 
 fn set_required_tags(tags: Vec<String>) {
-    *app_handle().state::<Mutex<Vec<String>>>().lock().unwrap() = tags;
+    app_handle().state::<Mutex<AppState>>().lock().unwrap().tags = tags;
 }
 
 pub fn emit_listeners(app: &tauri::App) {
@@ -121,25 +123,36 @@ fn process_cloud_details(
 
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
             (Equal, _) | (_, Equal) | (Greater, Greater) => (),
-            (k, Less) => match data
-                .ok_or(|| ())
-                .or_else(|_| plugin.download(&tag, &folder_name))
-            {
-                Ok(buf) => match k {
-                    Greater => zip_utils::extract(&path, buf),
-                    Less => {
-                        store_buffer(&tag, &folder_name, buf);
-                        emitter::conflicting_files(&tag, &folder_name, (local_date, cloud_date));
+            (k, Less) => {
+                println!("Less branch");
+                match data
+                    .ok_or(|| ())
+                    .or_else(|_| plugin.download(&tag, &folder_name))
+                {
+                    Ok(buf) => match k {
+                        Greater => {
+                            println!("Extracting");
+                            zip_utils::extract(&path, buf)
+                        }
+                        Less => {
+                            println!("Both less");
+                            store_buffer(&tag, &folder_name, buf);
+                            emitter::conflicting_files(
+                                &tag,
+                                &folder_name,
+                                (local_date, cloud_date),
+                            );
+                            return;
+                        }
+                        _ => (),
+                    },
+                    Err(e) => {
+                        println!("{e}");
+                        emitter::plugin_error("Download", &e);
                         return;
                     }
-                    _ => (),
-                },
-                Err(e) => {
-                    println!("{e}");
-                    emitter::plugin_error("Download", &e);
-                    return;
                 }
-            },
+            }
             (Less, Greater) => upload_file(&tag, path),
         }
         watch_folder(&tag, &folder_name);

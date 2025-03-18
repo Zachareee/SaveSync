@@ -1,13 +1,12 @@
 use std::{
-    collections::HashMap,
     ffi::{OsStr, OsString},
-    sync::{LazyLock, Mutex},
-    u8,
+    sync::Mutex,
 };
 
+use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
 
-use crate::app_handle;
+use crate::{app_handle, AppState};
 
 use super::{
     config_paths::temp,
@@ -16,20 +15,31 @@ use super::{
     zip_utils::extract,
 };
 
-const BUFFERS: LazyLock<Mutex<HashMap<(String, OsString), Vec<u8>>>> =
-    LazyLock::new(|| Mutex::new(HashMap::new()));
-
 pub fn store_buffer(tag: &str, foldername: &OsStr, buffer: Vec<u8>) {
-    BUFFERS
+    app_handle()
+        .state::<Mutex<AppState>>()
         .lock()
         .unwrap()
+        .buffers
         .insert((tag.into(), foldername.into()), buffer);
+}
+
+fn retrieve_buffer(tag: &str, foldername: &OsStr) -> Vec<u8> {
+    app_handle()
+        .state::<Mutex<AppState>>()
+        .lock()
+        .unwrap()
+        .buffers
+        .remove(&(tag.into(), foldername.into()))
+        .inspect(|x| println!("Got {x:?}"))
+        .unwrap()
 }
 
 pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String)) {
     if resolution == "local" {
         upload_file(&tag, &foldername);
         watch_folder(&tag, &foldername);
+        return;
     }
     let buf = retrieve_buffer(&tag, &foldername);
 
@@ -43,12 +53,4 @@ pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String
             .open_path(path.to_str().unwrap(), None::<String>)
             .unwrap()
     }
-}
-
-fn retrieve_buffer(tag: &str, foldername: &OsStr) -> Vec<u8> {
-    BUFFERS
-        .lock()
-        .unwrap()
-        .remove(&(tag.into(), foldername.into()))
-        .unwrap()
 }
