@@ -3,7 +3,7 @@ import { For, Index, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { confirm, open } from "@tauri-apps/plugin-dialog"
-import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
+import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 import lo from "lodash"
 import { RequiredList } from "@/types"
 
@@ -14,7 +14,7 @@ const createAddPath = (setMapping: ReturnType<typeof createStore<MappingArray>>[
 const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray>>[1]) =>
   (idx: number) => setMapping(mapping => mapping.toSpliced(idx, 1))
 
-const window = WebviewWindow.getCurrent()
+const window = getCurrentWebviewWindow()
 function saveAndClose(mapping: MappingArray) {
   invoke("set_mapping", {
     map: Object.fromEntries(

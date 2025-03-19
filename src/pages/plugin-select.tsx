@@ -5,6 +5,7 @@ import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
 import { menuStatus } from "@/logic/menu";
+import { conflicting_listener } from "@/logic/conflicting_window";
 
 const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
 
@@ -24,11 +25,12 @@ export default function PluginSelect() {
   }
 
   unlisten([
-    listen("init_result", ({ payload }) => {
+    listen("init_result", (payload) => {
       if (loading() && payload) navigate("/folders")
       else setLoading()
     }),
-    listen("saved_result", () => navigate("/folders"))
+    listen("saved_result", () => navigate("/folders")),
+    conflicting_listener()
   ])()
 
   // run on app boot

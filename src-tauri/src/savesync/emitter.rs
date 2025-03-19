@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
+    time::SystemTime,
 };
 
 use serde::Serialize;
@@ -24,12 +25,16 @@ pub fn saved_result() {
     app_emit("saved_result", ())
 }
 
-pub fn sync_result(tag: &String, foldername: &OsStr, synced: bool) {
+pub fn sync_result(tag: &str, foldername: &OsStr, synced: bool) {
     app_emit("sync_result", (tag, foldername, synced));
 }
 
 pub fn filetree_result(map: HashMap<String, Vec<OsString>>) {
     app_emit("filetree_result", map);
+}
+
+pub fn conflicting_files(tag: &str, foldername: &OsStr, diff: (SystemTime, SystemTime)) {
+    app_emit("conflicting_files", (tag, foldername, diff));
 }
 
 fn app_emit<S>(event: &str, payload: S)

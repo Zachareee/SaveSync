@@ -2,16 +2,20 @@ use crate::{
     app_handle, app_store,
     commands::env_resolve,
     savesync::{
-        config_paths, emitter,
+        config_paths,
+        conflict_files::{resolve_conflict, store_buffer},
+        emitter,
         fs_utils::FolderItems,
         plugin::{FileDetails, Plugin},
-        watch::{dump_watchers, watch_folder},
+        watch::{dump_watchers, upload_file, watch_folder},
         zip_utils,
     },
+    AppState,
 };
 use serde::Deserialize;
 use serde_json::from_str;
 use std::{
+    cmp::Ordering::{Equal, Greater, Less},
     ffi::{OsStr, OsString},
     fs::{read_dir, OpenOptions},
     io::Write,
@@ -23,14 +27,15 @@ use tauri::{Event, Listener, Manager};
 
 pub fn required_tags() -> Vec<String> {
     app_handle()
-        .state::<Mutex<Vec<String>>>()
+        .state::<Mutex<AppState>>()
         .lock()
         .unwrap()
-        .to_owned()
+        .tags
+        .clone()
 }
 
 fn set_required_tags(tags: Vec<String>) {
-    *app_handle().state::<Mutex<Vec<String>>>().lock().unwrap() = tags;
+    app_handle().state::<Mutex<AppState>>().lock().unwrap().tags = tags;
 }
 
 pub fn emit_listeners(app: &tauri::App) {
@@ -41,6 +46,7 @@ pub fn emit_listeners(app: &tauri::App) {
         ("unload", unload_listener),
         ("saved_plugin", saved_plugin_listener),
         ("filetree", filetree_listener),
+        ("conflict_resolve", conflict_resolve_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
@@ -83,11 +89,10 @@ pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
     plugin
         .read_cloud()
         .map(|details| {
-            let tags = details
+            set_required_tags(details.iter().map(|f| f.tag.clone()).collect());
+            details
                 .into_iter()
-                .map(|f| process_cloud_details(f, last_sync, plugin))
-                .collect();
-            set_required_tags(tags);
+                .for_each(|f| process_cloud_details(f, last_sync, plugin));
         })
         .map_err(|e| emitter::plugin_error("read_cloud", &e))
 }
@@ -101,34 +106,57 @@ fn process_cloud_details(
     }: FileDetails,
     last_sync: SystemTime,
     plugin: &Plugin,
-) -> String {
+) {
     if let Some(path) = app_store().get_mapping(&tag) {
         let path = path.join(&folder_name);
 
         let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
-        if last_sync < cloud_date {
-            match local_date.partial_cmp(&cloud_date) {
-                Some(std::cmp::Ordering::Less) => match data
+
+        // 6 permutations
+        // local < syncd < cloud (Download)
+        // cloud < syncd < local (Upload)
+        // syncd < local < cloud (Conflict)
+        // syncd < cloud < local (Conflict)
+        //
+        // cloud < local < syncd (Shouldn't be possible)
+        // local < cloud < syncd (Shouldn't be possible)
+
+        match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
+            (Equal, _) | (_, Equal) | (Greater, Greater) => (),
+            (k, Less) => {
+                println!("Less branch");
+                match data
                     .ok_or(|| ())
                     .or_else(|_| plugin.download(&tag, &folder_name))
                 {
-                    Ok(buf) => zip_utils::extract(&path, buf),
+                    Ok(buf) => match k {
+                        Greater => {
+                            println!("Extracting");
+                            zip_utils::extract(&path, buf)
+                        }
+                        Less => {
+                            println!("Both less");
+                            store_buffer(&tag, &folder_name, buf);
+                            emitter::conflicting_files(
+                                &tag,
+                                &folder_name,
+                                (local_date, cloud_date),
+                            );
+                            return;
+                        }
+                        _ => (),
+                    },
                     Err(e) => {
                         println!("{e}");
                         emitter::plugin_error("Download", &e);
-                        return tag;
+                        return;
                     }
-                },
-                _ => {
-                    // TODO: alert the user to the conflicting data
-                    // https://github.com/Zachareee/SaveSync/issues/9
-                    println!("In else branch")
                 }
             }
+            (Less, Greater) => upload_file(&tag, path),
         }
-        watch_folder(&tag, &folder_name.into(), local_date < cloud_date);
+        watch_folder(&tag, &folder_name);
     }
-    tag
 }
 
 fn get_last_modified<T>(path: T) -> std::io::Result<SystemTime>
@@ -178,7 +206,8 @@ struct SyncStruct {
 fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    emitter::sync_result(&tag, &foldername, watch_folder(&tag, &foldername, false));
+    upload_file(&tag, &foldername);
+    emitter::sync_result(&tag, &foldername, watch_folder(&tag, &foldername));
 }
 
 fn unload_listener(_: Event) {
@@ -218,4 +247,8 @@ where
         .into_iter()
         .map(|e| e.file_name())
         .collect()
+}
+
+fn conflict_resolve_listener(e: Event) {
+    resolve_conflict(from_str(e.payload()).unwrap());
 }

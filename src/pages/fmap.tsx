@@ -19,10 +19,10 @@ export default function Fmap() {
   const [folders, setFolders] = createStore<FileTree>()
 
   unlisten([
-    listen("sync_result", ({ payload: [tag, folder, bool] }) => {
+    listen("sync_result", ([tag, folder, bool]) => {
       setFolders(tag, osStringToString(folder), bool)
     }),
-    listen("filetree_result", ({ payload }) => {
+    listen("filetree_result", (payload) => {
       setCurrentFolder("")
       invoke("get_watched_folders").then(watched => {
         setFolders(reconcile(Object.fromEntries(

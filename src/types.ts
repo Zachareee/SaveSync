@@ -27,6 +27,7 @@ export namespace IPCtypes {
     unload: undefined
     saved_plugin: undefined
     filetree: undefined
+    conflict_resolve: [string, OsString, string]
   };
 
   /**
@@ -41,10 +42,12 @@ export namespace IPCtypes {
     saved_result: undefined
     sync_result: [string, OsString, boolean]
     filetree_result: Record<string, OsString[]>
+    conflicting_files: [string, OsString, [SystemTime, SystemTime]]
   }
 }
 
 export type OsString = { Windows: number[] }
+export type SystemTime = Record<`${"nanos" | "secs"}_since_epoch`, number>
 export type Info = Record<"name" | "description" | "author" | "filename", string> & Partial<
   Record<"icon_url", string>
 >

@@ -9,23 +9,23 @@ use std::{
 
 use crate::app_store;
 
-use super::{plugin::Plugin, zip_utils::zip_dir};
+use super::{fs_utils::resolve_path, plugin::Plugin, zip_utils::zip_dir};
 
 static WATCHERS: LazyLock<
     Mutex<HashMap<(String, OsString), Debouncer<RecommendedWatcher, RecommendedCache>>>,
 > = LazyLock::new(|| Mutex::new(HashMap::new()));
 
-fn file_update_callback<P>(tag: &str, path: P)
+pub fn upload_file<P>(tag: &str, path: P)
 where
     P: AsRef<Path>,
 {
-    let (zipbuffer, date) = zip_dir(&app_store().get_mapping(tag).unwrap().join(&path));
+    let (zipbuffer, date) = zip_dir(&resolve_path(tag, &path));
     current_plugin()
         .upload(tag, path.as_ref().as_os_str(), date, zipbuffer.into())
         .unwrap();
 }
 
-pub fn watch_folder(tag: &str, path: &OsString, initial: bool) -> bool {
+pub fn watch_folder(tag: &str, path: &OsString) -> bool {
     let mut map = WATCHERS.lock().unwrap();
     let key = (tag.to_owned(), path.to_owned());
 
@@ -34,37 +34,30 @@ pub fn watch_folder(tag: &str, path: &OsString, initial: bool) -> bool {
     // exist, !initial => remove
     // exist, initial => nothing
 
-    match (map.contains_key(&key), initial) {
-        (true, false) => {
+    match map.contains_key(&key) {
+        true => {
             map.remove(&key);
             current_plugin().remove(tag, path).unwrap();
             false
         }
-        (false, b) => {
+        false => {
             let (tag, path) = key.clone();
 
             let mut debouncer =
                 new_debouncer(Duration::from_secs(1), None, move |result| match result {
-                    Ok(_) => file_update_callback(&tag, &path),
+                    Ok(_) => upload_file(&tag, &path),
                     Err(err) => println!("{err:?}"),
                 })
                 .unwrap();
 
             let (tag, path) = key.clone();
             debouncer
-                .watch(
-                    &app_store().get_mapping(&tag).unwrap().join(&path),
-                    RecursiveMode::Recursive,
-                )
+                .watch(&resolve_path(&tag, path), RecursiveMode::Recursive)
                 .unwrap();
 
-            if !b {
-                file_update_callback(&tag, &path)
-            }
             map.insert(key, debouncer);
             true
         }
-        _ => true,
     }
 }
 

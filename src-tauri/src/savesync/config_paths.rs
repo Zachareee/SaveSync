@@ -47,9 +47,13 @@ pub fn logs() -> PathBuf {
     create_dir_if_not_exist(config().join("logs"))
 }
 
+pub fn temp(tag: &str) -> PathBuf {
+    create_dir_if_not_exist(config().join("temp").join(tag))
+}
+
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {
     if fs::exists(&path).is_ok_and(|x| !x) {
-        fs::create_dir(&path).unwrap()
+        fs::create_dir_all(&path).unwrap()
     }
     path
 }
