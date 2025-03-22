@@ -5,7 +5,7 @@ import { Portal } from "solid-js/web"
 import { confirm, open } from "@tauri-apps/plugin-dialog"
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 import lo from "lodash"
-import { RequiredList } from "@/types"
+import { RequiredList } from "@/types/data"
 
 type MappingArray = [string, [string, string]][]
 
