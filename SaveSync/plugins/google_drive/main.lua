@@ -25,3 +25,12 @@ function Upload(tag, filename, date_modified, zipbuffer)
 		file:close()
 	end
 end
+
+---@return {tag: string, filename: string, last_modified: {secs_since_epoch: number, nanos_since_epoch: string}, data: string?}[]?
+function Read_cloud()
+end
+
+---@return string
+function Download(tag, filename)
+	return 0
+end
