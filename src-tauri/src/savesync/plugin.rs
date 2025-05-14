@@ -125,7 +125,9 @@ impl Plugin {
                         fs::write(&filename, credentials).expect("Unable to write credentials");
                         Ok(())
                     }
-                    None => Err(err.unwrap_or("Something went wrong".into())),
+                    None => Err(err.unwrap_or(
+                        "Error message not found, please consult the plugin developer".into(),
+                    )),
                 },
             )
     }
