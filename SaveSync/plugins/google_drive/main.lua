@@ -8,21 +8,30 @@ function Info()
 end
 
 --- @param credentials string Credential string produced on last initialisation of plugin
---- @return string?, string
-function Init(credentials)
+--- @return string?
+function Validate(credentials, redirect_uri)
+	local access, refresh = credentials:match("([^\n]+)\n([^\n]+)")
 	local gdrive = require("gdrive")
 	local gd, msg = gdrive.new({
 		creds = {
 			client_id = "487698375903-j8s33ij1pc335jc2pu6d2rb1bgrg2fqo.apps.googleusercontent.com",
 			client_secret = "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",
 		},
+		redirect_uri,
+		tokens = {
+			access_token = access,
+			refresh_token = refresh,
+			token_type = "??????",
+			expires = "????",
+		},
 	})
-	if not gd then
-		print(msg)
-		return nil, "Failed to initialise the plugin"
-	end
-	os.execute('start "" "' .. gd.acquireToken[1] .. '"')
-	return nil, "End of testrun"
+	return gd.tokenUpdated and nil or gd.acquireToken[1]
+end
+
+---@param url string
+---@return string
+function Extract_credentials(url)
+	return url
 end
 
 --- Sync function
