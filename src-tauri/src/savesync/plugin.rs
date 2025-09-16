@@ -1,4 +1,4 @@
-use mlua::{FromLuaMulti, Function, IntoLuaMulti, Lua, LuaOptions, LuaSerdeExt, StdLib};
+use mlua::{BString, FromLuaMulti, Function, IntoLuaMulti, Lua, LuaOptions, LuaSerdeExt, StdLib};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -35,7 +35,7 @@ struct InterFileDetails {
     pub tag: String,
     pub folder_name: String,
     pub last_modified: SystemTime,
-    pub data: Option<bytes::Bytes>,
+    pub data: Option<BString>,
 }
 
 impl From<InterFileDetails> for FileDetails {
@@ -68,6 +68,7 @@ impl Plugin {
         let path = include_path(&servicepath, "lua");
         let cpath = include_path(&servicepath, "dll");
 
+
         backend
             .load(format!(
             "package.path = '{path};' .. package.path; package.cpath = '{cpath};' .. package.cpath"
@@ -80,6 +81,7 @@ impl Plugin {
             .unwrap() // dofile() should always be available in lua runtime
             .call::<()>(servicepath.join("main.lua").as_path())
             .map_err(|e| format!("Error parsing {}: {e}", servicepath.to_string_lossy()))?;
+
 
         Ok(Plugin {
             backend,
@@ -112,24 +114,26 @@ impl Plugin {
             )
     }
 
-    pub fn init(&self) -> PluginResult<()> {
+    fn read_creds(&self) -> Option<String> {
         let mut filename = self.filename.to_os_string();
         filename.push(".auth");
 
-        let filename = super::config_paths::creds().join(&filename);
+        fs::read_to_string(super::config_paths::creds().join(&filename)).ok()
+    }
 
-        self.run_function("Init", fs::read_to_string(&filename).ok())
-            .and_then(
-                |(creds, err): (Option<String>, Option<String>)| match creds {
-                    Some(credentials) => {
-                        fs::write(&filename, credentials).expect("Unable to write credentials");
-                        Ok(())
-                    }
-                    None => Err(err.unwrap_or(
-                        "Error message not found, please consult the plugin developer".into(),
-                    )),
-                },
-            )
+    fn write_creds(&self, credentials: &str) -> std::io::Result<()> {
+        fs::write(self.filename.to_os_string(), credentials)
+    }
+
+    pub fn validate(&self, redirect_uri: &str) -> PluginResult<Option<String>> {
+        self.run_function("Validate", (self.read_creds(), redirect_uri))
+    }
+
+    pub fn process_save_credentials(&self, url: &str) -> PluginResult<String> {
+        self.run_function("Extract_credentials", url)
+            .inspect(|s: &String| {
+                let _ = self.write_creds(s);
+            })
     }
 
     pub fn abort(&self) -> PluginResult<()> {

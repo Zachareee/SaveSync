@@ -35,5 +35,14 @@
     "resources": [
       "./lua54.dll"
     ]
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "savesync"
+        ]
+      }
+    }
   }
 }

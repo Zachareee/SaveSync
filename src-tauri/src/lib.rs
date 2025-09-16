@@ -12,9 +12,11 @@ use std::{
     sync::{Arc, Mutex, OnceLock},
 };
 use tauri::{AppHandle, Manager, RunEvent};
+use tauri_plugin_deep_link::DeepLinkExt;
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
+const REDIRECT_URL: &str = "savesync://tokens";
 
 struct AppState {
     pub tags: Vec<String>,
@@ -32,16 +34,25 @@ impl Default for AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|_, _, _| {}));
+    }
+
+    builder
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_deep_link::init())
         .invoke_handler(tauri::generate_handler![
             get_plugins,
             get_mapping,
             set_mapping,
             get_envpaths,
-            get_watched_folders
+            get_watched_folders,
         ])
         .setup(|app| {
             emit_listeners(app);
@@ -49,6 +60,11 @@ pub fn run() {
             let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
 
             app.manage(Mutex::new(AppState::default()));
+
+            #[cfg(desktop)]
+            app.deep_link().on_open_url(|e| {
+                println!("Urls: {:?}", e.urls());
+            });
 
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
             Ok(())

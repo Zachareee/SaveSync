@@ -10,7 +10,7 @@ use crate::{
         watch::{dump_watchers, upload_file, watch_folder},
         zip_utils,
     },
-    AppState,
+    AppState, REDIRECT_URL,
 };
 use serde::Deserialize;
 use serde_json::from_str;
@@ -24,6 +24,7 @@ use std::{
     time::SystemTime,
 };
 use tauri::{Event, Listener, Manager};
+use tauri_plugin_opener::OpenerExt;
 
 pub fn required_tags() -> Vec<String> {
     app_handle()
@@ -47,6 +48,7 @@ pub fn emit_listeners(app: &tauri::App) {
         ("saved_plugin", saved_plugin_listener),
         ("filetree", filetree_listener),
         ("conflict_resolve", conflict_resolve_listener),
+        ("oauth_redirect", oauth_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
@@ -68,15 +70,23 @@ pub fn init_func(path: &OsStr) -> bool {
             false
         },
         |plugin| {
-            plugin
-                .init()
-                .map_err(|e| emitter::plugin_error(&pathstr, &String::from(e)))
-                .map(|_| {
-                    if let Ok(_) = init_download_folders(&plugin) {
-                        app_store().set_plugin(path)
-                    }
-                })
-                .is_ok()
+            app_store().set_plugin(path);
+            let res = plugin
+                .validate(REDIRECT_URL)
+                .unwrap()
+                // .inspect(|option| match option {
+                //     Some(url) => {
+                //         println!("I'm in some");
+                //         let _ = app_handle().opener().open_url(url, None::<&str>);
+                //     }
+                //     None => {
+                //         println!("I'm in none");
+                //         let _ = init_download_folders(&plugin);
+                //     }
+                // })
+                .is_none();
+            println!("{res}");
+            res
         },
     )
 }
@@ -249,4 +259,14 @@ where
 
 fn conflict_resolve_listener(e: Event) {
     resolve_conflict(from_str(e.payload()).unwrap());
+}
+
+fn oauth_listener(e: Event) {
+    let plugin = Plugin::new(&app_store().plugin().unwrap()).unwrap();
+    match plugin.process_save_credentials(e.payload()) {
+        Ok(_) => {
+            let _ = init_download_folders(&plugin);
+        }
+        Err(err) => emitter::plugin_error(&plugin.filename().to_string_lossy(), &err),
+    }
 }
