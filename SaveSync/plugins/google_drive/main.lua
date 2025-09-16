@@ -7,10 +7,22 @@ function Info()
 	}
 end
 
+--- @param credentials string Credential string produced on last initialisation of plugin
+--- @return string?, string
 function Init(credentials)
 	local gdrive = require("gdrive")
-	print("This is real")
-	print(gdrive.new({}))
+	local gd, msg = gdrive.new({
+		creds = {
+			client_id = "487698375903-j8s33ij1pc335jc2pu6d2rb1bgrg2fqo.apps.googleusercontent.com",
+			client_secret = "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",
+		},
+	})
+	if not gd then
+		print(msg)
+		return nil, "Failed to initialise the plugin"
+	end
+	os.execute('start "" "' .. gd.acquireToken[1] .. '"')
+	return nil, "End of testrun"
 end
 
 --- Sync function
@@ -27,10 +39,11 @@ function Upload(tag, filename, date_modified, zipbuffer)
 end
 
 ---@return {tag: string, filename: string, last_modified: {secs_since_epoch: number, nanos_since_epoch: string}, data: string?}[]?
-function Read_cloud()
-end
+function Read_cloud() end
 
 ---@return string
 function Download(tag, filename)
-	return 0
+	return "BINARYSTRING"
 end
+
+-- vim: ts=2 sw=2 et

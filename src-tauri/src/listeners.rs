@@ -55,9 +55,7 @@ pub fn emit_listeners(app: &tauri::App) {
 
 // wrapper function
 fn init_listener(event: Event) {
-    if init_func(&from_str::<OsString>(event.payload()).unwrap()) {
-        emitter::init_result(true);
-    }
+    emitter::init_result(init_func(&from_str::<OsString>(event.payload()).unwrap()));
 }
 
 // async to prevent UI thread from freezing
