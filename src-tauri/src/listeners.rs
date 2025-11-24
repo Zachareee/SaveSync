@@ -71,22 +71,20 @@ pub fn init_func(path: &OsStr) -> bool {
         },
         |plugin| {
             app_store().set_plugin(path);
-            let res = plugin
+            plugin
                 .validate(REDIRECT_URL)
-                .unwrap()
-                // .inspect(|option| match option {
-                //     Some(url) => {
-                //         println!("I'm in some");
-                //         let _ = app_handle().opener().open_url(url, None::<&str>);
-                //     }
-                //     None => {
-                //         println!("I'm in none");
-                //         let _ = init_download_folders(&plugin);
-                //     }
-                // })
-                .is_none();
-            println!("{res}");
-            res
+                .inspect(|option| match option {
+                    Some(url) => {
+                        println!("I'm in some");
+                        app_handle().opener().open_url(url, None::<&str>).unwrap();
+                    }
+                    None => {
+                        println!("I'm in none");
+                        init_download_folders(&plugin).unwrap();
+                    }
+                })
+                .inspect_err(|e| emitter::plugin_error("Unable to login", e))
+                .is_ok()
         },
     )
 }

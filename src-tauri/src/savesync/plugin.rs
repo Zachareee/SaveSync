@@ -68,7 +68,6 @@ impl Plugin {
         let path = include_path(&servicepath, "lua");
         let cpath = include_path(&servicepath, "dll");
 
-
         backend
             .load(format!(
             "package.path = '{path};' .. package.path; package.cpath = '{cpath};' .. package.cpath"
@@ -81,7 +80,6 @@ impl Plugin {
             .unwrap() // dofile() should always be available in lua runtime
             .call::<()>(servicepath.join("main.lua").as_path())
             .map_err(|e| format!("Error parsing {}: {e}", servicepath.to_string_lossy()))?;
-
 
         Ok(Plugin {
             backend,
@@ -114,11 +112,11 @@ impl Plugin {
             )
     }
 
-    fn read_creds(&self) -> Option<String> {
+    fn read_creds(&self) -> String {
         let mut filename = self.filename.to_os_string();
         filename.push(".auth");
 
-        fs::read_to_string(super::config_paths::creds().join(&filename)).ok()
+        fs::read_to_string(super::config_paths::creds().join(&filename)).unwrap_or_default()
     }
 
     fn write_creds(&self, credentials: &str) -> std::io::Result<()> {
