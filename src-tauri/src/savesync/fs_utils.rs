@@ -1,4 +1,5 @@
 use std::{
+    ffi::OsStr,
     fs::{read_dir, DirEntry, FileType},
     path::{Path, PathBuf},
 };
@@ -35,9 +36,9 @@ where
         .collect()
 }
 
-pub fn resolve_path<P>(tag: &str, path: P) -> PathBuf
+pub fn resolve_path<P>(path: P) -> PathBuf
 where
-    P: AsRef<Path>,
+    P: AsRef<OsStr>,
 {
-    app_store().get_mapping(&tag).unwrap().join(path)
+    app_store().get_mapping(path).unwrap()
 }

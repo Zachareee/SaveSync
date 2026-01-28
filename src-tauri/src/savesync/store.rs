@@ -2,6 +2,7 @@ use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
     path::{Path, PathBuf},
+    str::FromStr,
     sync::Arc,
     time::{Duration, SystemTime},
 };
@@ -9,8 +10,6 @@ use std::{
 use serde_json::{from_value, json, to_value, Value};
 use tauri::{Manager, Wry};
 use tauri_plugin_store::{Result, Store, StoreBuilder};
-
-use crate::commands::env_resolve;
 
 pub struct AppStore {
     store: Arc<Store<Wry>>,
@@ -52,7 +51,7 @@ impl AppStore {
             .unwrap()
             .to_owned()
             .into_iter()
-            .map(|(k, v)| (k, from_value(v).unwrap()))
+            .map(|(k, v)| (OsString::from_str(&k).unwrap(), from_value(v).unwrap()))
             .collect()
     }
 
@@ -84,17 +83,17 @@ impl AppStore {
             + Duration::from_secs(self.store.get("last_sync").unwrap().as_u64().unwrap())
     }
 
-    pub fn get_mapping(&self, key: &str) -> Option<PathBuf> {
+    pub fn get_mapping(&self, key: impl AsRef<OsStr>) -> Option<PathBuf> {
         self.mapping()
             .as_object()
             .unwrap()
-            .get(key)
-            .cloned()
-            .map(|s| {
-                let (envvar, folder): (String, OsString) = from_value(s).unwrap();
-                Path::new(&env_resolve(&envvar)).join(folder).into()
+            .iter()
+            .find(|(k, _)| key.as_ref() == OsStr::new(k))
+            .map(|(_, v)| {
+                let folder: OsString = from_value(v.to_owned()).unwrap();
+                Path::new(&folder).into()
             })
     }
 }
 
-pub type PathMapping = HashMap<String, (String, OsString)>;
+pub type PathMapping = HashMap<OsString, OsString>;

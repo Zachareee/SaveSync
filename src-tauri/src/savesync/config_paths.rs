@@ -47,8 +47,8 @@ pub fn logs() -> PathBuf {
     create_dir_if_not_exist(config().join("logs"))
 }
 
-pub fn temp(tag: &str) -> PathBuf {
-    create_dir_if_not_exist(config().join("temp").join(tag))
+pub fn temp() -> PathBuf {
+    create_dir_if_not_exist(config().join("temp"))
 }
 
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {

@@ -57,7 +57,7 @@ pub fn set_mapping(map: PathMapping) {
     drop_watchers(
         watched_folders()
             .into_iter()
-            .filter(|(k, _)| !map.contains_key(k))
+            .filter(|k| !map.contains_key(k))
             .collect(),
     );
     app_store().set_mapping(map);
@@ -77,7 +77,7 @@ pub fn get_envpaths() -> HashMap<String, OsString> {
 }
 
 #[tauri::command]
-pub fn get_watched_folders() -> Vec<(String, OsString)> {
+pub fn get_watched_folders() -> Vec<OsString> {
     watched_folders()
 }
 

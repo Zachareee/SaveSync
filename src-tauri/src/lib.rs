@@ -20,7 +20,7 @@ const REDIRECT_URL: &str = "savesync://tokens";
 
 struct AppState {
     pub tags: Vec<String>,
-    pub buffers: HashMap<(String, OsString), Vec<u8>>,
+    pub buffers: HashMap<OsString, Vec<u8>>,
 }
 
 impl Default for AppState {
