@@ -24,7 +24,7 @@ use std::{
     time::SystemTime,
 };
 use tauri::{Event, Listener, Manager};
-use tauri_plugin_opener::open_url;
+use tauri_plugin_opener::OpenerExt;
 
 pub fn required_tags() -> Vec<String> {
     app_handle()
@@ -64,28 +64,31 @@ fn init_listener(event: Event) {
 pub fn init_func(path: &OsStr) -> bool {
     let pathstr = path.to_string_lossy();
 
-    match Plugin::new(path) {
-        Err(e) => {
+    Plugin::new(path).map_or_else(
+        |e| {
             emitter::plugin_error(&pathstr, &e);
             false
-        }
-        Ok(plugin) => {
+        },
+        |plugin| {
             app_store().set_plugin(path);
-
-            match plugin.validate(REDIRECT_URL) {
-                (None, None) => {
-                    let _ = init_download_folders(&plugin);
-                    true
-                }
-                (Some(url), Some(err)) => {
-                    open_url(url, None::<&str>);
-                    emitter::plugin_error(&pathstr, &err);
-                    false
-                }
-                (_, _) => todo!(),
-            }
-        }
-    }
+            let res = plugin
+                .validate(REDIRECT_URL)
+                .unwrap()
+                // .inspect(|option| match option {
+                //     Some(url) => {
+                //         println!("I'm in some");
+                //         let _ = app_handle().opener().open_url(url, None::<&str>);
+                //     }
+                //     None => {
+                //         println!("I'm in none");
+                //         let _ = init_download_folders(&plugin);
+                //     }
+                // })
+                .is_none();
+            println!("{res}");
+            res
+        },
+    )
 }
 
 pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
@@ -94,6 +97,7 @@ pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
     plugin
         .read_cloud()
         .map(|details| {
+            set_required_tags(details.iter().map(|f| f.tag.clone()).collect());
             details
                 .into_iter()
                 .for_each(|f| process_cloud_details(f, last_sync, plugin));
@@ -103,55 +107,63 @@ pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
 
 fn process_cloud_details(
     FileDetails {
+        tag,
         folder_name,
         last_modified: cloud_date,
+        data,
     }: FileDetails,
     last_sync: SystemTime,
     plugin: &Plugin,
 ) {
-    match app_store().get_mapping(&folder_name) {
-        Some(path) => {
-            let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
+    if let Some(path) = app_store().get_mapping(&tag) {
+        let path = path.join(&folder_name);
 
-            // 6 permutations
-            // local < syncd < cloud (Download)
-            // cloud < syncd < local (Upload)
-            // syncd < local < cloud (Conflict)
-            // syncd < cloud < local (Conflict)
-            //
-            // cloud < local < syncd (Shouldn't be possible)
-            // local < cloud < syncd (Shouldn't be possible)
+        let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
 
-            match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
-                (Equal, _) | (_, Equal) | (Greater, Greater) => (),
-                (k, Less) => {
-                    println!("Less branch");
-                    match plugin.download(folder_name.as_encoded_bytes()) {
-                        Ok(buf) => match k {
-                            Greater => {
-                                println!("Extracting");
-                                zip_utils::extract(&path, buf)
-                            }
-                            Less => {
-                                println!("Both less");
-                                store_buffer(&folder_name, buf);
-                                emitter::conflicting_files(&folder_name, (local_date, cloud_date));
-                                return;
-                            }
-                            _ => (),
-                        },
-                        Err(e) => {
-                            println!("{e}");
-                            emitter::plugin_error("Download", &e);
+        // 6 permutations
+        // local < syncd < cloud (Download)
+        // cloud < syncd < local (Upload)
+        // syncd < local < cloud (Conflict)
+        // syncd < cloud < local (Conflict)
+        //
+        // cloud < local < syncd (Shouldn't be possible)
+        // local < cloud < syncd (Shouldn't be possible)
+
+        match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
+            (Equal, _) | (_, Equal) | (Greater, Greater) => (),
+            (k, Less) => {
+                println!("Less branch");
+                match data
+                    .ok_or(|| ())
+                    .or_else(|_| plugin.download(&tag, &folder_name))
+                {
+                    Ok(buf) => match k {
+                        Greater => {
+                            println!("Extracting");
+                            zip_utils::extract(&path, buf)
+                        }
+                        Less => {
+                            println!("Both less");
+                            store_buffer(&tag, &folder_name, buf);
+                            emitter::conflicting_files(
+                                &tag,
+                                &folder_name,
+                                (local_date, cloud_date),
+                            );
                             return;
                         }
+                        _ => (),
+                    },
+                    Err(e) => {
+                        println!("{e}");
+                        emitter::plugin_error("Download", &e);
+                        return;
                     }
                 }
-                (Less, Greater) => upload_file(path),
             }
-            watch_folder(&folder_name);
+            (Less, Greater) => upload_file(&tag, path),
         }
-        None => todo!(),
+        watch_folder(&tag, &folder_name);
     }
 }
 
@@ -176,7 +188,7 @@ where
 fn abort_listener(event: Event) {
     let mut filename: OsString = from_str(event.payload()).unwrap();
 
-    if let Err(err) = Plugin::new(&filename).map_or(Ok(()), |plugin| plugin.abort()) {
+    if let Some(mut err) = Plugin::new(&filename).map_or(None, |plugin| plugin.abort().err()) {
         emitter::abort_result(&err);
 
         filename.push(".txt");
@@ -187,22 +199,23 @@ fn abort_listener(event: Event) {
             .append(true)
             .open(config_paths::logs().join(filename))
         {
-            let _ = file.write_all(&err.as_bytes());
+            err.push('\n');
+            let _ = file.write_all(&err.into_bytes());
         }
     }
 }
 
-// #[derive(Deserialize)]
-// struct SyncStruct {
-//     tag: String,
-//     foldername: OsString,
-// }
+#[derive(Deserialize)]
+struct SyncStruct {
+    tag: String,
+    foldername: OsString,
+}
 
 fn sync_listener(event: Event) {
-    let foldername: OsString = from_str(event.payload()).unwrap();
+    let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    upload_file(&foldername);
-    emitter::sync_result(&foldername, watch_folder(&foldername));
+    upload_file(&tag, &foldername);
+    emitter::sync_result(&tag, &foldername, watch_folder(&tag, &foldername));
 }
 
 fn unload_listener(_: Event) {
@@ -222,7 +235,13 @@ fn saved_plugin_listener(_: Event) {
 }
 
 fn filetree_listener(_: Event) {
-    emitter::filetree_result(app_store().path_mapping())
+    emitter::filetree_result(
+        app_store()
+            .path_mapping()
+            .into_iter()
+            .map(|(tag, (env, path))| (tag, find_folders_in_path(&env, path)))
+            .collect(),
+    )
 }
 
 fn find_folders_in_path<T>(env: &str, path: T) -> Vec<OsString>
@@ -239,12 +258,11 @@ where
 }
 
 fn conflict_resolve_listener(e: Event) {
-    let (foldername, resolution): (OsString, String) = from_str(e.payload()).unwrap();
-    resolve_conflict(foldername, resolution);
+    resolve_conflict(from_str(e.payload()).unwrap());
 }
 
 fn oauth_listener(e: Event) {
-    let mut plugin = Plugin::new(&app_store().plugin().unwrap()).unwrap();
+    let plugin = Plugin::new(&app_store().plugin().unwrap()).unwrap();
     match plugin.process_save_credentials(e.payload()) {
         Ok(_) => {
             let _ = init_download_folders(&plugin);

@@ -15,38 +15,38 @@ use super::{
     zip_utils::extract,
 };
 
-pub fn store_buffer(foldername: &OsStr, buffer: Vec<u8>) {
+pub fn store_buffer(tag: &str, foldername: &OsStr, buffer: Vec<u8>) {
     app_handle()
         .state::<Mutex<AppState>>()
         .lock()
         .unwrap()
         .buffers
-        .insert(foldername.into(), buffer);
+        .insert((tag.into(), foldername.into()), buffer);
 }
 
-fn retrieve_buffer(foldername: &OsStr) -> Vec<u8> {
+fn retrieve_buffer(tag: &str, foldername: &OsStr) -> Vec<u8> {
     app_handle()
         .state::<Mutex<AppState>>()
         .lock()
         .unwrap()
         .buffers
-        .remove(foldername.into())
+        .remove(&(tag.into(), foldername.into()))
         .inspect(|x| println!("Got {x:?}"))
         .unwrap()
 }
 
-pub fn resolve_conflict(foldername: OsString, resolution: String) {
+pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String)) {
     if resolution == "local" {
-        upload_file(&foldername);
-        watch_folder(&foldername);
+        upload_file(&tag, &foldername);
+        watch_folder(&tag, &foldername);
         return;
     }
-    let buf = retrieve_buffer(&foldername);
+    let buf = retrieve_buffer(&tag, &foldername);
 
     if resolution == "cloud" {
-        extract(resolve_path(&foldername), buf);
+        extract(resolve_path(&tag, &foldername), buf);
     } else if resolution == "none" {
-        let path = temp();
+        let path = temp(&tag);
         extract(&path, buf);
         app_handle()
             .opener()
