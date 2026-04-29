@@ -24,7 +24,7 @@ use std::{
     time::SystemTime,
 };
 use tauri::{Event, Listener, Manager};
-use tauri_plugin_opener::OpenerExt;
+use tauri_plugin_opener::open_url;
 
 pub fn required_tags() -> Vec<String> {
     app_handle()
@@ -64,31 +64,28 @@ fn init_listener(event: Event) {
 pub fn init_func(path: &OsStr) -> bool {
     let pathstr = path.to_string_lossy();
 
-    Plugin::new(path).map_or_else(
-        |e| {
+    match Plugin::new(path) {
+        Err(e) => {
             emitter::plugin_error(&pathstr, &e);
             false
-        },
-        |plugin| {
+        }
+        Ok(plugin) => {
             app_store().set_plugin(path);
-            let res = plugin
-                .validate(REDIRECT_URL)
-                .unwrap()
-                // .inspect(|option| match option {
-                //     Some(url) => {
-                //         println!("I'm in some");
-                //         let _ = app_handle().opener().open_url(url, None::<&str>);
-                //     }
-                //     None => {
-                //         println!("I'm in none");
-                //         let _ = init_download_folders(&plugin);
-                //     }
-                // })
-                .is_none();
-            println!("{res}");
-            res
-        },
-    )
+
+            match plugin.validate(REDIRECT_URL) {
+                (None, None) => {
+                    let _ = init_download_folders(&plugin);
+                    true
+                }
+                (Some(url), Some(err)) => {
+                    open_url(url, None::<&str>);
+                    emitter::plugin_error(&pathstr, &err);
+                    false
+                }
+                (_, _) => todo!(),
+            }
+        }
+    }
 }
 
 pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
@@ -188,7 +185,7 @@ where
 fn abort_listener(event: Event) {
     let mut filename: OsString = from_str(event.payload()).unwrap();
 
-    if let Some(mut err) = Plugin::new(&filename).map_or(None, |plugin| plugin.abort().err()) {
+    if let Err(err) = Plugin::new(&filename).map_or(Ok(()), |plugin| plugin.abort()) {
         emitter::abort_result(&err);
 
         filename.push(".txt");
@@ -199,8 +196,7 @@ fn abort_listener(event: Event) {
             .append(true)
             .open(config_paths::logs().join(filename))
         {
-            err.push('\n');
-            let _ = file.write_all(&err.into_bytes());
+            let _ = file.write_all(&err.as_bytes());
         }
     }
 }
