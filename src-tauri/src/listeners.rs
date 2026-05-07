@@ -1,6 +1,7 @@
 use crate::{
     app_handle, app_store,
     commands::env_resolve,
+    mutate_app_state,
     savesync::{
         config_paths,
         conflict_files::{resolve_conflict, store_buffer},
@@ -26,23 +27,10 @@ use std::{
 use tauri::{Event, Listener, Manager};
 use tauri_plugin_opener::open_url;
 
-pub fn required_tags() -> Vec<String> {
-    app_handle()
-        .state::<Mutex<AppState>>()
-        .lock()
-        .unwrap()
-        .tags
-        .clone()
-}
-
-fn set_required_tags(tags: Vec<String>) {
-    app_handle().state::<Mutex<AppState>>().lock().unwrap().tags = tags;
-}
-
 pub fn emit_listeners(app: &tauri::App) {
     let arr: Vec<(&str, fn(Event))> = vec![
         ("init", init_listener),
-        ("abort", abort_listener),
+        // ("abort", abort_listener),
         ("sync", sync_listener),
         ("unload", unload_listener),
         ("saved_plugin", saved_plugin_listener),
@@ -64,7 +52,7 @@ fn init_listener(event: Event) {
 pub fn init_func(path: &OsStr) -> bool {
     let pathstr = path.to_string_lossy();
 
-    match Plugin::new(path) {
+    match unsafe { Plugin::new(path) } {
         Err(e) => {
             emitter::plugin_error(&pathstr, &e);
             false
@@ -79,9 +67,11 @@ pub fn init_func(path: &OsStr) -> bool {
                 }
                 (Some(url), Some(err)) => {
                     open_url(url, None::<&str>);
+                    mutate_app_state(|s| s.plugin = plugin?);
                     emitter::plugin_error(&pathstr, &err);
                     false
                 }
+                // this shouldn't be possible
                 (_, _) => todo!(),
             }
         }
@@ -94,7 +84,7 @@ pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
     plugin
         .read_cloud()
         .map(|details| {
-            set_required_tags(details.iter().map(|f| f.tag.clone()).collect());
+            mutate_app_state(|s| s.tags = details.iter().map(|f| f.tag.clone()).collect());
             details
                 .into_iter()
                 .for_each(|f| process_cloud_details(f, last_sync, plugin));
@@ -132,7 +122,7 @@ fn process_cloud_details(
                 println!("Less branch");
                 match data
                     .ok_or(|| ())
-                    .or_else(|_| plugin.download(&tag, &folder_name))
+                    .or_else(|_| plugin.download(tag.as_bytes(), folder_name.as_encoded_bytes()))
                 {
                     Ok(buf) => match k {
                         Greater => {
@@ -182,6 +172,7 @@ where
 
 /// Fails silently, plugin does not need to implement abort()
 /// If a message is returned, it is logged to the logs folder
+/*
 fn abort_listener(event: Event) {
     let mut filename: OsString = from_str(event.payload()).unwrap();
 
@@ -200,6 +191,7 @@ fn abort_listener(event: Event) {
         }
     }
 }
+*/
 
 #[derive(Deserialize)]
 struct SyncStruct {
@@ -258,7 +250,7 @@ fn conflict_resolve_listener(e: Event) {
 }
 
 fn oauth_listener(e: Event) {
-    let plugin = Plugin::new(&app_store().plugin().unwrap()).unwrap();
+    let mut plugin = mutate_app_state(|s| s.plugin)?;
     match plugin.process_save_credentials(e.payload()) {
         Ok(_) => {
             let _ = init_download_folders(&plugin);

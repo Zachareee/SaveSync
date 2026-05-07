@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use crate::app_store;
+use crate::{app_store, mutate_app_state};
 
 use super::{fs_utils::resolve_path, plugin::Plugin, zip_utils::zip_dir};
 
@@ -20,8 +20,9 @@ where
     P: AsRef<Path>,
 {
     let (zipbuffer, date) = zip_dir(&resolve_path(tag, &path));
-    current_plugin()
-        .upload(tag, path.as_ref().as_os_str(), date, zipbuffer.into())
+    mutate_app_state(|s| s.plugin)
+        .unwrap()
+        .upload(tag.into(), path.into(), date, zipbuffer.into())
         .unwrap();
 }
 
@@ -37,7 +38,10 @@ pub fn watch_folder(tag: &str, path: &OsString) -> bool {
     match map.contains_key(&key) {
         true => {
             map.remove(&key);
-            current_plugin().remove(tag, path).unwrap();
+            mutate_app_state(|s| s.plugin)
+                .unwrap()
+                .remove(tag.into(), path.into())
+                .unwrap();
             false
         }
         false => {
@@ -59,10 +63,6 @@ pub fn watch_folder(tag: &str, path: &OsString) -> bool {
             true
         }
     }
-}
-
-fn current_plugin() -> Plugin {
-    Plugin::new(&app_store().plugin().unwrap()).unwrap()
 }
 
 pub fn watched_folders() -> Vec<(String, OsString)> {

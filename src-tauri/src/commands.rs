@@ -4,21 +4,21 @@ use std::{env, path};
 
 use serde::{Deserialize, Serialize};
 
-use crate::app_store;
-use crate::listeners::{init_download_folders, required_tags};
+use crate::listeners::init_download_folders;
 use crate::savesync::watch::{drop_watchers, watched_folders};
 use crate::savesync::{
     config_paths, emitter,
     plugin::{Plugin, PluginInfo},
     store::PathMapping,
 };
+use crate::{app_store, mutate_app_state};
 
 #[tauri::command]
 pub fn get_plugins() -> Vec<PluginInfo> {
     config_paths::get_pluginfiles()
         .into_iter()
         .filter_map(|path| {
-            Plugin::new(&path).map_or_else(
+            unsafe { Plugin::new(&path) }.map_or_else(
                 |e| {
                     emitter::plugin_error(&path.to_string_lossy(), &e.to_string());
                     None
@@ -48,7 +48,7 @@ pub struct Mappings {
 pub fn get_mapping() -> Mappings {
     Mappings {
         mapping: app_store().path_mapping(),
-        required: required_tags(),
+        required: mutate_app_state(|s| s.tags),
     }
 }
 
@@ -61,7 +61,7 @@ pub fn set_mapping(map: PathMapping) {
             .collect(),
     );
     app_store().set_mapping(map);
-    init_download_folders(&Plugin::new(&app_store().plugin().unwrap()).unwrap()).unwrap()
+    init_download_folders(&mutate_app_state(|s| s.plugin)?).unwrap()
 }
 
 #[tauri::command]

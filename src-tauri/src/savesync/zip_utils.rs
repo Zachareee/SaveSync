@@ -1,4 +1,5 @@
 use std::{
+    cmp::max,
     fs,
     io::{Cursor, Seek, Write},
     path::{Path, PathBuf},
@@ -62,10 +63,6 @@ where
                 entry.metadata().unwrap().modified().unwrap()
             };
 
-            if accum < date {
-                date
-            } else {
-                accum
-            }
+            max(accum, date)
         })
 }

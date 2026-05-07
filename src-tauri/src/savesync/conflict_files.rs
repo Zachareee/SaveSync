@@ -6,7 +6,7 @@ use std::{
 use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
 
-use crate::{app_handle, AppState};
+use crate::{app_handle, mutate_app_state, AppState};
 
 use super::{
     config_paths::temp,
@@ -16,23 +16,16 @@ use super::{
 };
 
 pub fn store_buffer(tag: &str, foldername: &OsStr, buffer: Vec<u8>) {
-    app_handle()
-        .state::<Mutex<AppState>>()
-        .lock()
-        .unwrap()
-        .buffers
-        .insert((tag.into(), foldername.into()), buffer);
+    mutate_app_state(|s| s.buffers.insert((tag.into(), foldername.into()), buffer));
 }
 
 fn retrieve_buffer(tag: &str, foldername: &OsStr) -> Vec<u8> {
-    app_handle()
-        .state::<Mutex<AppState>>()
-        .lock()
-        .unwrap()
-        .buffers
-        .remove(&(tag.into(), foldername.into()))
-        .inspect(|x| println!("Got {x:?}"))
-        .unwrap()
+    mutate_app_state(|s| {
+        s.buffers
+            .remove(&(tag.into(), foldername.into()))
+            .inspect(|x| println!("Got {x:?}"))
+            .unwrap()
+    })
 }
 
 pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String)) {

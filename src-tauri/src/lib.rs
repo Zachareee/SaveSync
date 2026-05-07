@@ -14,6 +14,8 @@ use std::{
 use tauri::{AppHandle, Manager, RunEvent};
 use tauri_plugin_deep_link::DeepLinkExt;
 
+use crate::savesync::plugin::Plugin;
+
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
 const REDIRECT_URL: &str = "savesync://tokens";
@@ -21,6 +23,7 @@ const REDIRECT_URL: &str = "savesync://tokens";
 struct AppState {
     pub tags: Vec<String>,
     pub buffers: HashMap<(String, OsString), Vec<u8>>,
+    pub plugin: Option<Plugin>,
 }
 
 impl Default for AppState {
@@ -28,6 +31,7 @@ impl Default for AppState {
         AppState {
             tags: Vec::new(),
             buffers: HashMap::new(),
+            plugin: None,
         }
     }
 }
@@ -85,4 +89,18 @@ pub fn app_handle() -> AppHandle {
 
 pub fn app_store() -> Arc<AppStore> {
     APP_STORE.get().unwrap().clone()
+}
+
+pub fn mutate_app_state<F, T>(func: F) -> T
+where
+    F: FnOnce(&AppState) -> T,
+{
+    func(
+        &APP_INSTANCE
+            .get()
+            .unwrap()
+            .state::<Mutex<AppState>>()
+            .lock()
+            .unwrap(),
+    )
 }

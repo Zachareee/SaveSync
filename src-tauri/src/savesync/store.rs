@@ -89,7 +89,7 @@ impl AppStore {
         self.mapping()
             .as_object()
             .unwrap()
-            .get(key)
+            .get(key.as_ref())
             .cloned()
             .map(|s| {
                 let (envvar, folder): (String, OsString) = from_value(s).unwrap();
