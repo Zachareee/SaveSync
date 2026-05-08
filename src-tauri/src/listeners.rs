@@ -1,5 +1,5 @@
 use crate::{
-    app_handle, app_store,
+    app_store,
     commands::env_resolve,
     mutate_app_state,
     savesync::{
@@ -11,20 +11,18 @@ use crate::{
         watch::{dump_watchers, upload_file, watch_folder},
         zip_utils,
     },
-    AppState, REDIRECT_URL,
+    REDIRECT_URL,
 };
 use serde::Deserialize;
 use serde_json::from_str;
 use std::{
     cmp::Ordering::{Equal, Greater, Less},
     ffi::{OsStr, OsString},
-    fs::{read_dir, OpenOptions},
-    io::Write,
+    fs::read_dir,
     path::Path,
-    sync::Mutex,
     time::SystemTime,
 };
-use tauri::{Event, Listener, Manager};
+use tauri::{Event, Listener};
 use tauri_plugin_opener::open_url;
 
 pub fn emit_listeners(app: &tauri::App) {
@@ -62,12 +60,12 @@ pub fn init_func(path: &OsStr) -> bool {
 
             match plugin.validate(REDIRECT_URL) {
                 (None, None) => {
-                    let _ = init_download_folders(&plugin);
+                    let _ = init_download_folders();
                     true
                 }
                 (Some(url), Some(err)) => {
-                    open_url(url, None::<&str>);
-                    mutate_app_state(|s| s.plugin = plugin?);
+                    let _ = open_url(url, None::<&str>);
+                    mutate_app_state(|s| s.plugin = Some(plugin));
                     emitter::plugin_error(&pathstr, &err);
                     false
                 }
@@ -78,18 +76,21 @@ pub fn init_func(path: &OsStr) -> bool {
     }
 }
 
-pub fn init_download_folders(plugin: &Plugin) -> Result<(), ()> {
+pub fn init_download_folders() -> Result<(), ()> {
     let last_sync = app_store().last_sync();
 
-    plugin
-        .read_cloud()
-        .map(|details| {
-            mutate_app_state(|s| s.tags = details.iter().map(|f| f.tag.clone()).collect());
-            details
-                .into_iter()
-                .for_each(|f| process_cloud_details(f, last_sync, plugin));
-        })
-        .map_err(|e| emitter::plugin_error("read_cloud", &e))
+    mutate_app_state(|s| {
+        let plugin = s.plugin.as_ref().unwrap();
+        plugin
+            .read_cloud()
+            .map(|details| {
+                mutate_app_state(|s| s.tags = details.iter().map(|f| f.tag.clone()).collect());
+                details
+                    .into_iter()
+                    .for_each(|f| process_cloud_details(f, last_sync, plugin));
+            })
+            .map_err(|e| emitter::plugin_error("read_cloud", &e))
+    })
 }
 
 fn process_cloud_details(
@@ -250,11 +251,19 @@ fn conflict_resolve_listener(e: Event) {
 }
 
 fn oauth_listener(e: Event) {
-    let mut plugin = mutate_app_state(|s| s.plugin)?;
-    match plugin.process_save_credentials(e.payload()) {
-        Ok(_) => {
-            let _ = init_download_folders(&plugin);
+    let result: Option<(String, String)> =
+        mutate_app_state(
+            |s| match s.plugin.as_mut()?.process_save_credentials(e.payload()) {
+                Ok(_) => None,
+                Err(err) => Some((s.plugin.as_ref()?.filename().into_string().unwrap(), err)),
+            },
+        );
+    match result {
+        Some((filename, msg)) => {
+            emitter::plugin_error(&filename, &msg);
         }
-        Err(err) => emitter::plugin_error(&plugin.filename().to_string_lossy(), &err),
+        None => {
+            let _ = init_download_folders();
+        }
     }
 }

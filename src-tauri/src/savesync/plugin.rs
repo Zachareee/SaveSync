@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     ffi::{c_char, CStr, CString, OsStr, OsString},
     fs,
-    path::Path,
     time::{Duration, SystemTime},
 };
 
@@ -11,7 +10,6 @@ use super::config_paths;
 
 type DLLString = *const c_char;
 type DLLFileDetails = *const (DLLString, DLLString, u64, DLLString);
-type DLLResult<T> = Result<T, String>;
 
 #[derive(Debug)]
 pub struct Plugin {
@@ -39,11 +37,14 @@ impl Plugin {
         }
     }
 
-    unsafe fn create_string(&self, raw_str: DLLString) -> Option<&[u8]> {
+    unsafe fn create_string(&self, raw_str: DLLString) -> Option<String> {
         if raw_str.is_null() {
             None
         } else {
-            let c_str = unsafe { CStr::from_ptr(raw_str) }.to_bytes();
+            let c_str = unsafe { CStr::from_ptr(raw_str) }
+                .to_owned()
+                .into_string()
+                .unwrap();
             unsafe {
                 self.free_string(raw_str);
             }
@@ -80,14 +81,12 @@ impl Plugin {
 
         let (name, description, author, icon_url) = ptr;
 
-        let url: Option<String> = unsafe { self.create_string(icon_url).into() };
-
         let info = unsafe {
             PluginInfo {
-                name: self.create_string(name).unwrap_or_default().into(),
-                description: self.create_string(description).unwrap_or_default().into(),
-                author: self.create_string(author).unwrap_or_default().into(),
-                icon_url: self.create_string(icon_url).unwrap_or("??".into()).into(),
+                name: self.create_string(name).unwrap_or_default(),
+                description: self.create_string(description).unwrap_or_default(),
+                author: self.create_string(author).unwrap_or_default(),
+                icon_url: self.create_string(icon_url).unwrap_or_default(),
                 filename: self.filename(),
             }
         };
@@ -129,7 +128,7 @@ impl Plugin {
             )
         };
 
-        unsafe { (self.create_string(url).into(), self.create_string(msg)).into() }
+        unsafe { (self.create_string(url), self.create_string(msg)) }
     }
 
     pub fn process_save_credentials(&mut self, url: &str) -> PluginResult<()> {
@@ -145,15 +144,13 @@ impl Plugin {
 
         match unsafe { self.create_string(possible_err) } {
             None => {
-                let _ = self.write_creds(unsafe {
-                    &self
-                        .create_string(res)
+                let _ = self.write_creds(&unsafe {
+                    self.create_string(res)
                         .expect("Both ok and error value are empty")
-                        .into()
                 });
-                ()?
+                Ok(())
             }
-            Some(e) => e.into()?,
+            Some(e) => Err(e.into()),
         }
     }
 
@@ -193,25 +190,25 @@ impl Plugin {
                 buffer.as_ptr() as *const i8,
                 buffer.len() as u64,
             );
-            self.create_string(ptr).map_or(()?, |e| e.into()?)
+            self.create_string(ptr).map_or(Ok(()), |e| Err(e))
         }
     }
 
     pub fn download(&self, tag: &[u8], folder_name: &[u8]) -> PluginResult<Vec<u8>> {
         let access_token = CString::new(self.credentials()).unwrap_or_default();
+        let tagname = CString::new(tag).unwrap_or_default();
         let filename = CString::new(folder_name).unwrap_or_default();
 
-        let (ptr, count, possible_err) =
-            unsafe {
-                self.library
-                .get::<unsafe extern "C" fn(DLLString, DLLString) -> (DLLString, u64, DLLString)>(
+        let (ptr, count, possible_err) = unsafe {
+            self.library
+                .get::<unsafe extern "C" fn(DLLString, DLLString, DLLString) -> (DLLString, u64, DLLString)>(
                     b"download",
                 )
-                .expect("download function not found")(access_token.as_ptr(), filename.as_ptr())
-            };
+                .expect("download function not found")(access_token.as_ptr(), tagname.as_ptr(), filename.as_ptr())
+        };
 
         if let Some(err) = unsafe { self.create_string(possible_err) } {
-            err.into()?
+            Err(err)
         } else {
             let mut v = Vec::new();
             let u8_ptr = ptr as *const u8;
@@ -222,7 +219,7 @@ impl Plugin {
 
             unsafe { self.free_string(ptr) };
 
-            v?
+            Ok(v)
         }
     }
 
@@ -243,7 +240,7 @@ impl Plugin {
                 filename.as_ptr(),
             );
 
-            self.create_string(ptr).map_or_else(()?, |e| e.into()?)
+            self.create_string(ptr).map_or(Ok(()), |e| Err(e))
         }
     }
 
@@ -259,7 +256,7 @@ impl Plugin {
                     .expect("read_cloud function not found")(access_token.as_ptr());
 
             match self.create_string(possible_err) {
-                Some(err) => err.into()?,
+                Some(err) => Err(err),
                 None => {
                     let mut v: Vec<FileDetails> = Vec::new();
 
@@ -269,7 +266,11 @@ impl Plugin {
                             tag: self.create_string(detail.0).unwrap().into(),
                             folder_name: self.create_string(detail.1).unwrap().into(),
                             last_modified: SystemTime::UNIX_EPOCH + Duration::from_secs(detail.2),
-                            data: self.create_string(detail.3).into(),
+                            data: if detail.3.is_null() {
+                                None
+                            } else {
+                                Some(CStr::from_ptr(detail.3).to_bytes().to_vec())
+                            },
                         });
                     }
 
@@ -278,7 +279,7 @@ impl Plugin {
                         .expect("free_file_details function not found")(
                         count, ptr
                     );
-                    v?
+                    Ok(v)
                 }
             }
         }

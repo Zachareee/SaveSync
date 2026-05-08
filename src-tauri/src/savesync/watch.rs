@@ -7,9 +7,9 @@ use std::{
     time::Duration,
 };
 
-use crate::{app_store, mutate_app_state};
+use crate::mutate_app_state;
 
-use super::{fs_utils::resolve_path, plugin::Plugin, zip_utils::zip_dir};
+use super::{fs_utils::resolve_path, zip_utils::zip_dir};
 
 static WATCHERS: LazyLock<
     Mutex<HashMap<(String, OsString), Debouncer<RecommendedWatcher, RecommendedCache>>>,
@@ -20,10 +20,18 @@ where
     P: AsRef<Path>,
 {
     let (zipbuffer, date) = zip_dir(&resolve_path(tag, &path));
-    mutate_app_state(|s| s.plugin)
-        .unwrap()
-        .upload(tag.into(), path.into(), date, zipbuffer.into())
-        .unwrap();
+    mutate_app_state(|s| {
+        s.plugin
+            .as_ref()
+            .unwrap()
+            .upload(
+                tag.as_bytes(),
+                path.as_ref().as_os_str().as_encoded_bytes(),
+                date,
+                zipbuffer.as_slice(),
+            )
+            .unwrap()
+    });
 }
 
 pub fn watch_folder(tag: &str, path: &OsString) -> bool {
@@ -38,10 +46,13 @@ pub fn watch_folder(tag: &str, path: &OsString) -> bool {
     match map.contains_key(&key) {
         true => {
             map.remove(&key);
-            mutate_app_state(|s| s.plugin)
-                .unwrap()
-                .remove(tag.into(), path.into())
-                .unwrap();
+            mutate_app_state(|s| {
+                s.plugin
+                    .as_ref()
+                    .unwrap()
+                    .remove(tag.as_bytes(), path.as_encoded_bytes())
+                    .unwrap()
+            });
             false
         }
         false => {

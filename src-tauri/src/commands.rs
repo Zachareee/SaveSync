@@ -48,7 +48,7 @@ pub struct Mappings {
 pub fn get_mapping() -> Mappings {
     Mappings {
         mapping: app_store().path_mapping(),
-        required: mutate_app_state(|s| s.tags),
+        required: mutate_app_state(|s| s.tags.clone()),
     }
 }
 
@@ -61,7 +61,7 @@ pub fn set_mapping(map: PathMapping) {
             .collect(),
     );
     app_store().set_mapping(map);
-    init_download_folders(&mutate_app_state(|s| s.plugin)?).unwrap()
+    init_download_folders().unwrap()
 }
 
 #[tauri::command]

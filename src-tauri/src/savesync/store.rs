@@ -2,7 +2,6 @@ use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
     time::{Duration, SystemTime},
 };
@@ -85,11 +84,11 @@ impl AppStore {
             + Duration::from_secs(self.store.get("last_sync").unwrap().as_u64().unwrap())
     }
 
-    pub fn get_mapping(&self, key: impl AsRef<OsStr>) -> Option<PathBuf> {
+    pub fn get_mapping(&self, key: &str) -> Option<PathBuf> {
         self.mapping()
             .as_object()
             .unwrap()
-            .get(key.as_ref())
+            .get(key)
             .cloned()
             .map(|s| {
                 let (envvar, folder): (String, OsString) = from_value(s).unwrap();

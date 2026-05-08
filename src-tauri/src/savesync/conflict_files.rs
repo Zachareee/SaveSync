@@ -1,12 +1,10 @@
-use std::{
-    ffi::{OsStr, OsString},
-    sync::Mutex,
-};
+use std::
+    ffi::{OsStr, OsString}
+;
 
-use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
 
-use crate::{app_handle, mutate_app_state, AppState};
+use crate::{app_handle, mutate_app_state};
 
 use super::{
     config_paths::temp,

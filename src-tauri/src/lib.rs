@@ -20,7 +20,7 @@ static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
 const REDIRECT_URL: &str = "savesync://tokens";
 
-struct AppState {
+pub struct AppState {
     pub tags: Vec<String>,
     pub buffers: HashMap<(String, OsString), Vec<u8>>,
     pub plugin: Option<Plugin>,
@@ -93,10 +93,10 @@ pub fn app_store() -> Arc<AppStore> {
 
 pub fn mutate_app_state<F, T>(func: F) -> T
 where
-    F: FnOnce(&AppState) -> T,
+    F: FnOnce(&mut AppState) -> T,
 {
     func(
-        &APP_INSTANCE
+        &mut APP_INSTANCE
             .get()
             .unwrap()
             .state::<Mutex<AppState>>()
