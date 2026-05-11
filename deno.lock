@@ -1,14 +1,15 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@fabianlars/tauri-plugin-oauth@2": "2.0.0",
     "npm:@solidjs/router@~0.15.3": "0.15.3_solid-js@1.9.4__seroval@1.2.0",
-    "npm:@tailwindcss/vite@^4.0.3": "4.0.3_vite@6.0.11_lightningcss@1.29.1",
-    "npm:@tauri-apps/api@2": "2.2.0",
+    "npm:@tailwindcss/vite@^4.0.3": "4.0.3_vite@6.0.11__lightningcss@1.29.1_lightningcss@1.29.1",
+    "npm:@tauri-apps/api@2": "2.11.0",
     "npm:@tauri-apps/cli@2": "2.2.5",
-    "npm:@tauri-apps/plugin-deep-link@~2.2.1": "2.2.1",
-    "npm:@tauri-apps/plugin-dialog@2.2": "2.2.0",
+    "npm:@tauri-apps/plugin-deep-link@2": "2.4.9",
+    "npm:@tauri-apps/plugin-dialog@2": "2.7.1",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
-    "npm:@tauri-apps/plugin-store@2.2": "2.2.0",
+    "npm:@tauri-apps/plugin-store@2": "2.4.3",
     "npm:@types/lodash@^4.17.15": "4.17.15",
     "npm:lodash@^4.17.21": "4.17.21",
     "npm:postcss@^8.5.1": "8.5.1",
@@ -16,7 +17,7 @@
     "npm:solid-toast@0.5": "0.5.0_solid-js@1.9.4__seroval@1.2.0",
     "npm:tailwindcss@^4.0.3": "4.0.3",
     "npm:typescript@~5.6.2": "5.6.3",
-    "npm:vite-plugin-solid@^2.11.0": "2.11.0_solid-js@1.9.4__seroval@1.2.0_vite@6.0.11_@babel+core@7.26.0",
+    "npm:vite-plugin-solid@^2.11.0": "2.11.0_solid-js@1.9.4__seroval@1.2.0_vite@6.0.11__lightningcss@1.29.1_@babel+core@7.26.0",
     "npm:vite@^6.0.3": "6.0.11_lightningcss@1.29.1"
   },
   "npm": {
@@ -285,6 +286,12 @@
       "os": ["win32"],
       "cpu": ["x64"]
     },
+    "@fabianlars/tauri-plugin-oauth@2.0.0": {
+      "integrity": "sha512-I1s08ZXrsFuYfNWusAcpLyiCfr5TCvaBrRuKfTG+XQrcaqnAcwjdWH0U5J9QWuMDLwCUMnVxdobtMJzPR8raxQ==",
+      "dependencies": [
+        "@tauri-apps/api"
+      ]
+    },
     "@jridgewell/gen-mapping@0.3.8": {
       "integrity": "sha512-imAbBGkb+ebQyxKgzv5Hu2nmROxoDOXHh80evxdoXNOrvAnVx7zimzc1Oo5h9RlfV4vPXaE2iM5pOFbvOCClWA==",
       "dependencies": [
@@ -489,18 +496,18 @@
         "@tailwindcss/oxide-win32-x64-msvc"
       ]
     },
-    "@tailwindcss/vite@4.0.3_vite@6.0.11_lightningcss@1.29.1": {
+    "@tailwindcss/vite@4.0.3_vite@6.0.11__lightningcss@1.29.1_lightningcss@1.29.1": {
       "integrity": "sha512-Qj6rSO+EvXnNDymloKZ11D54JJTnDrkRWJBzNHENDxjt0HtrCZJbSLIrcJ/WdaoU4othrel/oFqHpO/doxIS/Q==",
       "dependencies": [
         "@tailwindcss/node",
         "@tailwindcss/oxide",
         "lightningcss",
         "tailwindcss",
-        "vite@6.0.11_lightningcss@1.29.1"
+        "vite"
       ]
     },
-    "@tauri-apps/api@2.2.0": {
-      "integrity": "sha512-R8epOeZl1eJEl603aUMIGb4RXlhPjpgxbGVEaqY+0G5JG9vzV/clNlzTeqc+NLYXVqXcn8mb4c5b9pJIUDEyAg=="
+    "@tauri-apps/api@2.11.0": {
+      "integrity": "sha512-7CinYODhky9lmO23xHnUFv0Xt43fbtWMyxZcLcRBlFkcgXKuEirBvHpmtJ89YMhyeGcq20Wuc47Fa4XjyniywA=="
     },
     "@tauri-apps/cli-darwin-arm64@2.2.5": {
       "integrity": "sha512-qdPmypQE7qj62UJy3Wl/ccCJZwsv5gyBByOrAaG7u5c/PB3QSxhNPegice2k4EHeIuApaVJOoe/CEYVgm/og2Q==",
@@ -568,14 +575,14 @@
       ],
       "bin": true
     },
-    "@tauri-apps/plugin-deep-link@2.2.1": {
-      "integrity": "sha512-8skZ6qIH/kWaV8d6jj3aPvvkIOuqkVk0APRDey9n9N3Ueu3n4MIbuxpAKR2EdoAyQxnXxPTNVyjw2D35/vfGyg==",
+    "@tauri-apps/plugin-deep-link@2.4.9": {
+      "integrity": "sha512-u0SKOUHnJ1wqeqXsDFq2+kASCBj9xxbG0g9XZWPy9SOmU4wXtp6b/wiYpm6oH6/5fBTQsLqnLhIvqLBRpgHJlA==",
       "dependencies": [
         "@tauri-apps/api"
       ]
     },
-    "@tauri-apps/plugin-dialog@2.2.0": {
-      "integrity": "sha512-6bLkYK68zyK31418AK5fNccCdVuRnNpbxquCl8IqgFByOgWFivbiIlvb79wpSXi0O+8k8RCSsIpOquebusRVSg==",
+    "@tauri-apps/plugin-dialog@2.7.1": {
+      "integrity": "sha512-OK1UBXYt+ojcmxMktzzuyonYIFta8CmAASpX+CA+DTGK24KlHjhYI6x2iOJ/TjZF4N7/ACK1oFmEOjIY9IhzOQ==",
       "dependencies": [
         "@tauri-apps/api"
       ]
@@ -586,8 +593,8 @@
         "@tauri-apps/api"
       ]
     },
-    "@tauri-apps/plugin-store@2.2.0": {
-      "integrity": "sha512-hJTRtuJis4w5fW1dkcgftsYxKXK0+DbAqurZ3CURHG5WkAyyZgbxpeYctw12bbzF9ZbZREXZklPq8mocCC3Sgg==",
+    "@tauri-apps/plugin-store@2.4.3": {
+      "integrity": "sha512-9LWPj9yMphRi9czEtUv87XHbl1b6xgd9EXpPrUnq6nG7+nbtoF84d4Kwz9xhAv/Hf30sr58pq7EOlyI936y8qw==",
       "dependencies": [
         "@tauri-apps/api"
       ]
@@ -958,7 +965,7 @@
     "validate-html-nesting@1.2.2": {
       "integrity": "sha512-hGdgQozCsQJMyfK5urgFcWEqsSSrK63Awe0t/IMR0bZ0QMtnuaiHzThW81guu3qx9abLi99NEuiaN6P9gVYsNg=="
     },
-    "vite-plugin-solid@2.11.0_solid-js@1.9.4__seroval@1.2.0_vite@6.0.11_@babel+core@7.26.0": {
+    "vite-plugin-solid@2.11.0_solid-js@1.9.4__seroval@1.2.0_vite@6.0.11__lightningcss@1.29.1_@babel+core@7.26.0": {
       "integrity": "sha512-G+NiwDj4EAeUE0wt3Ur9f+Lt9oMUuLd0FIxYuqwJSqRacKQRteCwUFzNy8zMEt88xWokngQhiFjfJMhjc1fDXw==",
       "dependencies": [
         "@babel/core",
@@ -967,34 +974,9 @@
         "merge-anything",
         "solid-js",
         "solid-refresh",
-        "vite@6.0.11_lightningcss@1.29.1",
+        "vite",
         "vitefu"
       ]
-    },
-    "vite@6.0.11": {
-      "integrity": "sha512-4VL9mQPKoHy4+FE0NnRE/kbY51TOfaknxAjt3fJbGJxhIpBZiqVzlZDEesWWsuREXHwNdAoOFZ9MkPEVXczHwg==",
-      "dependencies": [
-        "esbuild",
-        "postcss",
-        "rollup"
-      ],
-      "optionalDependencies": [
-        "fsevents"
-      ],
-      "optionalPeers": [
-        "@types/node@^18.0.0 || ^20.0.0 || >=22.0.0",
-        "jiti",
-        "less@*",
-        "lightningcss",
-        "sass@*",
-        "sass-embedded@*",
-        "stylus@*",
-        "sugarss@*",
-        "terser@^5.16.0",
-        "tsx@^4.8.1",
-        "yaml@^2.4.2"
-      ],
-      "bin": true
     },
     "vite@6.0.11_lightningcss@1.29.1": {
       "integrity": "sha512-4VL9mQPKoHy4+FE0NnRE/kbY51TOfaknxAjt3fJbGJxhIpBZiqVzlZDEesWWsuREXHwNdAoOFZ9MkPEVXczHwg==",
@@ -1012,13 +994,13 @@
       ],
       "bin": true
     },
-    "vitefu@1.0.5_vite@6.0.11": {
+    "vitefu@1.0.5_vite@6.0.11__lightningcss@1.29.1": {
       "integrity": "sha512-h4Vflt9gxODPFNGPwp4zAMZRpZR7eslzwH2c5hn5kNZ5rhnKyRJ50U+yGCdc2IRaBs8O4haIgLNGrV5CrpMsCA==",
       "dependencies": [
-        "vite@6.0.11_lightningcss@1.29.1"
+        "vite"
       ],
       "optionalPeers": [
-        "vite@6.0.11_lightningcss@1.29.1"
+        "vite"
       ]
     },
     "yallist@3.1.1": {
@@ -1028,14 +1010,15 @@
   "workspace": {
     "packageJson": {
       "dependencies": [
+        "npm:@fabianlars/tauri-plugin-oauth@2",
         "npm:@solidjs/router@~0.15.3",
         "npm:@tailwindcss/vite@^4.0.3",
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
-        "npm:@tauri-apps/plugin-deep-link@~2.2.1",
-        "npm:@tauri-apps/plugin-dialog@2.2",
+        "npm:@tauri-apps/plugin-deep-link@2",
+        "npm:@tauri-apps/plugin-dialog@2",
         "npm:@tauri-apps/plugin-opener@2",
-        "npm:@tauri-apps/plugin-store@2.2",
+        "npm:@tauri-apps/plugin-store@2",
         "npm:@types/lodash@^4.17.15",
         "npm:lodash@^4.17.21",
         "npm:solid-js@^1.9.3",
