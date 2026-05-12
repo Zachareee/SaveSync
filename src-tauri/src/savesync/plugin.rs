@@ -115,7 +115,10 @@ impl Plugin {
 
     fn write_creds(&mut self, credentials: &str) -> std::io::Result<()> {
         self.credentials = Some(credentials.into());
-        fs::write(self.filename.to_os_string(), credentials)
+        let mut filename = self.filename.to_os_string();
+        filename.push(".auth");
+
+        fs::write(config_paths::creds().join(&filename), credentials)
     }
 
     pub fn validate(&self, redirect_uri: &str) -> (Option<String>, Option<String>) {
