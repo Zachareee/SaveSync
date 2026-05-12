@@ -3,6 +3,7 @@ use std::ffi::OsString;
 use std::{env, path};
 
 use serde::{Deserialize, Serialize};
+use tauri::command;
 
 use crate::listeners::init_download_folders;
 use crate::savesync::watch::{drop_watchers, watched_folders};
@@ -13,7 +14,7 @@ use crate::savesync::{
 };
 use crate::{app_store, mutate_app_state};
 
-#[tauri::command]
+#[command]
 pub fn get_plugins() -> Vec<PluginInfo> {
     config_paths::get_pluginfiles()
         .into_iter()
@@ -44,7 +45,7 @@ pub struct Mappings {
     required: Vec<String>,
 }
 
-#[tauri::command]
+#[command]
 pub fn get_mapping() -> Mappings {
     Mappings {
         mapping: app_store().path_mapping(),
@@ -52,7 +53,7 @@ pub fn get_mapping() -> Mappings {
     }
 }
 
-#[tauri::command]
+#[command]
 pub fn set_mapping(map: PathMapping) {
     drop_watchers(
         watched_folders()
@@ -64,7 +65,7 @@ pub fn set_mapping(map: PathMapping) {
     init_download_folders().unwrap()
 }
 
-#[tauri::command]
+#[command]
 pub fn get_envpaths() -> HashMap<String, OsString> {
     env::vars()
         .filter_map(|(k, v)| {
@@ -76,7 +77,7 @@ pub fn get_envpaths() -> HashMap<String, OsString> {
         .collect()
 }
 
-#[tauri::command]
+#[command]
 pub fn get_watched_folders() -> Vec<(String, OsString)> {
     watched_folders()
 }

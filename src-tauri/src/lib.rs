@@ -18,7 +18,6 @@ use crate::savesync::plugin::Plugin;
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
-const REDIRECT_URL: &str = "savesync://tokens";
 
 pub struct AppState {
     pub tags: Vec<String>,
@@ -51,6 +50,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_oauth::init())
         .invoke_handler(tauri::generate_handler![
             get_plugins,
             get_mapping,

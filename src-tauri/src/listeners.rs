@@ -11,7 +11,6 @@ use crate::{
         watch::{dump_watchers, upload_file, watch_folder},
         zip_utils,
     },
-    REDIRECT_URL,
 };
 use serde::Deserialize;
 use serde_json::from_str;
@@ -23,6 +22,7 @@ use std::{
     time::SystemTime,
 };
 use tauri::{Event, Listener};
+use tauri_plugin_oauth::OauthConfig;
 use tauri_plugin_opener::open_url;
 
 pub fn emit_listeners(app: &tauri::App) {
@@ -58,22 +58,50 @@ pub fn init_func(path: &OsStr) -> bool {
         Ok(plugin) => {
             app_store().set_plugin(path);
 
-            match plugin.validate(REDIRECT_URL) {
+            let port = start_server().unwrap();
+            let bool = match plugin.validate(&format!("http://localhost:{port}")) {
                 (None, None) => {
+                    mutate_app_state(move |s| s.plugin = Some(plugin));
                     let _ = init_download_folders();
                     true
                 }
                 (Some(url), Some(err)) => {
                     let _ = open_url(url, None::<&str>);
                     mutate_app_state(|s| s.plugin = Some(plugin));
-                    emitter::plugin_error(&pathstr, &err);
+                    // emitter::plugin_error(&pathstr, &err);
                     false
                 }
                 // this shouldn't be possible
                 (_, _) => todo!(),
-            }
+            };
+            dbg!(bool)
         }
     }
+}
+
+pub fn start_server() -> Result<u16, String> {
+    tauri_plugin_oauth::start_with_config(
+        OauthConfig {
+            ports: Some(vec![3333]),
+            response: None,
+        },
+        move |url| {
+            mutate_app_state(|s| {
+                let mut plugin = s.plugin.take().unwrap();
+                if let Err(s) = plugin.process_save_credentials(&url) {
+                    emitter::plugin_error(plugin.filename().to_str().unwrap(), &s);
+                }
+                s.plugin = Some(plugin);
+                stop_server(3333);
+                let _ = init_download_folders();
+            })
+        },
+    )
+    .map_err(|err| err.to_string())
+}
+
+fn stop_server(port: u16) {
+    let _ = tauri_plugin_oauth::cancel(port);
 }
 
 pub fn init_download_folders() -> Result<(), ()> {
