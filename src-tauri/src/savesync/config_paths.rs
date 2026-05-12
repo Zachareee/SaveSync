@@ -1,6 +1,6 @@
 use std::{
     ffi::OsString,
-    fs::{self, DirEntry},
+    fs,
     path::{Path, PathBuf},
 };
 
@@ -8,10 +8,10 @@ use super::fs_utils::FolderItems;
 
 pub fn get_pluginfiles() -> Vec<OsString> {
     let path = plugin();
-    path.get_folders()
+    path.get_files()
         .expect(&format!("Unable to read {}", path.to_string_lossy()))
         .iter()
-        .map(DirEntry::file_name)
+        .map(fs::DirEntry::file_name)
         .collect()
 }
 
