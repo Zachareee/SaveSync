@@ -25,6 +25,8 @@ use tauri::{Event, Listener};
 use tauri_plugin_oauth::OauthConfig;
 use tauri_plugin_opener::open_url;
 
+const PORT: u16 = 3333;
+
 pub fn emit_listeners(app: &tauri::App) {
     let arr: Vec<(&str, fn(Event))> = vec![
         ("init", init_listener),
@@ -58,14 +60,14 @@ pub fn init_func(path: &OsStr) -> bool {
         Ok(plugin) => {
             app_store().set_plugin(path);
 
-            let port = start_server().unwrap();
-            let bool = match plugin.validate(&format!("http://localhost:{port}")) {
+            let bool = match plugin.validate(&format!("http://localhost:{PORT}")) {
                 (None, None) => {
                     mutate_app_state(move |s| s.plugin = Some(plugin));
                     let _ = init_download_folders();
                     true
                 }
                 (Some(url), Some(err)) => {
+                    start_server().unwrap();
                     let _ = open_url(url, None::<&str>);
                     mutate_app_state(|s| s.plugin = Some(plugin));
                     // emitter::plugin_error(&pathstr, &err);
@@ -82,7 +84,7 @@ pub fn init_func(path: &OsStr) -> bool {
 pub fn start_server() -> Result<u16, String> {
     tauri_plugin_oauth::start_with_config(
         OauthConfig {
-            ports: Some(vec![3333]),
+            ports: Some(vec![PORT]),
             response: None,
         },
         move |url| {
@@ -92,7 +94,7 @@ pub fn start_server() -> Result<u16, String> {
                     emitter::plugin_error(plugin.filename().to_str().unwrap(), &s);
                 }
                 s.plugin = Some(plugin);
-                stop_server(3333);
+                stop_server(PORT);
                 let _ = init_download_folders();
             })
         },
@@ -112,7 +114,7 @@ pub fn init_download_folders() -> Result<(), ()> {
         plugin
             .read_cloud()
             .map(|details| {
-                mutate_app_state(|s| s.tags = details.iter().map(|f| f.tag.clone()).collect());
+                s.tags = details.iter().map(|f| f.tag.clone()).collect();
                 details
                     .into_iter()
                     .for_each(|f| process_cloud_details(f, last_sync, plugin));

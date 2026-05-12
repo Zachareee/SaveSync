@@ -17,9 +17,11 @@ pub fn init_result(bool: bool) {
     app_emit("init_result", bool);
 }
 
+/*
 pub fn abort_result(err: &str) {
     app_emit("abort_result", &err);
 }
+*/
 
 pub fn saved_result() {
     app_emit("saved_result", ())
