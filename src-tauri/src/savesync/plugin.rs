@@ -61,7 +61,11 @@ impl Plugin {
     }
 
     pub unsafe fn new(servicename: &OsStr) -> PluginResult<Plugin> {
-        let library = unsafe { Library::new(servicename) }.unwrap();
+        let library: Library = unsafe { 
+            let library = libloading::os::windows::Library::new(config_paths::plugin().join(servicename)).unwrap();
+            library.pin().unwrap();
+            library.into()
+        };
 
         Ok(Plugin {
             library,
