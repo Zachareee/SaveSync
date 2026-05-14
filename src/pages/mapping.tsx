@@ -94,7 +94,7 @@ export default function Mapping() {
           <button onclick={[addPath, ""]}>Add mapping</button>
         </div>
         <div class="fixed right-0 bottom-0 m-4">
-          <button onclick={[saveAndClose, mapping]}>Save and quit</button>
+          <button onclick={[saveAndClose, mapping]}>Save and close</button>
         </div>
       </Portal>
     </div>

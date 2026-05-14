@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::ffi::OsString;
+use std::path::{Path, PathBuf};
 use std::{env, path};
 
 use serde::{Deserialize, Serialize};
@@ -82,6 +83,9 @@ pub fn get_watched_folders() -> Vec<(String, OsString)> {
     watched_folders()
 }
 
-pub fn env_resolve(key: &str) -> OsString {
-    std::env::var_os(key).unwrap()
+pub fn env_resolve(key: &str) -> Result<PathBuf, String> {
+    match std::env::var_os(key) {
+        Some(osstr) => Path::new(&osstr).canonicalize().map_err(|e| e.to_string()),
+        None => Err("Env key not found".to_string()),
+    }
 }

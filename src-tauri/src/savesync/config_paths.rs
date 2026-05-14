@@ -43,9 +43,9 @@ pub fn plugin() -> PathBuf {
 }
 
 /// PathBuf pointing to logs folder in SaveSync
-pub fn logs() -> PathBuf {
-    create_dir_if_not_exist(config().join("logs"))
-}
+// pub fn logs() -> PathBuf {
+//     create_dir_if_not_exist(config().join("logs"))
+// }
 
 pub fn temp(tag: &str) -> PathBuf {
     create_dir_if_not_exist(config().join("temp").join(tag))

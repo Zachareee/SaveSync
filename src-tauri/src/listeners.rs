@@ -66,7 +66,7 @@ pub fn init_func(path: &OsStr) -> bool {
                     let _ = init_download_folders();
                     true
                 }
-                (Some(url), Some(err)) => {
+                (Some(url), _) => {
                     start_server().unwrap();
                     let _ = open_url(url, None::<&str>);
                     mutate_app_state(|s| s.plugin = Some(plugin));
@@ -76,7 +76,7 @@ pub fn init_func(path: &OsStr) -> bool {
                 // this shouldn't be possible
                 (_, _) => todo!(),
             };
-            dbg!(bool)
+            bool
         }
     }
 }
@@ -267,7 +267,8 @@ fn find_folders_in_path<T>(env: &str, path: T) -> Vec<OsString>
 where
     T: AsRef<Path>,
 {
-    Path::new(&env_resolve(env))
+    env_resolve(env)
+        .expect("Environment variable not found")
         .join(path)
         .get_folders()
         .unwrap()
