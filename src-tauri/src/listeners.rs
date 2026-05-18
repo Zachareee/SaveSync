@@ -6,7 +6,7 @@ use crate::{
         config_paths,
         conflict_files::{resolve_conflict, store_buffer},
         emitter,
-        fs_utils::FolderItems,
+        fs_utils::{recurse_directories, FolderItems},
         plugin::{FileDetails, Plugin},
         watch::{dump_watchers, upload_file, watch_folder},
         zip_utils,
@@ -15,7 +15,10 @@ use crate::{
 use serde::Deserialize;
 use serde_json::from_str;
 use std::{
-    cmp::Ordering::{Equal, Greater, Less},
+    cmp::{
+        max,
+        Ordering::{Greater, Less},
+    },
     ffi::{OsStr, OsString},
     fs::read_dir,
     path::Path,
@@ -131,7 +134,13 @@ fn process_cloud_details(
     if let Some(path) = app_store().get_mapping(&tag) {
         let path = path.join(&folder_name);
 
-        let local_date = get_last_modified(&path).unwrap_or(SystemTime::UNIX_EPOCH);
+        let local_date = recurse_directories(
+            &path,
+            SystemTime::UNIX_EPOCH,
+            &mut |_, _, e| e.metadata()?.modified(),
+            &max,
+        )
+        .unwrap_or(SystemTime::UNIX_EPOCH);
 
         // 6 permutations
         // local < syncd < cloud (Download)
@@ -143,7 +152,6 @@ fn process_cloud_details(
         // local < cloud < syncd (Shouldn't be possible)
 
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
-            (Equal, _) | (_, Equal) | (Greater, Greater) => (),
             (k, Less) => {
                 println!("Less branch");
                 match data
@@ -175,25 +183,10 @@ fn process_cloud_details(
                 }
             }
             (Less, Greater) => upload_file(&tag, path),
+            (i, j) => println!("{i:?}, {j:?}"),
         }
         watch_folder(&tag, &folder_name);
     }
-}
-
-fn get_last_modified<T>(path: T) -> std::io::Result<SystemTime>
-where
-    T: AsRef<Path>,
-{
-    read_dir(&path)?.try_fold(SystemTime::UNIX_EPOCH, |accum, entry| {
-        let entry = entry.unwrap();
-        let timestamp = if entry.file_type().unwrap().is_dir() {
-            get_last_modified(&path.as_ref().join(entry.file_name()))?
-        } else {
-            entry.metadata()?.modified()?
-        };
-
-        Ok(if accum < timestamp { timestamp } else { accum })
-    })
 }
 
 /// Fails silently, plugin does not need to implement abort()
