@@ -36,7 +36,6 @@ pub fn emit_listeners(app: &tauri::App) {
         ("saved_plugin", saved_plugin_listener),
         ("filetree", filetree_listener),
         ("conflict_resolve", conflict_resolve_listener),
-        ("oauth_redirect", oauth_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
         app.listen(event, handler);
@@ -273,22 +272,4 @@ where
 
 fn conflict_resolve_listener(e: Event) {
     resolve_conflict(from_str(e.payload()).unwrap());
-}
-
-fn oauth_listener(e: Event) {
-    let result: Option<(String, String)> =
-        mutate_app_state(
-            |s| match s.plugin.as_mut()?.process_save_credentials(e.payload()) {
-                Ok(_) => None,
-                Err(err) => Some((s.plugin.as_ref()?.filename().into_string().unwrap(), err)),
-            },
-        );
-    match result {
-        Some((filename, msg)) => {
-            emitter::plugin_error(&filename, &msg);
-        }
-        None => {
-            let _ = init_download_folders();
-        }
-    }
 }
