@@ -23,10 +23,6 @@ pub fn abort_result(err: &str) {
 }
 */
 
-pub fn saved_result() {
-    app_emit("saved_result", ())
-}
-
 pub fn sync_result(tag: &str, foldername: &OsStr, synced: bool) {
     app_emit("sync_result", (tag, foldername, synced));
 }

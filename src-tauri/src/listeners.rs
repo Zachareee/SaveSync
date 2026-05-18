@@ -45,38 +45,34 @@ pub fn emit_listeners(app: &tauri::App) {
 
 // wrapper function
 fn init_listener(event: Event) {
-    emitter::init_result(init_func(&from_str::<OsString>(event.payload()).unwrap()));
+    init_func(&from_str::<OsString>(event.payload()).unwrap());
 }
 
 // async to prevent UI thread from freezing
-pub fn init_func(path: &OsStr) -> bool {
+pub fn init_func(path: &OsStr) {
     let pathstr = path.to_string_lossy();
 
     match unsafe { Plugin::new(path) } {
         Err(e) => {
             emitter::plugin_error(&pathstr, &e);
-            false
         }
         Ok(plugin) => {
             app_store().set_plugin(path);
 
-            let bool = match plugin.validate(&format!("http://localhost:{PORT}")) {
+            match plugin.validate(&format!("http://localhost:{PORT}")) {
                 (None, None) => {
                     mutate_app_state(move |s| s.plugin = Some(plugin));
                     let _ = init_download_folders();
-                    true
                 }
                 (Some(url), _) => {
                     start_server().unwrap();
                     let _ = open_url(url, None::<&str>);
                     mutate_app_state(|s| s.plugin = Some(plugin));
                     // emitter::plugin_error(&pathstr, &err);
-                    false
                 }
                 // this shouldn't be possible
                 (_, _) => todo!(),
             };
-            bool
         }
     }
 }
@@ -108,6 +104,8 @@ fn stop_server(port: u16) {
 
 pub fn init_download_folders() -> Result<(), ()> {
     let last_sync = app_store().last_sync();
+
+    emitter::init_result(true);
 
     mutate_app_state(|s| {
         let plugin = s.plugin.as_ref().unwrap();
@@ -246,11 +244,7 @@ fn saved_plugin_listener(_: Event) {
     app_store()
         .plugin()
         .filter(|p| !p.is_empty() && config_paths::plugin().join(p).exists())
-        .map(|p| {
-            if init_func(&p) {
-                emitter::saved_result();
-            }
-        });
+        .map(|p| init_func(&p));
 }
 
 fn filetree_listener(_: Event) {
