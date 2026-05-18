@@ -55,28 +55,26 @@ pub fn init_func(path: &OsStr) {
         Err(e) => {
             emitter::plugin_error(&pathstr, &e);
         }
-        Ok(plugin) => {
+        Ok(mut plugin) => {
             app_store().set_plugin(path);
 
-            match plugin.authenticate(&format!("http://localhost:{PORT}")) {
-                (None, None) => {
-                    mutate_app_state(move |s| s.plugin = Some(plugin));
-                    let _ = init_download_folders();
-                }
-                (Some(url), _) => {
-                    start_server().unwrap();
-                    let _ = open_url(url, None::<&str>);
-                    mutate_app_state(|s| s.plugin = Some(plugin));
-                    // emitter::plugin_error(&pathstr, &err);
-                }
-                // this shouldn't be possible
-                (_, _) => todo!(),
+            if plugin.authenticate() {
+                mutate_app_state(move |s| s.plugin = Some(plugin));
+                init_download_folders();
+            } else {
+                start_server();
+                let _ = open_url(
+                    plugin.auth_url(&format!("http://localhost:{PORT}")),
+                    None::<&str>,
+                );
+                mutate_app_state(|s| s.plugin = Some(plugin));
+                // emitter::plugin_error(&pathstr, &err);
             };
         }
     }
 }
 
-pub fn start_server() -> Result<u16, String> {
+pub fn start_server() {
     tauri_plugin_oauth::start_with_config(
         OauthConfig {
             ports: Some(vec![PORT]),
@@ -89,35 +87,35 @@ pub fn start_server() -> Result<u16, String> {
                     emitter::plugin_error(plugin.filename().to_str().unwrap(), &s);
                 }
                 s.plugin = Some(plugin);
-                stop_server(PORT);
-                let _ = init_download_folders();
-            })
+            });
+            stop_server(PORT);
+            init_download_folders();
         },
     )
-    .map_err(|err| err.to_string())
+    .unwrap();
 }
 
 fn stop_server(port: u16) {
-    let _ = tauri_plugin_oauth::cancel(port);
+    tauri_plugin_oauth::cancel(port).unwrap();
 }
 
-pub fn init_download_folders() -> Result<(), ()> {
+pub fn init_download_folders() {
     let last_sync = app_store().last_sync();
-
-    emitter::init_result(true);
 
     mutate_app_state(|s| {
         let plugin = s.plugin.as_ref().unwrap();
-        plugin
-            .read_cloud()
-            .map(|details| {
+        match plugin.read_cloud() {
+            Ok(details) => {
                 s.tags = details.iter().map(|f| f.tag.clone()).collect();
                 details
                     .into_iter()
                     .for_each(|f| process_cloud_details(f, last_sync, plugin));
-            })
-            .map_err(|e| emitter::plugin_error("read_cloud", &e))
-    })
+            }
+            Err(e) => emitter::plugin_error("read_cloud", &e),
+        }
+    });
+
+    emitter::init_result(true);
 }
 
 fn process_cloud_details(

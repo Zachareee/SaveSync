@@ -123,22 +123,40 @@ impl Plugin {
         fs::write(config_paths::creds().join(&filename), credentials)
     }
 
-    pub fn authenticate(&self, redirect_uri: &str) -> (Option<String>, Option<String>) {
+    pub fn authenticate(&mut self) -> bool {
         let credentials = CString::new(self.credentials()).unwrap_or_default();
-        let redirect_uri = CString::new(redirect_uri).unwrap_or_default();
 
-        let (url, msg) = unsafe {
+        let (new_token, msg) = unsafe {
             self.library
-                .get::<unsafe extern "C" fn(DLLString, DLLString) -> (DLLString, DLLString)>(
-                    b"authenticate",
-                )
-                .expect("authenticate function not found")(
-                credentials.as_ptr(),
-                redirect_uri.as_ptr(),
-            )
+                .get::<unsafe extern "C" fn(DLLString) -> (DLLString, DLLString)>(b"authenticate")
+                .expect("authenticate function not found")(credentials.as_ptr())
         };
 
-        unsafe { (self.create_string(url), self.create_string(msg)) }
+        unsafe {
+            match (self.create_string(new_token), self.create_string(msg)) {
+                (None, Some(_err)) => false,
+                (Some(creds), None) => {
+                    let _ = self.write_creds(&creds);
+                    true
+                },
+                (Some(_), Some(_)) => todo!("authenticate function should not return two values"),
+                _ => true,
+            }
+        }
+    }
+
+    pub fn auth_url(&self, redirect_uri: &str) -> String {
+        let redirect_uri = CString::new(redirect_uri).unwrap_or_default();
+
+        unsafe {
+            self.create_string(self
+                .library
+                .get::<unsafe extern "C" fn(DLLString) -> DLLString>(b"auth_url")
+                .expect("auth_url function not found")(
+                redirect_uri.as_ptr()
+            ))
+            .expect("Null pointer received from auth_url function")
+        }
     }
 
     pub fn process_save_credentials(&mut self, url: &str) -> PluginResult<()> {

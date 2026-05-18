@@ -63,7 +63,7 @@ pub fn set_mapping(map: PathMapping) {
             .collect(),
     );
     app_store().set_mapping(map);
-    init_download_folders().unwrap()
+    init_download_folders();
 }
 
 #[command]
