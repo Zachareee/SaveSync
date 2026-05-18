@@ -4,7 +4,7 @@ use std::{
     ffi::OsString,
     path::Path,
     sync::{LazyLock, Mutex},
-    time::Duration,
+    time::{Duration, SystemTime},
 };
 
 use crate::mutate_app_state;
@@ -19,7 +19,10 @@ pub fn upload_file<P>(tag: &str, path: P)
 where
     P: AsRef<Path>,
 {
-    let (zipbuffer, date) = zip_dir(&resolve_path(tag, &path));
+    let (zipbuffer, mut date) = zip_dir(&resolve_path(tag, &path));
+    if date == SystemTime::UNIX_EPOCH {
+        date = SystemTime::now();
+    }
     mutate_app_state(|s| {
         s.plugin
             .as_ref()
