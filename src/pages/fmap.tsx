@@ -42,7 +42,8 @@ export default function Fmap() {
   emit("filetree")
 
   invoke("get_mapping").then(({ mapping, required }) => {
-    if (!lo.isEqual(required, Object.entries(mapping).map(([key]) => key)))
+    let current = Object.entries(mapping).map(([key]) => key)
+    if (required.some(tag => !current.includes(tag)))
       toast.error("Some folders were not synced, please check File -> Mappings")
   })
 
