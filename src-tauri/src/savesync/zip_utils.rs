@@ -6,15 +6,12 @@ use std::{
     time::SystemTime,
 };
 
-use zip::{write::SimpleFileOptions, ZipArchive, ZipWriter};
+use zip::{result::ZipResult, write::SimpleFileOptions, ZipArchive, ZipWriter};
 
 use crate::savesync::fs_utils::recurse_directories;
 
-pub fn extract(directory: impl AsRef<Path>, buffer: Vec<u8>) {
-    ZipArchive::new(Cursor::new(buffer))
-        .unwrap()
-        .extract(directory)
-        .unwrap();
+pub fn extract(directory: impl AsRef<Path>, buffer: Vec<u8>) -> ZipResult<()> {
+    ZipArchive::new(Cursor::new(buffer))?.extract(directory)
 }
 
 pub fn zip_dir<P>(path: P) -> (Vec<u8>, SystemTime)
@@ -46,4 +43,3 @@ where
         date,
     )
 }
-

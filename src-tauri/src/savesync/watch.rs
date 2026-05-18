@@ -4,7 +4,7 @@ use std::{
     ffi::OsString,
     path::Path,
     sync::{LazyLock, Mutex},
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 use crate::mutate_app_state;
@@ -19,10 +19,7 @@ pub fn upload_file<P>(tag: &str, path: P)
 where
     P: AsRef<Path>,
 {
-    let (zipbuffer, mut date) = zip_dir(&resolve_path(tag, &path));
-    if date == SystemTime::UNIX_EPOCH {
-        date = SystemTime::now();
-    }
+    let (zipbuffer, date) = zip_dir(&resolve_path(tag, &path));
     mutate_app_state(|s| {
         s.plugin
             .as_ref()
@@ -38,63 +35,73 @@ where
 }
 
 pub fn watch_folder(tag: &str, path: &OsString) -> bool {
-    let mut map = WATCHERS.lock().unwrap();
-    let key = (tag.to_owned(), path.to_owned());
+    mutate_watchers(|map| {
+        let key = (tag.to_owned(), path.to_owned());
 
-    // !exist, !initial => add
-    // !exist, initial => add
-    // exist, !initial => remove
-    // exist, initial => nothing
+        // !exist, !initial => add
+        // !exist, initial => add
+        // exist, !initial => remove
+        // exist, initial => nothing
 
-    match map.contains_key(&key) {
-        true => {
-            map.remove(&key);
-            mutate_app_state(|s| {
-                s.plugin
-                    .as_ref()
-                    .unwrap()
-                    .remove(tag.as_bytes(), path.as_encoded_bytes())
-                    .unwrap()
-            });
-            false
+        match map.contains_key(&key) {
+            true => {
+                map.remove(&key);
+                mutate_app_state(|s| {
+                    s.plugin
+                        .as_ref()
+                        .unwrap()
+                        .remove(tag.as_bytes(), path.as_encoded_bytes())
+                        .unwrap()
+                });
+                false
+            }
+            false => {
+                let (tag, path) = key.clone();
+
+                let mut debouncer =
+                    new_debouncer(Duration::from_secs(1), None, move |result| match result {
+                        Ok(_) => upload_file(&tag, &path),
+                        Err(err) => println!("{err:?}"),
+                    })
+                    .unwrap();
+
+                let (tag, path) = key.clone();
+                debouncer
+                    .watch(&resolve_path(&tag, &path), RecursiveMode::Recursive)
+                    .unwrap();
+
+                map.insert(key, debouncer);
+                true
+            }
         }
-        false => {
-            let (tag, path) = key.clone();
-
-            let mut debouncer =
-                new_debouncer(Duration::from_secs(1), None, move |result| match result {
-                    Ok(_) => upload_file(&tag, &path),
-                    Err(err) => println!("{err:?}"),
-                })
-                .unwrap();
-
-            let (tag, path) = key.clone();
-            debouncer
-                .watch(&resolve_path(&tag, path), RecursiveMode::Recursive)
-                .unwrap();
-
-            map.insert(key, debouncer);
-            true
-        }
-    }
+    })
 }
 
 pub fn watched_folders() -> Vec<(String, OsString)> {
-    WATCHERS
-        .lock()
-        .unwrap()
-        .iter()
-        .map(|((tag, path), _)| (tag.into(), path.into()))
-        .collect()
+    mutate_watchers(|map| {
+        map.iter()
+            .map(|((tag, path), _)| (tag.into(), path.into()))
+            .collect()
+    })
 }
 
 pub fn dump_watchers() {
-    WATCHERS.lock().unwrap().clear();
+    mutate_watchers(|map| map.clear());
 }
 
 pub fn drop_watchers(watchers: Vec<(String, OsString)>) {
-    let mut map = WATCHERS.lock().unwrap();
-    watchers.iter().for_each(|k| {
-        map.remove(k);
+    mutate_watchers(|map| {
+        watchers.iter().for_each(|k| {
+            map.remove(k);
+        })
     });
+}
+
+pub fn mutate_watchers<F, T>(func: F) -> T
+where
+    F: FnOnce(
+        &mut HashMap<(String, OsString), Debouncer<RecommendedWatcher, RecommendedCache>>,
+    ) -> T,
+{
+    func(&mut WATCHERS.lock().unwrap())
 }

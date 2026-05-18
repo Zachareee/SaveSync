@@ -2,7 +2,6 @@ use std::{
     fs::{read_dir, DirEntry, FileType},
     io,
     path::{Path, PathBuf},
-    time::SystemTime,
 };
 
 use crate::app_store;
