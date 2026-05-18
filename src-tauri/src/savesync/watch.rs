@@ -21,12 +21,10 @@ where
 {
     let (zipbuffer, date) = zip_dir(&resolve_path(tag, &path));
     mutate_app_state(|s| {
-        s.plugin
-            .as_ref()
-            .unwrap()
+        s.plugin_ref()
             .upload(
                 tag.as_bytes(),
-                path.as_ref().as_os_str().as_encoded_bytes(),
+                path.as_ref().file_name().unwrap().as_encoded_bytes(),
                 date,
                 zipbuffer.as_slice(),
             )
@@ -47,9 +45,7 @@ pub fn watch_folder(tag: &str, path: &OsString) -> bool {
             true => {
                 map.remove(&key);
                 mutate_app_state(|s| {
-                    s.plugin
-                        .as_ref()
-                        .unwrap()
+                    s.plugin_ref()
                         .remove(tag.as_bytes(), path.as_encoded_bytes())
                         .unwrap()
                 });

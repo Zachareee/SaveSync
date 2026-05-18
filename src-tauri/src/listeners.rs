@@ -17,10 +17,9 @@ use serde_json::from_str;
 use std::{
     cmp::{
         max,
-        Ordering::{Greater, Less},
+        Ordering::{Equal, Greater, Less},
     },
     ffi::{OsStr, OsString},
-    fs::read_dir,
     path::Path,
     time::SystemTime,
 };
@@ -105,18 +104,23 @@ fn stop_server(port: u16) {
 pub fn init_download_folders() {
     let last_sync = app_store().last_sync();
 
-    mutate_app_state(|s| {
-        let plugin = s.plugin.as_ref().unwrap();
+    if let Some(details) = mutate_app_state(|s| {
+        let plugin = s.plugin_ref();
         match plugin.read_cloud() {
             Ok(details) => {
                 s.tags = details.iter().map(|f| f.tag.clone()).collect();
-                details
-                    .into_iter()
-                    .for_each(|f| process_cloud_details(f, last_sync, plugin));
+                Some(details)
             }
-            Err(e) => emitter::plugin_error("read_cloud", &e),
+            Err(e) => {
+                emitter::plugin_error("read_cloud", &e);
+                None
+            }
         }
-    });
+    }) {
+        details
+            .into_iter()
+            .for_each(|f| process_cloud_details(f, last_sync));
+    }
 
     emitter::init_result(true);
 }
@@ -129,7 +133,6 @@ fn process_cloud_details(
         data,
     }: FileDetails,
     last_sync: SystemTime,
-    plugin: &Plugin,
 ) {
     if let Some(path) = app_store().get_mapping(&tag) {
         let path = path.join(&folder_name);
@@ -154,15 +157,13 @@ fn process_cloud_details(
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
             (k, Less) => {
                 println!("Less branch");
-                match data
-                    .ok_or(|| ())
-                    .or_else(|_| plugin.download(tag.as_bytes(), folder_name.as_encoded_bytes()))
-                {
+                match data.ok_or(|| ()).or_else(|_| {
+                    mutate_app_state(|s| {
+                        s.plugin_ref()
+                            .download(tag.as_bytes(), folder_name.as_encoded_bytes())
+                    })
+                }) {
                     Ok(buf) => match k {
-                        Greater => {
-                            println!("Extracting");
-                            zip_utils::extract(&path, buf)
-                        }
                         Less => {
                             println!("Both less");
                             store_buffer(&tag, &folder_name, buf);
@@ -173,7 +174,10 @@ fn process_cloud_details(
                             );
                             return;
                         }
-                        _ => (),
+                        _ => {
+                            println!("Extracting");
+                            zip_utils::extract(&path, buf).unwrap();
+                        }
                     },
                     Err(e) => {
                         println!("{e}");
@@ -182,7 +186,10 @@ fn process_cloud_details(
                     }
                 }
             }
-            (Less, Greater) => upload_file(&tag, path),
+            (Less, Equal | Greater) => {
+                println!("Less with equal or greater");
+                upload_file(&tag, path)
+            }
             (i, j) => println!("{i:?}, {j:?}"),
         }
         watch_folder(&tag, &folder_name);

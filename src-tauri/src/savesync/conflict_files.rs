@@ -21,7 +21,6 @@ fn retrieve_buffer(tag: &str, foldername: &OsStr) -> Vec<u8> {
     mutate_app_state(|s| {
         s.buffers
             .remove(&(tag.into(), foldername.into()))
-            .inspect(|x| println!("Got {x:?}"))
             .unwrap()
     })
 }

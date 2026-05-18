@@ -25,6 +25,12 @@ pub struct AppState {
     pub plugin: Option<Plugin>,
 }
 
+impl AppState {
+    pub fn plugin_ref(&self) -> &Plugin {
+        self.plugin.as_ref().unwrap()
+    }
+}
+
 impl Default for AppState {
     fn default() -> Self {
         AppState {
