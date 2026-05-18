@@ -61,8 +61,10 @@ impl Plugin {
     }
 
     pub unsafe fn new(servicename: &OsStr) -> PluginResult<Plugin> {
-        let library: Library = unsafe { 
-            let library = libloading::os::windows::Library::new(config_paths::plugin().join(servicename)).unwrap();
+        let library: Library = unsafe {
+            let library =
+                libloading::os::windows::Library::new(config_paths::plugin().join(servicename))
+                    .unwrap();
             library.pin().unwrap();
             library.into()
         };
@@ -121,17 +123,18 @@ impl Plugin {
         fs::write(config_paths::creds().join(&filename), credentials)
     }
 
-    pub fn validate(&self, redirect_uri: &str) -> (Option<String>, Option<String>) {
+    pub fn authenticate(&self, redirect_uri: &str) -> (Option<String>, Option<String>) {
         let credentials = CString::new(self.credentials()).unwrap_or_default();
         let redirect_uri = CString::new(redirect_uri).unwrap_or_default();
 
         let (url, msg) = unsafe {
             self.library
                 .get::<unsafe extern "C" fn(DLLString, DLLString) -> (DLLString, DLLString)>(
-                    b"validate",
+                    b"authenticate",
                 )
-                .expect("validate function not found")(
-                credentials.as_ptr(), redirect_uri.as_ptr()
+                .expect("authenticate function not found")(
+                credentials.as_ptr(),
+                redirect_uri.as_ptr(),
             )
         };
 

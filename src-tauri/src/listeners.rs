@@ -59,7 +59,7 @@ pub fn init_func(path: &OsStr) {
         Ok(plugin) => {
             app_store().set_plugin(path);
 
-            match plugin.validate(&format!("http://localhost:{PORT}")) {
+            match plugin.authenticate(&format!("http://localhost:{PORT}")) {
                 (None, None) => {
                     mutate_app_state(move |s| s.plugin = Some(plugin));
                     let _ = init_download_folders();
