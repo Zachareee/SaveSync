@@ -19,6 +19,7 @@ use std::{
         Ordering::{Equal, Greater, Less},
     },
     ffi::{OsStr, OsString},
+    thread,
     time::SystemTime,
 };
 use tauri::{Event, Listener};
@@ -225,11 +226,13 @@ struct SyncStruct {
 fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    let bool = toggle_watch(&tag, &foldername);
-    if bool {
-        upload_file(&tag, &foldername)
-    };
-    emitter::sync_result(&tag, &foldername, bool);
+    thread::spawn(move || {
+        let bool = toggle_watch(&tag, &foldername);
+        if bool {
+            upload_file(&tag, &foldername)
+        };
+        emitter::sync_result(&tag, &foldername, bool);
+    });
 }
 
 fn unload_listener(_: Event) {
