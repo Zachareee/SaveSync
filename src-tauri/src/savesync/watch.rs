@@ -20,6 +20,8 @@ where
     P: AsRef<Path>,
 {
     let (zipbuffer, date) = zip_dir(&app_store().get_mapping(tag).unwrap().join(&path));
+    // TODO: remove debug statement
+    println!("zipped");
     mutate_app_state(|s| {
         s.plugin_ref()
             .upload(

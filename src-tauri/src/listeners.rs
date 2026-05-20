@@ -1,6 +1,5 @@
 use crate::{
-    app_store,
-    mutate_app_state,
+    app_store, mutate_app_state,
     savesync::{
         config_paths,
         conflict_files::{resolve_conflict, store_buffer},
@@ -225,8 +224,11 @@ struct SyncStruct {
 fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    upload_file(&tag, &foldername);
-    emitter::sync_result(&tag, &foldername, toggle_watch(&tag, &foldername));
+    let bool = toggle_watch(&tag, &foldername);
+    if bool {
+        upload_file(&tag, &foldername)
+    };
+    emitter::sync_result(&tag, &foldername, bool);
 }
 
 fn unload_listener(_: Event) {
