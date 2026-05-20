@@ -1,27 +1,27 @@
 import { emit, invoke, listen, osStringToString, stringToOsString, unlisten } from "@/logic/backend"
 import { useNavigate } from "@solidjs/router"
 import { createSignal, For, Index, Show } from "solid-js"
-import { menuStatus } from "@/logic/menu"
 import toast from "solid-toast"
 import lo from "lodash"
 import { FileTree, } from "@/types/data"
 import { OsString } from "@/types/rust"
 import { Portal } from "solid-js/web"
 import DivButton from "@/components/DivButton"
-import { createStore, reconcile } from "solid-js/store"
+import { createStore, reconcile, SetStoreFunction } from "solid-js/store"
 
-const sync_folder = (data: { tag: string, foldername: OsString }) => {
+const sync_folder = (data: { tag: string, foldername: OsString, setFolders: SetStoreFunction<FileTree> }) => {
+  const { setFolders, tag, foldername } = data
+  setFolders(tag, osStringToString(foldername), "loading", true)
   emit("sync", data)
 }
 
 export default function Fmap() {
-  menuStatus(true)
   const [currentFolder, setCurrentFolder] = createSignal("")
   const [folders, setFolders] = createStore<FileTree>()
 
   unlisten([
     listen("sync_result", ([tag, folder, bool]) => {
-      setFolders(tag, osStringToString(folder), bool)
+      setFolders(tag, osStringToString(folder), { loading: false, synced: bool })
     })
   ])()
 
@@ -31,9 +31,12 @@ export default function Fmap() {
       setFolders(reconcile(Object.fromEntries(
         Object.entries(payload).map(
           ([k, v]) => [k, Object.fromEntries(v.map(e =>
-            [osStringToString(e), watched.some(
-              tagpath => lo.isEqual(tagpath, [k, e])
-            )]
+            [osStringToString(e), {
+              synced: watched.some(
+                tagpath => lo.isEqual(tagpath, [k, e])
+              ),
+              loading: false
+            }]
           ))]
         )
       )))
@@ -50,7 +53,7 @@ export default function Fmap() {
   return <main class="w-full">
     <Show when={currentFolder()}
       fallback={<TagList folders={folders} setCurrentFolder={setCurrentFolder} />}>
-      <FolderList folders={folders} currentFolder={currentFolder()} setCurrentFolder={setCurrentFolder} />
+      <FolderList folders={folders} setFolders={setFolders} currentFolder={currentFolder()} setCurrentFolder={setCurrentFolder} />
     </Show>
   </main>
 }
@@ -73,14 +76,15 @@ function TagList(props: { folders: FileTree, setCurrentFolder: CurrentFolderSett
   </div>
 }
 
-function FolderList(props: { folders: FileTree, currentFolder: string, setCurrentFolder: CurrentFolderSetter }) {
+function FolderList(props: { folders: FileTree, setFolders: SetStoreFunction<FileTree>, currentFolder: string, setCurrentFolder: CurrentFolderSetter, }) {
   return <div class="flex justify-center">
     <div class="w-min">
       <Index each={Object.entries(props.folders[props.currentFolder])}>
         {
-          foldername => <DivButton onclick={[sync_folder, { tag: props.currentFolder, foldername: stringToOsString(foldername()[0]) }]}>
-            <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1]} onclick={(e) => e.preventDefault()} />
+          foldername => <DivButton onclick={[sync_folder, { tag: props.currentFolder, foldername: stringToOsString(foldername()[0]), setFolders: props.setFolders }]}>
+            <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1].synced} onclick={(e) => e.preventDefault()} />
             {foldername()[0]}
+            <Show when={foldername()[1].loading}> Loading </Show>
           </DivButton>
         }
       </Index>
