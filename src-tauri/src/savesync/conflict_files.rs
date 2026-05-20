@@ -2,7 +2,7 @@ use std::ffi::{OsStr, OsString};
 
 use tauri_plugin_opener::OpenerExt;
 
-use crate::{app_handle, app_store, mutate_app_state};
+use crate::{app_handle, app_store, write_app_state};
 
 use super::{
     config_paths::temp,
@@ -11,11 +11,11 @@ use super::{
 };
 
 pub fn store_buffer(tag: &str, foldername: &OsStr, buffer: Vec<u8>) {
-    mutate_app_state(|s| s.buffers.insert((tag.into(), foldername.into()), buffer));
+    write_app_state(|s| s.buffers.insert((tag.into(), foldername.into()), buffer));
 }
 
 fn retrieve_buffer(tag: &str, foldername: &OsStr) -> Vec<u8> {
-    mutate_app_state(|s| s.buffers.remove(&(tag.into(), foldername.into())).unwrap())
+    write_app_state(|s| s.buffers.remove(&(tag.into(), foldername.into())).unwrap())
 }
 
 pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String)) {

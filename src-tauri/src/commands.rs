@@ -13,7 +13,7 @@ use crate::savesync::{
     plugin::{Plugin, PluginInfo},
     store::PathMapping,
 };
-use crate::{app_store, mutate_app_state};
+use crate::{app_store, read_app_state};
 
 #[command]
 pub fn get_plugins() -> Vec<PluginInfo> {
@@ -50,7 +50,7 @@ pub struct Mappings {
 pub fn get_mapping() -> Mappings {
     Mappings {
         mapping: app_store().path_mapping(),
-        required: mutate_app_state(|s| s.tags.clone()),
+        required: read_app_state(|s| s.tags.clone()),
     }
 }
 

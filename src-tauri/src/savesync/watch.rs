@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{app_store, mutate_app_state};
+use crate::{app_store, read_app_state};
 
 use super::zip_utils::zip_dir;
 
@@ -20,9 +20,7 @@ where
     P: AsRef<Path>,
 {
     let (zipbuffer, date) = zip_dir(&app_store().get_mapping(tag).unwrap().join(&path));
-    // TODO: remove debug statement
-    println!("zipped");
-    mutate_app_state(|s| {
+    read_app_state(|s| {
         s.plugin_ref()
             .upload(
                 tag.as_bytes(),
@@ -71,7 +69,7 @@ pub fn toggle_watch(tag: &str, path: &OsString) -> bool {
         match map.contains_key(&key) {
             true => {
                 map.remove(&key);
-                mutate_app_state(|s| {
+                read_app_state(|s| {
                     s.plugin_ref()
                         .remove(tag.as_bytes(), path.as_encoded_bytes())
                         .unwrap()

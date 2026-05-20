@@ -1,5 +1,5 @@
 use crate::{
-    app_store, mutate_app_state,
+    app_store, read_app_state,
     savesync::{
         config_paths,
         conflict_files::{resolve_conflict, store_buffer},
@@ -9,6 +9,7 @@ use crate::{
         watch::{dump_watchers, toggle_watch, upload_file, watch_folder},
         zip_utils,
     },
+    write_app_state,
 };
 use serde::Deserialize;
 use serde_json::from_str;
@@ -57,7 +58,7 @@ pub fn init_func(path: &OsStr) {
             app_store().set_plugin(path);
 
             if plugin.authenticate() {
-                mutate_app_state(move |s| s.plugin = Some(plugin));
+                write_app_state(move |s| s.plugin = Some(plugin));
                 init_download_folders();
             } else {
                 start_server();
@@ -65,7 +66,7 @@ pub fn init_func(path: &OsStr) {
                     plugin.auth_url(&format!("http://localhost:{PORT}")),
                     None::<&str>,
                 );
-                mutate_app_state(|s| s.plugin = Some(plugin));
+                write_app_state(|s| s.plugin = Some(plugin));
                 // emitter::plugin_error(&pathstr, &err);
             };
         }
@@ -79,7 +80,7 @@ pub fn start_server() {
             response: None,
         },
         move |url| {
-            mutate_app_state(|s| {
+            write_app_state(|s| {
                 let mut plugin = s.plugin.take().unwrap();
                 if let Err(s) = plugin.process_save_credentials(&url) {
                     emitter::plugin_error(plugin.filename().to_str().unwrap(), &s);
@@ -100,7 +101,7 @@ fn stop_server(port: u16) {
 pub fn init_download_folders() {
     let last_sync = app_store().last_sync();
 
-    if let Some(details) = mutate_app_state(|s| {
+    if let Some(details) = write_app_state(|s| {
         let plugin = s.plugin_ref();
         match plugin.read_cloud() {
             Ok(details) => {
@@ -154,7 +155,7 @@ fn process_cloud_details(
             (k, Less) => {
                 println!("Less branch");
                 match data.ok_or(|| ()).or_else(|_| {
-                    mutate_app_state(|s| {
+                    read_app_state(|s| {
                         s.plugin_ref()
                             .download(tag.as_bytes(), folder_name.as_encoded_bytes())
                     })

@@ -9,7 +9,8 @@ use savesync::store::AppStore;
 use std::{
     collections::HashMap,
     ffi::OsString,
-    sync::{Arc, Mutex, OnceLock},
+    ops::Deref,
+    sync::{Arc, OnceLock, RwLock},
 };
 use tauri::{AppHandle, Manager, RunEvent};
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -69,7 +70,7 @@ pub fn run() {
 
             let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
 
-            app.manage(Mutex::new(AppState::default()));
+            app.manage(RwLock::new(AppState::default()));
 
             #[cfg(desktop)]
             app.deep_link().on_open_url(|e| {
@@ -97,7 +98,7 @@ pub fn app_store() -> Arc<AppStore> {
     APP_STORE.get().unwrap().clone()
 }
 
-pub fn mutate_app_state<F, T>(func: F) -> T
+pub fn write_app_state<F, T>(func: F) -> T
 where
     F: FnOnce(&mut AppState) -> T,
 {
@@ -105,8 +106,23 @@ where
         &mut APP_INSTANCE
             .get()
             .unwrap()
-            .state::<Mutex<AppState>>()
-            .lock()
+            .state::<RwLock<AppState>>()
+            .write()
             .unwrap(),
+    )
+}
+
+pub fn read_app_state<F, T>(func: F) -> T
+where
+    F: FnOnce(&AppState) -> T,
+{
+    func(
+        APP_INSTANCE
+            .get()
+            .unwrap()
+            .state::<RwLock<AppState>>()
+            .read()
+            .unwrap()
+            .deref(),
     )
 }
