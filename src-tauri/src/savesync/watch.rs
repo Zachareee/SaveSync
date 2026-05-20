@@ -32,7 +32,32 @@ where
     });
 }
 
-pub fn watch_folder(tag: &str, path: &OsString) -> bool {
+fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, RecommendedCache> {
+    let (tag, path) = key.clone();
+    let mut debouncer = new_debouncer(Duration::from_secs(1), None, move |result| match result {
+        Ok(_) => upload_file(&tag, &path),
+        Err(err) => println!("{err:?}"),
+    })
+    .unwrap();
+
+    let (tag, path) = key.clone();
+
+    debouncer
+        .watch(&resolve_path(&tag, path), RecursiveMode::Recursive)
+        .unwrap();
+
+    debouncer
+}
+pub fn watch_folder(tag: &str, path: &OsString) {
+    mutate_watchers(|map| {
+        let key = (tag.to_owned(), path.to_owned());
+        if !map.contains_key(&key) {
+            map.insert(key.clone(), setup_watcher(key));
+        }
+    })
+}
+
+pub fn toggle_watch(tag: &str, path: &OsString) -> bool {
     mutate_watchers(|map| {
         let key = (tag.to_owned(), path.to_owned());
 
@@ -52,21 +77,7 @@ pub fn watch_folder(tag: &str, path: &OsString) -> bool {
                 false
             }
             false => {
-                let (tag, path) = key.clone();
-
-                let mut debouncer =
-                    new_debouncer(Duration::from_secs(1), None, move |result| match result {
-                        Ok(_) => upload_file(&tag, &path),
-                        Err(err) => println!("{err:?}"),
-                    })
-                    .unwrap();
-
-                let (tag, path) = key.clone();
-                debouncer
-                    .watch(&resolve_path(&tag, &path), RecursiveMode::Recursive)
-                    .unwrap();
-
-                map.insert(key, debouncer);
+                map.insert(key.clone(), setup_watcher(key));
                 true
             }
         }

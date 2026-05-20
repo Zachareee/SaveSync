@@ -8,7 +8,7 @@ use crate::{
         emitter,
         fs_utils::{recurse_directories, FolderItems},
         plugin::{FileDetails, Plugin},
-        watch::{dump_watchers, upload_file, watch_folder},
+        watch::{dump_watchers, toggle_watch, upload_file, watch_folder},
         zip_utils,
     },
 };
@@ -229,7 +229,7 @@ fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
     upload_file(&tag, &foldername);
-    emitter::sync_result(&tag, &foldername, watch_folder(&tag, &foldername));
+    emitter::sync_result(&tag, &foldername, toggle_watch(&tag, &foldername));
 }
 
 fn unload_listener(_: Event) {
