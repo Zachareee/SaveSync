@@ -7,9 +7,9 @@ use std::{
     time::Duration,
 };
 
-use crate::mutate_app_state;
+use crate::{app_store, mutate_app_state};
 
-use super::{fs_utils::resolve_path, zip_utils::zip_dir};
+use super::zip_utils::zip_dir;
 
 static WATCHERS: LazyLock<
     Mutex<HashMap<(String, OsString), Debouncer<RecommendedWatcher, RecommendedCache>>>,
@@ -19,7 +19,7 @@ pub fn upload_file<P>(tag: &str, path: P)
 where
     P: AsRef<Path>,
 {
-    let (zipbuffer, date) = zip_dir(&resolve_path(tag, &path));
+    let (zipbuffer, date) = zip_dir(&app_store().get_mapping(tag).unwrap().join(&path));
     mutate_app_state(|s| {
         s.plugin_ref()
             .upload(
@@ -43,7 +43,7 @@ fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, Recom
     let (tag, path) = key.clone();
 
     debouncer
-        .watch(&resolve_path(&tag, path), RecursiveMode::Recursive)
+        .watch(&app_store().get_mapping(&tag).unwrap().join(path), RecursiveMode::Recursive)
         .unwrap();
 
     debouncer

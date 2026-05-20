@@ -1,14 +1,11 @@
-use std::
-    ffi::{OsStr, OsString}
-;
+use std::ffi::{OsStr, OsString};
 
 use tauri_plugin_opener::OpenerExt;
 
-use crate::{app_handle, mutate_app_state};
+use crate::{app_handle, app_store, mutate_app_state};
 
 use super::{
     config_paths::temp,
-    fs_utils::resolve_path,
     watch::{upload_file, watch_folder},
     zip_utils::extract,
 };
@@ -18,11 +15,7 @@ pub fn store_buffer(tag: &str, foldername: &OsStr, buffer: Vec<u8>) {
 }
 
 fn retrieve_buffer(tag: &str, foldername: &OsStr) -> Vec<u8> {
-    mutate_app_state(|s| {
-        s.buffers
-            .remove(&(tag.into(), foldername.into()))
-            .unwrap()
-    })
+    mutate_app_state(|s| s.buffers.remove(&(tag.into(), foldername.into())).unwrap())
 }
 
 pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String)) {
@@ -34,7 +27,7 @@ pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String
     let buf = retrieve_buffer(&tag, &foldername);
 
     if resolution == "cloud" {
-        extract(resolve_path(&tag, &foldername), buf).unwrap();
+        extract(app_store().get_mapping(&tag).unwrap().join(&foldername), buf).unwrap();
     } else if resolution == "none" {
         let path = temp(&tag);
         extract(&path, buf).unwrap();

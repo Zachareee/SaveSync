@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::ffi::OsString;
-use std::path::{Path, PathBuf};
-use std::{env, path};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
 use crate::listeners::init_download_folders;
+use crate::savesync::fs_utils::FolderItems;
 use crate::savesync::watch::{drop_watchers, watched_folders};
 use crate::savesync::{
     config_paths, emitter,
@@ -55,6 +55,27 @@ pub fn get_mapping() -> Mappings {
 }
 
 #[command]
+pub fn filetree() -> HashMap<String, Vec<OsString>> {
+    app_store()
+        .path_mapping()
+        .into_iter()
+        .map(|(tag, path)| (tag, find_folders_in_path(path)))
+        .collect()
+}
+
+fn find_folders_in_path<T>(path: T) -> Vec<OsString>
+where
+    T: AsRef<Path>,
+{
+    path.as_ref()
+        .get_folders()
+        .unwrap()
+        .into_iter()
+        .map(|e| e.file_name())
+        .collect()
+}
+
+#[command]
 pub fn set_mapping(map: PathMapping) {
     drop_watchers(
         watched_folders()
@@ -67,25 +88,6 @@ pub fn set_mapping(map: PathMapping) {
 }
 
 #[command]
-pub fn get_envpaths() -> HashMap<String, OsString> {
-    env::vars()
-        .filter_map(|(k, v)| {
-            path::absolute(&v)
-                .ok()
-                .filter(|p| p.exists())
-                .map(|p| (k, p.into_os_string()))
-        })
-        .collect()
-}
-
-#[command]
 pub fn get_watched_folders() -> Vec<(String, OsString)> {
     watched_folders()
-}
-
-pub fn env_resolve(key: &str) -> Result<PathBuf, String> {
-    match std::env::var_os(key) {
-        Some(osstr) => Path::new(&osstr).canonicalize().map_err(|e| e.to_string()),
-        None => Err("Env key not found".to_string()),
-    }
 }

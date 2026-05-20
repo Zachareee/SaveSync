@@ -1,56 +1,41 @@
-import { emit, invoke, osStringToString, stringToOsString } from "@/logic/backend"
-import { For, Index, Show } from "solid-js"
+import { invoke, osStringToString, stringToOsString } from "@/logic/backend"
+import { For, Index } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
 import { useNavigate } from "@solidjs/router"
-import { confirm, open } from "@tauri-apps/plugin-dialog"
-import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
-import lo from "lodash"
+import { open } from "@tauri-apps/plugin-dialog"
 import { RequiredList } from "@/types/data"
 
-type MappingArray = [string, [string, string]][]
+type MappingArray = [string, string][]
 
 const createAddPath = (setMapping: ReturnType<typeof createStore<MappingArray>>[1]) =>
-  (tag: string) => setMapping(mapping => [...mapping, [tag, ["", ""]] as const])
+  (tag: string) => setMapping(mapping => [...mapping, [tag, ""] as const])
 const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray>>[1]) =>
   (idx: number) => setMapping(mapping => mapping.toSpliced(idx, 1))
 
-const window = getCurrentWebviewWindow()
 function saveAndClose([mapping, navigate]: [MappingArray, () => {}]) {
   invoke("set_mapping", {
     map: Object.fromEntries(
-      mapping.filter(validEntry).map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])
+      mapping.filter(validEntry).map(e => [e[0], stringToOsString(e[1])])
     )
-  }).then(() => {
-    emit("filetree")
-    navigate()
-  })
+  }).then(navigate)
 }
 
-function validEntry(entry: MappingArray[number]): string {
-  return entry[0] && entry[1][0]
+function validEntry(entry: MappingArray[number]): boolean {
+  return entry.every(e => e)
 }
 
 export default function Mapping() {
-  const [envs, setEnvs] = createStore<Record<string, string>>()
   const [mapping, setMapping] = createStore<MappingArray>([])
-  const [oMapping, setOMapping] = createStore<MappingArray>([])
   const [requiredList, setRequiredList] = createStore<RequiredList>([])
 
-  invoke("get_envpaths").then(e => setEnvs(Object.fromEntries(Object.entries(e).map(([name, path]) => [name, osStringToString(path)]))))
   invoke("get_mapping").then(({ mapping, required }) => {
-    [setMapping, setOMapping].forEach(f => f(Object.entries(mapping).map(e => [e[0], [e[1][0], osStringToString(e[1][1])]])))
+    setMapping(Object.entries(mapping).map(e => [e[0], osStringToString(e[1])]))
     setRequiredList(required)
   })
 
   const addPath = createAddPath(setMapping)
   const removePath = createRemovePath(setMapping)
-
-  window.onCloseRequested(async e => {
-    if (lo.isEqual(mapping.filter(validEntry), oMapping) || await confirm("Unsaved changes will be lost"))
-      return window.destroy()
-    e.preventDefault()
-  })
 
   const navigate = useNavigate()
 
@@ -61,29 +46,14 @@ export default function Mapping() {
           <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} />
           <div>
             <div>
-              <select id={`${idx}`}
-                value={elem()[1][0]}
-                onchange={e => setMapping(idx, 1, 0, e.currentTarget.value)}
-                class="border-white border-2 rounded-lg"
-              >
-                <option class="bg-black" />
-                <Index each={Object.entries(envs).sort()}>
-                  {
-                    option => <option class="bg-black"> {option()[0]} </option>
-                  }
-                </Index>
-              </select>
-              <input value={elem()[1][1]} disabled />
+              <input value={elem()[1]} disabled />
               <button
-                onclick={() => open({ directory: true, multiple: false, defaultPath: envs[elem()[1][0]] }).then(path => {
+                onclick={() => open({ directory: true, multiple: false }).then(path => {
                   if (path)
-                    setMapping(idx, 1, 1, path.replace(RegExp(`${envs[elem()[1][0]]}\\?`.replace(/\\/g, "\\\\"), "g"), ""))
+                    setMapping(idx, 1, path)
                 })}
               >Browse</button>
             </div>
-            <Show when={envs[elem()[1][0]]}>
-              <span>Path: {`${envs[elem()[1][0]]}\\${elem()[1][1]}`}</span>
-            </Show>
           </div>
           <button onclick={[removePath, idx]}>Delete mapping</button>
         </div>}

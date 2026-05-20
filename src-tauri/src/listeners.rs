@@ -1,12 +1,11 @@
 use crate::{
     app_store,
-    commands::env_resolve,
     mutate_app_state,
     savesync::{
         config_paths,
         conflict_files::{resolve_conflict, store_buffer},
         emitter,
-        fs_utils::{recurse_directories, FolderItems},
+        fs_utils::recurse_directories,
         plugin::{FileDetails, Plugin},
         watch::{dump_watchers, toggle_watch, upload_file, watch_folder},
         zip_utils,
@@ -20,7 +19,6 @@ use std::{
         Ordering::{Equal, Greater, Less},
     },
     ffi::{OsStr, OsString},
-    path::Path,
     time::SystemTime,
 };
 use tauri::{Event, Listener};
@@ -36,7 +34,6 @@ pub fn emit_listeners(app: &tauri::App) {
         ("sync", sync_listener),
         ("unload", unload_listener),
         ("saved_plugin", saved_plugin_listener),
-        ("filetree", filetree_listener),
         ("conflict_resolve", conflict_resolve_listener),
     ];
     arr.into_iter().for_each(|(event, handler)| {
@@ -242,30 +239,6 @@ fn saved_plugin_listener(_: Event) {
         .plugin()
         .filter(|p| !p.is_empty() && config_paths::plugin().join(p).exists())
         .map(|p| init_func(&p));
-}
-
-fn filetree_listener(_: Event) {
-    emitter::filetree_result(
-        app_store()
-            .path_mapping()
-            .into_iter()
-            .map(|(tag, (env, path))| (tag, find_folders_in_path(&env, path)))
-            .collect(),
-    )
-}
-
-fn find_folders_in_path<T>(env: &str, path: T) -> Vec<OsString>
-where
-    T: AsRef<Path>,
-{
-    env_resolve(env)
-        .expect("Environment variable not found")
-        .join(path)
-        .get_folders()
-        .unwrap()
-        .into_iter()
-        .map(|e| e.file_name())
-        .collect()
 }
 
 fn conflict_resolve_listener(e: Event) {

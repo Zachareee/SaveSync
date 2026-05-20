@@ -1,4 +1,4 @@
-import { FolderMapping, RequiredList, EnvMapping, Info } from "./data";
+import { FolderMapping, RequiredList, Info } from "./data";
 import { OsString, SystemTime } from "./rust";
 
 /**
@@ -10,9 +10,9 @@ export type InvokeTypes = {
   get_plugins: [undefined, Info[]]
   saved_plugin: [undefined, boolean]
   get_mapping: [undefined, { mapping: FolderMapping, required: RequiredList }]
-  get_envpaths: [undefined, EnvMapping]
   set_mapping: [{ map: FolderMapping }, undefined]
   get_watched_folders: [undefined, [string, OsString][]]
+  filetree: [undefined, Record<string, OsString[]>]
 };
 
 /**
@@ -26,7 +26,6 @@ export type EmitTypes = {
   sync: { tag: string, foldername: OsString }
   unload: undefined
   saved_plugin: undefined
-  filetree: undefined
   conflict_resolve: [string, OsString, string]
 };
 
@@ -41,7 +40,6 @@ export type ListenTypes = {
   plugin_error: [string, string]
   saved_result: undefined
   sync_result: [string, OsString, boolean]
-  filetree_result: Record<string, OsString[]>
   conflicting_files: [string, OsString, [SystemTime, SystemTime]]
 }
 

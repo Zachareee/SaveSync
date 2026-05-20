@@ -3,7 +3,7 @@ mod commands;
 mod listeners;
 mod savesync;
 
-use commands::{get_envpaths, get_mapping, get_plugins, get_watched_folders, set_mapping};
+use commands::{get_mapping, get_plugins, get_watched_folders, set_mapping};
 use listeners::emit_listeners;
 use savesync::store::AppStore;
 use std::{
@@ -14,7 +14,7 @@ use std::{
 use tauri::{AppHandle, Manager, RunEvent};
 use tauri_plugin_deep_link::DeepLinkExt;
 
-use crate::savesync::plugin::Plugin;
+use crate::{commands::filetree, savesync::plugin::Plugin};
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
@@ -61,8 +61,8 @@ pub fn run() {
             get_plugins,
             get_mapping,
             set_mapping,
-            get_envpaths,
             get_watched_folders,
+            filetree
         ])
         .setup(|app| {
             emit_listeners(app);

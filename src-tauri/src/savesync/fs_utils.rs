@@ -4,8 +4,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::app_store;
-
 /// fs_utils internal representation of a Result<Vec<DirEntry>, std::io::Error>
 type DirResult = Result<Vec<DirEntry>, std::io::Error>;
 
@@ -34,13 +32,6 @@ where
                 .is_ok_and(|entry| entry.file_type().as_ref().is_ok_and(&filter))
         })
         .collect()
-}
-
-pub fn resolve_path<P>(tag: &str, path: P) -> PathBuf
-where
-    P: AsRef<Path>,
-{
-    app_store().get_mapping(&tag).unwrap().join(path)
 }
 
 pub fn recurse_directories<V, F, A>(

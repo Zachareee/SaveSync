@@ -22,24 +22,24 @@ export default function Fmap() {
   unlisten([
     listen("sync_result", ([tag, folder, bool]) => {
       setFolders(tag, osStringToString(folder), bool)
-    }),
-    listen("filetree_result", (payload) => {
-      setCurrentFolder("")
-      invoke("get_watched_folders").then(watched => {
-        setFolders(reconcile(Object.fromEntries(
-          Object.entries(payload).map(
-            ([k, v]) => [k, Object.fromEntries(v.map(e =>
-              [osStringToString(e), watched.some(
-                tagpath => lo.isEqual(tagpath, [k, e])
-              )]
-            ))]
-          )
-        )))
-      })
     })
   ])()
 
-  emit("filetree")
+  invoke("filetree").then(payload => {
+    setCurrentFolder("")
+    invoke("get_watched_folders").then(watched => {
+      setFolders(reconcile(Object.fromEntries(
+        Object.entries(payload).map(
+          ([k, v]) => [k, Object.fromEntries(v.map(e =>
+            [osStringToString(e), watched.some(
+              tagpath => lo.isEqual(tagpath, [k, e])
+            )]
+          ))]
+        )
+      )))
+    })
+
+  })
 
   invoke("get_mapping").then(({ mapping, required }) => {
     let current = Object.entries(mapping).map(([key]) => key)

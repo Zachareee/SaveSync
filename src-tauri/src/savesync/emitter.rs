@@ -1,6 +1,5 @@
 use std::{
-    collections::HashMap,
-    ffi::{OsStr, OsString},
+    ffi::OsStr,
     time::SystemTime,
 };
 
@@ -25,10 +24,6 @@ pub fn abort_result(err: &str) {
 
 pub fn sync_result(tag: &str, foldername: &OsStr, synced: bool) {
     app_emit("sync_result", (tag, foldername, synced));
-}
-
-pub fn filetree_result(map: HashMap<String, Vec<OsString>>) {
-    app_emit("filetree_result", map);
 }
 
 pub fn conflicting_files(tag: &str, foldername: &OsStr, diff: (SystemTime, SystemTime)) {
