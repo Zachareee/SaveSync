@@ -66,6 +66,7 @@ function TagList(props: { folders: FileTree, setCurrentFolder: CurrentFolderSett
     </For>
     <Portal>
       <div class="fixed right-0 bottom-0 m-4">
+        <button onclick={() => { navigate("/mapping") }}>See mapping</button>
         <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
       </div>
     </Portal>

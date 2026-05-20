@@ -2,6 +2,7 @@ import { emit, invoke, osStringToString, stringToOsString } from "@/logic/backen
 import { For, Index, Show } from "solid-js"
 import { createStore } from "solid-js/store"
 import { Portal } from "solid-js/web"
+import { useNavigate } from "@solidjs/router"
 import { confirm, open } from "@tauri-apps/plugin-dialog"
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 import lo from "lodash"
@@ -15,14 +16,14 @@ const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray
   (idx: number) => setMapping(mapping => mapping.toSpliced(idx, 1))
 
 const window = getCurrentWebviewWindow()
-function saveAndClose(mapping: MappingArray) {
+function saveAndClose([mapping, navigate]: [MappingArray, () => {}]) {
   invoke("set_mapping", {
     map: Object.fromEntries(
       mapping.filter(validEntry).map(e => [e[0], [e[1][0], stringToOsString(e[1][1])]])
     )
   }).then(() => {
     emit("filetree")
-    window.destroy()
+    navigate()
   })
 }
 
@@ -50,6 +51,8 @@ export default function Mapping() {
       return window.destroy()
     e.preventDefault()
   })
+
+  const navigate = useNavigate()
 
   return <>
     <div>
@@ -94,7 +97,7 @@ export default function Mapping() {
           <button onclick={[addPath, ""]}>Add mapping</button>
         </div>
         <div class="fixed right-0 bottom-0 m-4">
-          <button onclick={[saveAndClose, mapping]}>Save and close</button>
+          <button onclick={[saveAndClose, [mapping, () => navigate("/folders")]]}>Save and close</button>
         </div>
       </Portal>
     </div>
