@@ -1,7 +1,7 @@
 use notify_debouncer_full::{new_debouncer, notify::*, Debouncer, RecommendedCache};
 use std::{
     collections::HashMap,
-    ffi::OsString,
+    ffi::{OsStr, OsString},
     fs,
     path::Path,
     sync::{LazyLock, Mutex},
@@ -50,9 +50,9 @@ where
     });
 }
 
-pub fn handle_buffer(path: impl AsRef<Path>, buffer: Vec<u8>) {
+pub fn handle_buffer(path: impl AsRef<Path>, foldername: &OsStr, buffer: Vec<u8>) {
     if path.as_ref().extension() == None {
-        fs::write(path, buffer).unwrap();
+        fs::write(path.as_ref().join(foldername), buffer).unwrap();
     } else {
         zip_utils::extract(path.as_ref().with_extension(""), buffer).unwrap();
     }

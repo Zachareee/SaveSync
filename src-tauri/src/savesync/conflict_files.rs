@@ -26,10 +26,10 @@ pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String
     let buf = retrieve_buffer(&tag, &foldername);
 
     if resolution == "cloud" {
-        handle_buffer(app_store().get_mapping(&tag).unwrap().join(&foldername), buf);
+        handle_buffer(app_store().get_mapping(&tag).unwrap(), &foldername, buf);
     } else if resolution == "none" {
         let path = temp(&tag);
-        handle_buffer(&path, buf);
+        handle_buffer(&path, &foldername, buf);
         app_handle()
             .opener()
             .open_path(path.to_str().unwrap(), None::<String>)

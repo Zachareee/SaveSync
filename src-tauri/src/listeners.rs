@@ -171,7 +171,7 @@ fn process_cloud_details(
                         }
                         _ => {
                             println!("Extracting");
-                            handle_buffer(&path, buf);
+                            handle_buffer(&path, &folder_name, buf);
                         }
                     },
                     Err(e) => {

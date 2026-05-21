@@ -4,7 +4,7 @@ import MenuButton from "./components/MenuButton"
 import NavBar from "./components/NavBar"
 
 const PageRoot: ParentComponent = props => {
-  const [showMenu, setShowMenu] = createSignal(true)
+  const [showMenu, setShowMenu] = createSignal(false)
   const navigate = useNavigate()
 
   return <>
