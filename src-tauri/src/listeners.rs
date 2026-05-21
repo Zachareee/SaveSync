@@ -6,7 +6,10 @@ use crate::{
         emitter,
         fs_utils::recurse_directories,
         plugin::{FileDetails, Plugin},
-        watch::{dump_watchers, handle_buffer, toggle_watch, upload_file, watch_folder},
+        watch::{
+            dump_watchers, handle_buffer, strip_zip_extension, toggle_watch, upload_file,
+            watch_folder,
+        },
     },
     write_app_state,
 };
@@ -101,25 +104,28 @@ fn stop_server(port: u16) {
 pub fn init_download_folders() {
     let last_sync = app_store().last_sync();
 
-    if let Some(details) = write_app_state(|s| {
-        let plugin = s.plugin_ref();
-        match plugin.read_cloud() {
-            Ok(details) => {
-                s.tags = details.iter().map(|f| f.tag.clone()).collect();
-                Some(details)
+    thread::spawn(move || {
+        if let Some(details) = write_app_state(|s| {
+            let plugin = s.plugin_ref();
+            match plugin.read_cloud() {
+                Ok(details) => {
+                    s.tags = details.iter().map(|f| f.tag.clone()).collect();
+                    Some(details)
+                }
+                Err(e) => {
+                    emitter::plugin_error("read_cloud", &e);
+                    None
+                }
             }
-            Err(e) => {
-                emitter::plugin_error("read_cloud", &e);
-                None
-            }
+        }) {
+            details
+                .into_iter()
+                .for_each(|f| process_cloud_details(f, last_sync));
         }
-    }) {
-        details
-            .into_iter()
-            .for_each(|f| process_cloud_details(f, last_sync));
-    }
+        app_store().set_last_sync(SystemTime::now())
+    });
 
-    emitter::init_result(true);
+    emitter::init_result();
 }
 
 fn process_cloud_details(
@@ -187,7 +193,10 @@ fn process_cloud_details(
             }
             (i, j) => println!("{i:?}, {j:?}"),
         }
+        let folder_name = strip_zip_extension(&folder_name);
+
         watch_folder(&tag, &folder_name);
+        emitter::sync_result(&tag, &folder_name.as_os_str(), true);
     }
 }
 

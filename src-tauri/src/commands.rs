@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use tauri::command;
 
 use crate::listeners::init_download_folders;
-use crate::savesync::fs_utils::FolderItems;
 use crate::savesync::watch::{drop_watchers, watched_folders};
 use crate::savesync::{
     config_paths, emitter,

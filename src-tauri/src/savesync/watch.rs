@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
     fs,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{LazyLock, Mutex},
     time::Duration,
 };
@@ -77,18 +77,18 @@ fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, Recom
 
     debouncer
 }
-pub fn watch_folder(tag: &str, path: impl AsRef<Path>) {
-    let path = if path.as_ref().extension() == Some(&OsString::from(ZIPEXTENSION)) {
+
+pub fn strip_zip_extension(path: impl AsRef<Path>) -> PathBuf {
+    if path.as_ref().extension() == Some(&OsString::from(ZIPEXTENSION)) {
         path.as_ref().with_extension("")
     } else {
         path.as_ref().to_path_buf()
-    };
+    }
+}
 
+pub fn watch_folder(tag: &str, path: impl AsRef<Path>) {
     mutate_watchers(|map| {
-        let key = (
-            tag.to_owned(),
-            path.into_os_string(),
-        );
+        let key = (tag.to_owned(), path.as_ref().to_path_buf().into_os_string());
         if !map.contains_key(&key) {
             map.insert(key.clone(), setup_watcher(key));
         }

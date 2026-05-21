@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use serde_json::{Map, Value, from_value, json, to_value};
+use serde_json::{from_value, json, to_value, Map, Value};
 use tauri::{Manager, Wry};
 use tauri_plugin_store::{Result, Store, StoreBuilder};
 
@@ -55,31 +55,42 @@ impl AppStore {
     }
 
     pub fn set_plugin(&self, plugin: &OsStr) {
-        self.store.set("plugin", to_value(plugin).unwrap_or_default());
+        self.store
+            .set("plugin", to_value(plugin).unwrap_or_default());
     }
 
     pub fn save(&self) -> Result<()> {
-        self.store.set(
-            "last_sync",
-            SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs(),
-        );
+        self.set_last_sync(SystemTime::now());
         self.store.save()
     }
 
     pub fn set_mapping(&self, map: PathMapping) {
-        self.store.set("path_mapping", to_value(map).unwrap_or_default())
+        self.store
+            .set("path_mapping", to_value(map).unwrap_or_default())
     }
 
     fn mapping(&self) -> Value {
         self.store.get("path_mapping").unwrap_or_default()
     }
 
+    pub fn set_last_sync(&self, time: SystemTime) {
+        self.store.set(
+            "last_sync",
+            time.duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
+        );
+    }
+
     pub fn last_sync(&self) -> SystemTime {
         SystemTime::UNIX_EPOCH
-            + Duration::from_secs(self.store.get("last_sync").unwrap_or_default().as_u64().unwrap_or_default())
+            + Duration::from_secs(
+                self.store
+                    .get("last_sync")
+                    .unwrap_or_default()
+                    .as_u64()
+                    .unwrap_or_default(),
+            )
     }
 
     pub fn get_mapping(&self, key: &str) -> Option<PathBuf> {
@@ -88,9 +99,7 @@ impl AppStore {
             .unwrap_or(&Map::new())
             .get(key)
             .cloned()
-            .map(|s| {
-                from_value::<OsString>(s).unwrap().into()
-            })
+            .map(|s| from_value::<OsString>(s).unwrap().into())
     }
 }
 

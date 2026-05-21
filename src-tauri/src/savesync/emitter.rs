@@ -12,8 +12,8 @@ pub fn plugin_error(title: &str, description: &str) {
     app_emit("plugin_error", (title, description))
 }
 
-pub fn init_result(bool: bool) {
-    app_emit("init_result", bool);
+pub fn init_result() {
+    app_emit("init_result", ());
 }
 
 /*

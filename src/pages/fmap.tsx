@@ -8,6 +8,7 @@ import { OsString } from "@/types/rust"
 import { Portal } from "solid-js/web"
 import DivButton from "@/components/DivButton"
 import { createStore, reconcile, SetStoreFunction } from "solid-js/store"
+import { conflicting_listener } from "@/logic/conflicting_window"
 
 const sync_folder = (data: { tag: string, foldername: OsString, setFolders: SetStoreFunction<FileTree> }) => {
   const { setFolders, tag, foldername } = data
@@ -22,7 +23,8 @@ export default function Fmap() {
   unlisten([
     listen("sync_result", ([tag, folder, bool]) => {
       setFolders(tag, osStringToString(folder), { loading: false, synced: bool })
-    })
+    }),
+    conflicting_listener()
   ])()
 
   invoke("filetree").then(payload => {

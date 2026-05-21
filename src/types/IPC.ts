@@ -35,7 +35,7 @@ export type EmitTypes = {
  */
 export type ListenTypes = {
   plugins: Info[]
-  init_result: boolean
+  init_result: undefined
   abort_result: string
   plugin_error: [string, string]
   saved_result: undefined
