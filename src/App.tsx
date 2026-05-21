@@ -9,6 +9,7 @@ import { listen } from "@/logic/backend";
 import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
 import Conflicting from "./pages/conflicting";
+import PageRoot from "./PageRoot";
 
 (() => {
   const parent = Window.getCurrent()
@@ -19,7 +20,7 @@ import Conflicting from "./pages/conflicting";
 function App() {
   return <>
     <Toaster position="bottom-left" />
-    <Router>
+    <Router root={PageRoot}>
       <Route path={"/folders"} component={Fmap} />
       <Route path={"/error/*ERROR"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
