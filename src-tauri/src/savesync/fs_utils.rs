@@ -8,14 +8,14 @@ use std::{
 type DirResult = Result<Vec<DirEntry>, std::io::Error>;
 
 pub trait FolderItems {
-    fn get_folders(&self) -> DirResult;
+    // fn get_folders(&self) -> DirResult;
     fn get_files(&self) -> DirResult;
 }
 
 impl FolderItems for Path {
-    fn get_folders(&self) -> DirResult {
-        iter_dir_entries(self, FileType::is_dir)
-    }
+    // fn get_folders(&self) -> DirResult {
+    //     iter_dir_entries(self, FileType::is_dir)
+    // }
 
     fn get_files(&self) -> DirResult {
         iter_dir_entries(self, FileType::is_file)

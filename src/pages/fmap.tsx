@@ -30,10 +30,11 @@ export default function Fmap() {
     invoke("get_watched_folders").then(watched => {
       setFolders(reconcile(Object.fromEntries(
         Object.entries(payload).map(
-          ([k, v]) => [k, Object.fromEntries(v.map(e =>
-            [osStringToString(e), {
+          ([k, v]) => [k, Object.fromEntries(v.map(([filename, isFolder]) =>
+            [osStringToString(filename), {
+              folder: isFolder,
               synced: watched.some(
-                tagpath => lo.isEqual(tagpath, [k, e])
+                tagpath => lo.isEqual(tagpath, [k, filename])
               ),
               loading: false
             }]
@@ -69,7 +70,6 @@ function TagList(props: { folders: FileTree, setCurrentFolder: CurrentFolderSett
     </For>
     <Portal>
       <div class="fixed right-0 bottom-0 m-4">
-        <button onclick={() => { navigate("/mapping") }}>See mapping</button>
         <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
       </div>
     </Portal>
@@ -83,7 +83,7 @@ function FolderList(props: { folders: FileTree, setFolders: SetStoreFunction<Fil
         {
           foldername => <DivButton onclick={[sync_folder, { tag: props.currentFolder, foldername: stringToOsString(foldername()[0]), setFolders: props.setFolders }]}>
             <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1].synced} onclick={(e) => e.preventDefault()} />
-            {foldername()[0]}
+            {foldername()[1].folder ? "o" : "i"} {foldername()[0]}
             <Show when={foldername()[1].loading}> Loading </Show>
           </DivButton>
         }

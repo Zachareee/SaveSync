@@ -12,7 +12,7 @@ export type InvokeTypes = {
   get_mapping: [undefined, { mapping: FolderMapping, required: RequiredList }]
   set_mapping: [{ map: FolderMapping }, undefined]
   get_watched_folders: [undefined, [string, OsString][]]
-  filetree: [undefined, Record<string, OsString[]>]
+  filetree: [undefined, Record<string, [OsString, boolean][]>]
 };
 
 /**

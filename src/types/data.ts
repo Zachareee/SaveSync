@@ -4,6 +4,6 @@ export type Info = Record<"name" | "description" | "author" | "filename", string
   Record<"icon_url", string>
 >
 
-export type FileTree = Record<string, Record<string, { loading: boolean, synced: boolean }>>
+export type FileTree = Record<string, Record<string, Record<"folder" | "loading" | "synced", boolean>>>
 export type FolderMapping = Record<string, OsString>
 export type RequiredList = string[]

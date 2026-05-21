@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 use std::ffi::OsString;
+use std::fs::DirEntry;
+use std::io;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -55,7 +57,7 @@ pub fn get_mapping() -> Mappings {
 }
 
 #[command]
-pub fn filetree() -> HashMap<String, Vec<OsString>> {
+pub fn filetree() -> HashMap<String, Vec<(OsString, bool)>> {
     app_store()
         .path_mapping()
         .into_iter()
@@ -63,15 +65,17 @@ pub fn filetree() -> HashMap<String, Vec<OsString>> {
         .collect()
 }
 
-fn find_folders_in_path<T>(path: T) -> Vec<OsString>
+fn find_folders_in_path<T>(path: T) -> Vec<(OsString, bool)>
 where
     T: AsRef<Path>,
 {
     path.as_ref()
-        .get_folders()
+        .read_dir()
         .unwrap()
-        .into_iter()
-        .map(|e| e.file_name())
+        .collect::<io::Result<Vec<DirEntry>>>()
+        .unwrap()
+        .iter()
+        .map(|e| (e.file_name(), e.metadata().unwrap().is_dir()))
         .collect()
 }
 

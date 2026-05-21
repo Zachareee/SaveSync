@@ -6,8 +6,7 @@ use crate::{
         emitter,
         fs_utils::recurse_directories,
         plugin::{FileDetails, Plugin},
-        watch::{dump_watchers, toggle_watch, upload_file, watch_folder},
-        zip_utils,
+        watch::{dump_watchers, handle_buffer, toggle_watch, upload_file, watch_folder},
     },
     write_app_state,
 };
@@ -133,8 +132,6 @@ fn process_cloud_details(
     last_sync: SystemTime,
 ) {
     if let Some(path) = app_store().get_mapping(&tag) {
-        let path = path.join(&folder_name);
-
         let local_date = recurse_directories(
             &path,
             SystemTime::UNIX_EPOCH,
@@ -174,7 +171,7 @@ fn process_cloud_details(
                         }
                         _ => {
                             println!("Extracting");
-                            zip_utils::extract(&path, buf).unwrap();
+                            handle_buffer(&path, buf);
                         }
                     },
                     Err(e) => {

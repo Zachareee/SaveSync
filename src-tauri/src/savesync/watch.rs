@@ -2,12 +2,13 @@ use notify_debouncer_full::{new_debouncer, notify::*, Debouncer, RecommendedCach
 use std::{
     collections::HashMap,
     ffi::OsString,
+    fs,
     path::Path,
     sync::{LazyLock, Mutex},
     time::Duration,
 };
 
-use crate::{app_store, read_app_state};
+use crate::{app_store, read_app_state, savesync::zip_utils};
 
 use super::zip_utils::zip_dir;
 
@@ -15,21 +16,46 @@ static WATCHERS: LazyLock<
     Mutex<HashMap<(String, OsString), Debouncer<RecommendedWatcher, RecommendedCache>>>,
 > = LazyLock::new(|| Mutex::new(HashMap::new()));
 
+const ZIPEXTENSION: &'static str = "savesynczip";
+
 pub fn upload_file<P>(tag: &str, path: P)
 where
     P: AsRef<Path>,
 {
-    let (zipbuffer, date) = zip_dir(&app_store().get_mapping(tag).unwrap().join(&path));
+    let abspath = &app_store().get_mapping(tag).unwrap().join(&path);
+    let (zipbuffer, date) = if abspath.is_dir() {
+        zip_dir(abspath)
+    } else {
+        (
+            fs::read(abspath).unwrap(),
+            fs::metadata(abspath).unwrap().modified().unwrap(),
+        )
+    };
+
+    let refpath = if abspath.is_dir() {
+        path.as_ref().with_extension(ZIPEXTENSION)
+    } else {
+        path.as_ref().into()
+    };
+
     read_app_state(|s| {
         s.plugin_ref()
             .upload(
                 tag.as_bytes(),
-                path.as_ref().file_name().unwrap().as_encoded_bytes(),
+                refpath.file_name().unwrap().as_encoded_bytes(),
                 date,
                 zipbuffer.as_slice(),
             )
             .unwrap()
     });
+}
+
+pub fn handle_buffer(path: impl AsRef<Path>, buffer: Vec<u8>) {
+    if path.as_ref().extension() == None {
+        fs::write(path, buffer).unwrap();
+    } else {
+        zip_utils::extract(path.as_ref().with_extension(""), buffer).unwrap();
+    }
 }
 
 fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, RecommendedCache> {
@@ -43,14 +69,20 @@ fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, Recom
     let (tag, path) = key.clone();
 
     debouncer
-        .watch(&app_store().get_mapping(&tag).unwrap().join(path), RecursiveMode::Recursive)
+        .watch(
+            &app_store().get_mapping(&tag).unwrap().join(path),
+            RecursiveMode::Recursive,
+        )
         .unwrap();
 
     debouncer
 }
-pub fn watch_folder(tag: &str, path: &OsString) {
+pub fn watch_folder(tag: &str, path: impl AsRef<Path>) {
     mutate_watchers(|map| {
-        let key = (tag.to_owned(), path.to_owned());
+        let key = (
+            tag.to_owned(),
+            path.as_ref().with_extension("").into_os_string(),
+        );
         if !map.contains_key(&key) {
             map.insert(key.clone(), setup_watcher(key));
         }
@@ -66,6 +98,11 @@ pub fn toggle_watch(tag: &str, path: &OsString) -> bool {
         // exist, !initial => remove
         // exist, initial => nothing
 
+        let mut path = path.clone();
+        let abspath = app_store().get_mapping(&tag).unwrap().join(&path);
+        if abspath.is_dir() {
+            path.push(ZIPEXTENSION);
+        }
         match map.contains_key(&key) {
             true => {
                 map.remove(&key);
