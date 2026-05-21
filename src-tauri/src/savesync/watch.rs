@@ -78,10 +78,16 @@ fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, Recom
     debouncer
 }
 pub fn watch_folder(tag: &str, path: impl AsRef<Path>) {
+    let path = if path.as_ref().extension() == Some(&OsString::from(ZIPEXTENSION)) {
+        path.as_ref().with_extension("")
+    } else {
+        path.as_ref().to_path_buf()
+    };
+
     mutate_watchers(|map| {
         let key = (
             tag.to_owned(),
-            path.as_ref().with_extension("").into_os_string(),
+            path.into_os_string(),
         );
         if !map.contains_key(&key) {
             map.insert(key.clone(), setup_watcher(key));
