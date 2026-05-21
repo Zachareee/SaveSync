@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
 use std::fs::DirEntry;
 use std::io;
@@ -45,7 +45,7 @@ pub fn get_plugins() -> Vec<PluginInfo> {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Mappings {
     mapping: PathMapping,
-    required: Vec<String>,
+    required: HashSet<String>,
 }
 
 #[command]

@@ -7,7 +7,7 @@ use commands::{get_mapping, get_plugins, get_watched_folders, set_mapping};
 use listeners::emit_listeners;
 use savesync::store::AppStore;
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     ffi::OsString,
     ops::Deref,
     sync::{Arc, OnceLock, RwLock},
@@ -21,7 +21,7 @@ static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
 
 pub struct AppState {
-    pub tags: Vec<String>,
+    pub tags: HashSet<String>,
     pub buffers: HashMap<(String, OsString), Vec<u8>>,
     pub plugin: Option<Plugin>,
 }
@@ -35,7 +35,7 @@ impl AppState {
 impl Default for AppState {
     fn default() -> Self {
         AppState {
-            tags: Vec::new(),
+            tags: HashSet::new(),
             buffers: HashMap::new(),
             plugin: None,
         }
