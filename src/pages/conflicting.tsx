@@ -4,7 +4,10 @@ import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow"
 
 
 export default function Conflicting() {
-  const { FOLDERNAME, TAG, LOCAL, CLOUD } = useParams()
+  const params = useParams()
+  const { FOLDERNAME, TAG, LOCAL, CLOUD } = Object.fromEntries(
+    Object.entries(params).map(([k, v]) => [k, decodeURIComponent(v)])
+  )
 
   const reply = (reply: string) => {
     emit("conflict_resolve", [TAG, stringToOsString(FOLDERNAME), reply])

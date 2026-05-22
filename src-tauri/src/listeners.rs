@@ -131,7 +131,7 @@ pub fn init_download_folders() {
 fn process_cloud_details(
     FileDetails {
         tag,
-        folder_name,
+        folder_name: item,
         last_modified: cloud_date,
         data,
     }: FileDetails,
@@ -155,29 +155,27 @@ fn process_cloud_details(
         // cloud < local < syncd (Shouldn't be possible)
         // local < cloud < syncd (Shouldn't be possible)
 
+        let fileinfo = strip_zip_extension(&item);
+
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
             (k, Less) => {
                 println!("Less branch");
                 match data.ok_or(|| ()).or_else(|_| {
                     read_app_state(|s| {
                         s.plugin_ref()
-                            .download(tag.as_bytes(), folder_name.as_encoded_bytes())
+                            .download(tag.as_bytes(), item.as_encoded_bytes())
                     })
                 }) {
                     Ok(buf) => match k {
                         Less => {
                             println!("Both less");
-                            store_buffer(&tag, &folder_name, buf);
-                            emitter::conflicting_files(
-                                &tag,
-                                &folder_name,
-                                (local_date, cloud_date),
-                            );
+                            store_buffer(&tag, &item, buf);
+                            emitter::conflicting_files(&tag, &item, (local_date, cloud_date));
                             return;
                         }
                         _ => {
                             println!("Extracting");
-                            handle_buffer(&path, &folder_name, buf);
+                            handle_buffer(&path, &fileinfo, buf);
                         }
                     },
                     Err(e) => {
@@ -189,14 +187,14 @@ fn process_cloud_details(
             }
             (Less, Equal | Greater) => {
                 println!("Less with equal or greater");
-                upload_file(&tag, path)
+                upload_file(&tag, &fileinfo)
             }
             (i, j) => println!("{i:?}, {j:?}"),
         }
-        let folder_name = strip_zip_extension(&folder_name);
 
-        watch_folder(&tag, &folder_name);
-        emitter::sync_result(&tag, &folder_name.as_os_str(), true);
+        let val = fileinfo.value();
+        watch_folder(&tag, &val);
+        emitter::sync_result(&tag, &val.as_os_str(), true);
     }
 }
 
@@ -235,7 +233,7 @@ fn sync_listener(event: Event) {
     thread::spawn(move || {
         let bool = toggle_watch(&tag, &foldername);
         if bool {
-            upload_file(&tag, &foldername)
+            upload_file(&tag, &strip_zip_extension(&foldername))
         };
         emitter::sync_result(&tag, &foldername, bool);
     });
