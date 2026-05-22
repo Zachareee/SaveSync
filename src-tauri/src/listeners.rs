@@ -139,7 +139,7 @@ fn process_cloud_details(
 ) {
     if let Some(path) = app_store().get_mapping(&tag) {
         let local_date = recurse_directories(
-            &path,
+            &path.join(&item),
             SystemTime::UNIX_EPOCH,
             &mut |_, _, e| e.metadata()?.modified(),
             &max,
