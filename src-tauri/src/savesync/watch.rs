@@ -20,9 +20,9 @@ const ZIPEXTENSION: &'static str = "savesynczip";
 
 pub fn upload_file(tag: &str, path: &PathType) {
     let (zipbuffer, date) = match path {
-        PathType::Directory(path) => zip_dir(&app_store().get_mapping(tag).unwrap().join(&path)),
+        PathType::Directory(path) => zip_dir(&app_store().resolve_path(tag, path)),
         PathType::File(path) => {
-            let abspath = &app_store().get_mapping(tag).unwrap().join(&path);
+            let abspath = &app_store().resolve_path(tag, path);
             (
                 fs::read(abspath).unwrap(),
                 fs::metadata(abspath).unwrap().modified().unwrap(),
@@ -69,7 +69,7 @@ fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, Recom
 
     debouncer
         .watch(
-            &app_store().get_mapping(&tag).unwrap().join(path),
+            &app_store().resolve_path(&tag, path),
             RecursiveMode::Recursive,
         )
         .unwrap();
@@ -119,7 +119,7 @@ pub fn toggle_watch(tag: &str, path: &OsString) -> bool {
         // exist, initial => nothing
 
         let path = Path::new(path);
-        let abspath = app_store().get_mapping(&tag).unwrap().join(&path);
+        let abspath = app_store().resolve_path(&tag, &path);
         let pathbuf = if abspath.is_dir() {
             path.with_extension(ZIPEXTENSION)
         } else {

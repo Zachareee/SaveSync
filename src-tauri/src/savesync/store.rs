@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     ffi::{OsStr, OsString},
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
     time::{Duration, SystemTime},
 };
@@ -100,6 +100,10 @@ impl AppStore {
             .get(key)
             .cloned()
             .map(|s| from_value::<OsString>(s).unwrap().into())
+    }
+
+    pub fn resolve_path(&self, tag: &str, path: impl AsRef<Path>) -> PathBuf {
+        self.get_mapping(tag).unwrap().join(&path)
     }
 }
 
