@@ -138,8 +138,10 @@ fn process_cloud_details(
     last_sync: SystemTime,
 ) {
     if let Some(path) = app_store().get_mapping(&tag) {
+        let fileinfo = strip_zip_extension(&item);
+
         let local_date = recurse_directories(
-            &path.join(&item),
+            &path.join(fileinfo.value()),
             SystemTime::UNIX_EPOCH,
             &mut |_, _, e| e.metadata()?.modified(),
             &max,
@@ -154,8 +156,6 @@ fn process_cloud_details(
         //
         // cloud < local < syncd (Shouldn't be possible)
         // local < cloud < syncd (Shouldn't be possible)
-
-        let fileinfo = strip_zip_extension(&item);
 
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
             (k, Less) => {
