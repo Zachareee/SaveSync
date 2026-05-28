@@ -102,6 +102,14 @@ fn stop_server(port: u16) {
 }
 
 pub fn init_download_folders() {
+    collect_filter_from_cloud(|_| true);
+    emitter::init_result();
+}
+
+pub fn collect_filter_from_cloud<F>(lambda: F) -> thread::JoinHandle<()>
+where
+    F: Fn(&String) -> bool + Send + 'static,
+{
     let last_sync = app_store().last_sync();
 
     thread::spawn(move || {
@@ -120,12 +128,10 @@ pub fn init_download_folders() {
         }) {
             details
                 .into_iter()
+                .filter(|FileDetails { tag, .. }| lambda(tag))
                 .for_each(|f| process_cloud_details(f, last_sync));
         }
-        app_store().set_last_sync(SystemTime::now())
-    });
-
-    emitter::init_result();
+    })
 }
 
 fn process_cloud_details(

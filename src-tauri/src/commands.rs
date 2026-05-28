@@ -7,7 +7,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
-use crate::listeners::init_download_folders;
+use crate::listeners::{collect_filter_from_cloud, init_download_folders};
 use crate::savesync::watch::{drop_watchers, watched_folders};
 use crate::savesync::{
     config_paths, emitter,
@@ -86,8 +86,14 @@ pub fn set_mapping(map: PathMapping) {
             .filter(|(k, _)| !map.contains_key(k))
             .collect(),
     );
-    app_store().set_mapping(map);
-    init_download_folders();
+    let store = app_store();
+    let keys: HashSet<String> = map
+        .iter()
+        .filter(|(k, v)| store.get_mapping(k).is_none_or(|p| p != **v))
+        .map(|(k, _)| k.to_owned())
+        .collect();
+    store.set_mapping(map);
+    collect_filter_from_cloud(move |key| keys.contains(key));
 }
 
 #[command]
