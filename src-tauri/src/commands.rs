@@ -7,7 +7,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use tauri::command;
 
-use crate::listeners::{collect_filter_from_cloud, init_download_folders};
+use crate::listeners::collect_filter_from_cloud;
 use crate::savesync::watch::{drop_watchers, watched_folders};
 use crate::savesync::{
     config_paths, emitter,

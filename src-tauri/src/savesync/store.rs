@@ -43,14 +43,10 @@ impl AppStore {
     }
 
     pub fn path_mapping(&self) -> PathMapping {
-        self.store
-            .get("path_mapping")
-            .unwrap_or_default()
-            .as_object()
-            .unwrap_or(&Map::new())
-            .to_owned()
+        self.mapping()
             .into_iter()
             .map(|(k, v)| (k, from_value(v).unwrap_or_default()))
+            .filter(|(_, v)| Path::new(v).exists())
             .collect()
     }
 
@@ -61,6 +57,7 @@ impl AppStore {
 
     pub fn save(&self) -> Result<()> {
         self.set_last_sync(SystemTime::now());
+        self.set_mapping(self.path_mapping());
         self.store.save()
     }
 
@@ -69,8 +66,13 @@ impl AppStore {
             .set("path_mapping", to_value(map).unwrap_or_default())
     }
 
-    fn mapping(&self) -> Value {
-        self.store.get("path_mapping").unwrap_or_default()
+    fn mapping(&self) -> Map<String, Value> {
+        self.store
+            .get("path_mapping")
+            .unwrap_or_default()
+            .as_object()
+            .unwrap_or(&Map::new())
+            .to_owned()
     }
 
     pub fn set_last_sync(&self, time: SystemTime) {
@@ -94,12 +96,9 @@ impl AppStore {
     }
 
     pub fn get_mapping(&self, key: &str) -> Option<PathBuf> {
-        self.mapping()
-            .as_object()
-            .unwrap_or(&Map::new())
+        self.path_mapping()
             .get(key)
-            .cloned()
-            .map(|s| from_value::<OsString>(s).unwrap().into())
+            .map(|s| s.into())
     }
 
     pub fn resolve_path(&self, tag: &str, path: impl AsRef<Path>) -> PathBuf {
