@@ -11,16 +11,17 @@ use super::config_paths;
 type DLLString = *const c_char;
 type DLLFileDetails = *const (DLLString, DLLString, u64, DLLString);
 
-#[derive(Debug)]
 pub struct Plugin {
     library: Library,
     filename: OsString,
     credentials: Option<String>,
+    details: Option<Vec<FileDetails>>,
 }
 
 /// Gets file's last modified date
 /// Plugin developers can optionally attach the
 /// file buffer to reduce API calls where possible
+#[derive(Clone)]
 pub struct FileDetails {
     pub tag: String,
     pub folder_name: OsString,
@@ -73,6 +74,7 @@ impl Plugin {
             library,
             filename: servicename.to_owned(),
             credentials: Plugin::read_creds(servicename),
+            details: None,
         })
     }
 
@@ -138,7 +140,7 @@ impl Plugin {
                 (Some(creds), None) => {
                     let _ = self.write_creds(&creds);
                     true
-                },
+                }
                 (Some(_), Some(_)) => todo!("authenticate function should not return two values"),
                 _ => true,
             }
@@ -272,42 +274,52 @@ impl Plugin {
         }
     }
 
-    pub fn read_cloud(&self) -> PluginResult<Vec<FileDetails>> {
-        let access_token = CString::new(self.credentials()).unwrap_or_default();
+    pub fn read_cloud(&mut self) -> PluginResult<Vec<FileDetails>> {
+        if let Some(details) = self.details.clone() {
+            Ok(details)
+        } else {
+            let access_token = CString::new(self.credentials()).unwrap_or_default();
 
-        unsafe {
-            let (ptr, count, possible_err) =
-                self.library
+            unsafe {
+                let (ptr, count, possible_err) = self
+                    .library
                     .get::<unsafe extern "C" fn(DLLString) -> (DLLFileDetails, u64, DLLString)>(
                         b"read_cloud",
                     )
-                    .expect("read_cloud function not found")(access_token.as_ptr());
+                    .expect("read_cloud function not found")(
+                    access_token.as_ptr()
+                );
 
-            match self.create_string(possible_err) {
-                Some(err) => Err(err),
-                None => {
-                    let mut v: Vec<FileDetails> = Vec::new();
+                match self.create_string(possible_err) {
+                    Some(err) => Err(err),
+                    None => {
+                        let mut v: Vec<FileDetails> = Vec::new();
 
-                    for i in 0..count as isize {
-                        let detail = *ptr.offset(i);
-                        v.push(FileDetails {
-                            tag: self.create_string(detail.0).unwrap().into(),
-                            folder_name: self.create_string(detail.1).unwrap().into(),
-                            last_modified: SystemTime::UNIX_EPOCH + Duration::from_secs(detail.2),
-                            data: if detail.3.is_null() {
-                                None
-                            } else {
-                                Some(CStr::from_ptr(detail.3).to_bytes().to_vec())
-                            },
-                        });
+                        for i in 0..count as isize {
+                            let detail = *ptr.offset(i);
+                            v.push(FileDetails {
+                                tag: self.create_string(detail.0).unwrap().into(),
+                                folder_name: self.create_string(detail.1).unwrap().into(),
+                                last_modified: SystemTime::UNIX_EPOCH
+                                    + Duration::from_secs(detail.2),
+                                data: if detail.3.is_null() {
+                                    None
+                                } else {
+                                    Some(CStr::from_ptr(detail.3).to_bytes().to_vec())
+                                },
+                            });
+                        }
+
+                        self.library
+                            .get::<unsafe extern "C" fn(u64, DLLFileDetails)>(b"free_file_details")
+                            .expect("free_file_details function not found")(
+                            count, ptr
+                        );
+
+                        self.details =
+                            Some(v.clone().into_iter().filter(|f| f.data.is_none()).collect());
+                        Ok(v)
                     }
-
-                    self.library
-                        .get::<unsafe extern "C" fn(u64, DLLFileDetails)>(b"free_file_details")
-                        .expect("free_file_details function not found")(
-                        count, ptr
-                    );
-                    Ok(v)
                 }
             }
         }
