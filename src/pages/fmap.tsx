@@ -53,12 +53,12 @@ export default function Fmap() {
       toast.error("Some folders were not synced, please check File -> Mappings")
   })
 
-  return <main class="w-full">
+  return <>
     <Show when={currentFolder()}
       fallback={<TagList folders={folders} setCurrentFolder={setCurrentFolder} />}>
       <FolderList folders={folders} setFolders={setFolders} currentFolder={currentFolder()} setCurrentFolder={setCurrentFolder} />
     </Show>
-  </main>
+  </>
 }
 
 function TagList(props: { folders: FileTree, setCurrentFolder: CurrentFolderSetter }) {
