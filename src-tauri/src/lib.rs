@@ -25,6 +25,10 @@ pub struct AppState {
 }
 
 impl AppState {
+    pub fn plugin_mut_ref(&mut self) -> &mut Plugin {
+        self.plugin.as_mut().unwrap()
+    }
+
     pub fn plugin_ref(&self) -> &Plugin {
         self.plugin.as_ref().unwrap()
     }

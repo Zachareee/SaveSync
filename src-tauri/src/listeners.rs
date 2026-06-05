@@ -114,7 +114,7 @@ where
 
     thread::spawn(move || {
         if let Some(details) = write_app_state(|s| {
-            let plugin = s.plugin_ref();
+            let plugin = s.plugin_mut_ref();
             match plugin.read_cloud() {
                 Ok(details) => {
                     s.tags = details.iter().map(|f| f.tag.clone()).collect();
