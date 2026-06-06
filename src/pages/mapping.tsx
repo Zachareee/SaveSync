@@ -42,7 +42,7 @@ export default function Mapping() {
   return <>
     <Index each={mapping}>
       {(elem, idx) => <div class="flex">
-        <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} class="w-min"/>
+        <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} class="w-min" />
         <input value={elem()[1]} disabled />
         <button
           onclick={() => open({ directory: true, multiple: false }).then(path => {

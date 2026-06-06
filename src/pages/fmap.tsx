@@ -65,7 +65,7 @@ function TagList(props: { folders: FileTree, setCurrentFolder: CurrentFolderSett
   const navigate = useNavigate()
 
   return <div class="flex justify-center">
-    <For each={Object.entries(props.folders)}>
+    <For each={Object.entries(props.folders).sort()}>
       {elem => <div class="border-white m-4" onclick={[props.setCurrentFolder, elem[0]]}>
         <p>{elem[0]}</p>
       </div>}
