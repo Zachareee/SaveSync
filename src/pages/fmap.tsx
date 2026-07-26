@@ -55,7 +55,7 @@ export default function Fmap() {
       toast.error("Some folders were not synced, please check File -> Mappings")
   })
 
-  return <div class="flex justify-center items-center">
+  return <div class="flex justify-center overflow-y-auto">
     <Show when={currentFolder()}
       fallback={<TagList folders={Object.keys(folders).toSorted()} setCurrentFolder={setCurrentFolder} />}>
       <FolderList folders={folders[currentFolder()]} sync_folder={sync_folder} back={() => setCurrentFolder("")} />
@@ -66,29 +66,31 @@ export default function Fmap() {
 function TagList(props: { folders: string[], setCurrentFolder: (s: string) => void }) {
   const navigate = useNavigate()
 
-  return <>
+  return <div class="text-center">
     <For each={props.folders}>
-      {elem => <div class="border-white m-4" onclick={[props.setCurrentFolder, elem]}>
-        <p>{elem}</p>
-      </div>}
+      {elem =>
+        <div class="border-white border-3 rounded-full m-4 px-4 py-2 bg-indigo-600 cursor-pointer hover:bg-indigo-800" onclick={[props.setCurrentFolder, elem]}>
+          {elem}
+        </div>
+      }
     </For>
     <Portal>
       <div class="fixed right-0 bottom-0 m-4">
         <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
       </div>
     </Portal>
-  </>
+  </div>
 }
 
 function FolderList(props: { folders: FileTree[string], sync_folder: (arg: OsString) => void, back: () => void }) {
   return <>
-    <div class="w-min">
+    <div class="w-min h-screen">
       <Index each={Object.entries(props.folders)}>
         {
           foldername => <DivButton onclick={[props.sync_folder, stringToOsString(foldername()[0])]}>
             <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1].synced} onclick={(e) => e.preventDefault()} />
             {foldername()[1].folder ? <Folder /> : <InsertDriveFile />} {foldername()[0]}
-            <Loop style={{"visibility": foldername()[1].loading ? "visible" : "hidden"}} class="ml-2"/>
+            <Loop style={{ "visibility": foldername()[1].loading ? "visible" : "hidden" }} class="ml-2" />
           </DivButton>
         }
       </Index>

@@ -23,6 +23,18 @@
   -webkit-text-size-adjust: 100%;
 }
 
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar, ::-webkit-scrollbar-button {
+  display: none;
+  width: 0px;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+html {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
 .container {
   margin: 0;
   padding-top: 10vh;

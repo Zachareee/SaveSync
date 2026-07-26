@@ -1,21 +1,16 @@
 import { useNavigate } from "@solidjs/router"
-import { createSignal, ParentComponent, Show } from "solid-js"
-import MenuButton from "./components/MenuButton"
+import { ParentComponent } from "solid-js"
 import NavBar from "./components/NavBar"
 
 const PageRoot: ParentComponent = props => {
-  const [showMenu, setShowMenu] = createSignal(false)
   const navigate = useNavigate()
 
-  return <>
-    <Show when={showMenu()}>
-      <NavBar navigate={navigate} />
-    </Show>
-    <MenuButton onclick={[setShowMenu, (m: boolean) => !m]} class="fixed" />
-    <div class="inline-block w-full h-screen">
+  return <div class="w-full flex">
+    <NavBar navigate={navigate} />
+    <div class="content-center flex-auto">
       {props.children}
     </div>
-  </>
+  </div>
 }
 
 export default PageRoot

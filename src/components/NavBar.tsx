@@ -9,7 +9,7 @@ const navs = Object.entries({
 
 const NavBar: Component<{ navigate: Navigator }> = props => {
   return <>
-    <div class="inline-block h-lvh content-center bg-indigo-950 p-2 fixed">
+    <div class="inline-block h-screen content-center bg-indigo-950 p-2">
       <For each={navs}>
         {name => <NavOption onclick={[props.navigate, name[1]]}>{name[0]}</NavOption>}
       </For>
