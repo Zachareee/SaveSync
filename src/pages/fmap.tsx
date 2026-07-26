@@ -10,12 +10,6 @@ import DivButton from "@/components/DivButton"
 import { createStore, reconcile, SetStoreFunction } from "solid-js/store"
 import { conflicting_listener } from "@/logic/conflicting_window"
 
-const sync_folder = (data: { tag: string, foldername: OsString, setFolders: SetStoreFunction<FileTree> }) => {
-  const { setFolders, tag, foldername } = data
-  setFolders(tag, osStringToString(foldername), "loading", true)
-  emit("sync", data)
-}
-
 export default function Fmap() {
   const [currentFolder, setCurrentFolder] = createSignal("")
   const [folders, setFolders] = createStore<FileTree>()
@@ -44,8 +38,14 @@ export default function Fmap() {
         )
       )))
     })
-
   })
+
+  const sync_folder = (foldername: OsString) => {
+    const tag = currentFolder()
+    setFolders(tag, osStringToString(foldername), "loading", true)
+    emit("sync", { tag, foldername })
+  }
+
 
   invoke("get_mapping").then(({ mapping, required }) => {
     let current = Object.entries(mapping).map(([key]) => key)
@@ -55,19 +55,19 @@ export default function Fmap() {
 
   return <>
     <Show when={currentFolder()}
-      fallback={<TagList folders={folders} setCurrentFolder={setCurrentFolder} />}>
-      <FolderList folders={folders} setFolders={setFolders} currentFolder={currentFolder()} setCurrentFolder={setCurrentFolder} />
+      fallback={<TagList folders={Object.keys(folders).toSorted()} setCurrentFolder={setCurrentFolder} />}>
+      <FolderList folders={folders[currentFolder()]} sync_folder={sync_folder} back={() => setCurrentFolder("")} />
     </Show>
   </>
 }
 
-function TagList(props: { folders: FileTree, setCurrentFolder: CurrentFolderSetter }) {
+function TagList(props: { folders: string[], setCurrentFolder: (s: string) => void }) {
   const navigate = useNavigate()
 
-  return <div class="flex justify-center">
-    <For each={Object.entries(props.folders).sort()}>
-      {elem => <div class="border-white m-4" onclick={[props.setCurrentFolder, elem[0]]}>
-        <p>{elem[0]}</p>
+  return <div class="flex justify-center w-full">
+    <For each={props.folders}>
+      {elem => <div class="border-white m-4" onclick={[props.setCurrentFolder, elem]}>
+        <p>{elem}</p>
       </div>}
     </For>
     <Portal>
@@ -78,12 +78,12 @@ function TagList(props: { folders: FileTree, setCurrentFolder: CurrentFolderSett
   </div>
 }
 
-function FolderList(props: { folders: FileTree, setFolders: SetStoreFunction<FileTree>, currentFolder: string, setCurrentFolder: CurrentFolderSetter, }) {
+function FolderList(props: { folders: FileTree[string], sync_folder: (arg: OsString) => void, back: () => void }) {
   return <div class="flex justify-center">
     <div class="w-min">
-      <Index each={Object.entries(props.folders[props.currentFolder])}>
+      <Index each={Object.entries(props.folders)}>
         {
-          foldername => <DivButton onclick={[sync_folder, { tag: props.currentFolder, foldername: stringToOsString(foldername()[0]), setFolders: props.setFolders }]}>
+          foldername => <DivButton onclick={[props.sync_folder, stringToOsString(foldername()[0])]}>
             <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1].synced} onclick={(e) => e.preventDefault()} />
             {foldername()[1].folder ? "o" : "i"} {foldername()[0]}
             <Show when={foldername()[1].loading}> Loading </Show>
@@ -93,10 +93,8 @@ function FolderList(props: { folders: FileTree, setFolders: SetStoreFunction<Fil
     </div>
     <Portal>
       <div class="fixed right-0 bottom-0 m-4">
-        <button onclick={[props.setCurrentFolder, ""]}>Back to tags</button>
+        <button onclick={props.back}>Back to tags</button>
       </div>
     </Portal>
   </div>
 }
-
-type CurrentFolderSetter = ReturnType<typeof createSignal<string>>[1]
