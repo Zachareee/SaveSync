@@ -3,12 +3,14 @@ import { useNavigate } from "@solidjs/router"
 import { createSignal, For, Index, Show } from "solid-js"
 import toast from "solid-toast"
 import lo from "lodash"
-import { FileTree, } from "@/types/data"
+import { FileTree } from "@/types/data"
 import { OsString } from "@/types/rust"
 import { Portal } from "solid-js/web"
 import DivButton from "@/components/DivButton"
-import { createStore, reconcile, SetStoreFunction } from "solid-js/store"
+import { createStore, reconcile } from "solid-js/store"
 import { conflicting_listener } from "@/logic/conflicting_window"
+
+import { Folder, InsertDriveFile, Loop } from "@suid/icons-material"
 
 export default function Fmap() {
   const [currentFolder, setCurrentFolder] = createSignal("")
@@ -53,18 +55,18 @@ export default function Fmap() {
       toast.error("Some folders were not synced, please check File -> Mappings")
   })
 
-  return <>
+  return <div class="flex justify-center items-center">
     <Show when={currentFolder()}
       fallback={<TagList folders={Object.keys(folders).toSorted()} setCurrentFolder={setCurrentFolder} />}>
       <FolderList folders={folders[currentFolder()]} sync_folder={sync_folder} back={() => setCurrentFolder("")} />
     </Show>
-  </>
+  </div>
 }
 
 function TagList(props: { folders: string[], setCurrentFolder: (s: string) => void }) {
   const navigate = useNavigate()
 
-  return <div class="flex justify-center w-full">
+  return <>
     <For each={props.folders}>
       {elem => <div class="border-white m-4" onclick={[props.setCurrentFolder, elem]}>
         <p>{elem}</p>
@@ -75,18 +77,18 @@ function TagList(props: { folders: string[], setCurrentFolder: (s: string) => vo
         <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
       </div>
     </Portal>
-  </div>
+  </>
 }
 
 function FolderList(props: { folders: FileTree[string], sync_folder: (arg: OsString) => void, back: () => void }) {
-  return <div class="flex justify-center">
+  return <>
     <div class="w-min">
       <Index each={Object.entries(props.folders)}>
         {
           foldername => <DivButton onclick={[props.sync_folder, stringToOsString(foldername()[0])]}>
             <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1].synced} onclick={(e) => e.preventDefault()} />
-            {foldername()[1].folder ? "o" : "i"} {foldername()[0]}
-            <Show when={foldername()[1].loading}> Loading </Show>
+            {foldername()[1].folder ? <Folder /> : <InsertDriveFile />} {foldername()[0]}
+            <Loop style={{"visibility": foldername()[1].loading ? "visible" : "hidden"}} class="ml-2"/>
           </DivButton>
         }
       </Index>
@@ -96,5 +98,5 @@ function FolderList(props: { folders: FileTree[string], sync_folder: (arg: OsStr
         <button onclick={props.back}>Back to tags</button>
       </div>
     </Portal>
-  </div>
+  </>
 }
