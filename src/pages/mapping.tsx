@@ -40,30 +40,33 @@ export default function Mapping() {
   const navigate = useNavigate()
 
   return <>
-    <Index each={mapping}>
-      {(elem, idx) => <div class="flex">
-        <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} class="w-min" />
-        <input value={elem()[1]} disabled />
-        <button
-          onclick={() => open({ directory: true, multiple: false }).then(path => {
-            if (path)
-              setMapping(idx, 1, path)
-          })}
-        >Browse</button>
-        <button onclick={[removePath, idx]}>Delete mapping</button>
-      </div>}
-    </Index>
-    <h2> Missing tags </h2>
-    <For each={requiredList.filter(tag => !mapping.some(([key]) => tag == key))}>
-      {e => <button onclick={[addPath, e]}>{e}</button>}
-    </For>
-    <Portal>
-      <div class="fixed left-0 bottom-0 m-4">
-        <button onclick={[addPath, ""]}>Add mapping</button>
-      </div>
-      <div class="fixed right-0 bottom-0 m-4">
-        <button onclick={[saveAndClose, [mapping, () => navigate("/folders")]]}>Save and close</button>
-      </div>
-    </Portal>
+    <div class="flex flex-col items-center">
+      <Index each={mapping}>
+        {(elem, idx) => <div class="text-center">
+          <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} class="w-min" />
+          <input value={elem()[1]} disabled />
+          <button
+            onclick={() => open({ directory: true, multiple: false }).then(path => {
+              if (path)
+                setMapping(idx, 1, path)
+            })}
+          >Browse</button>
+          <button onclick={[removePath, idx]}>Delete mapping</button>
+        </div>}
+      </Index>
+      <br />
+      <h2> Missing tags </h2>
+      <For each={requiredList.filter(tag => !mapping.some(([key]) => tag == key))}>
+        {e => <button onclick={[addPath, e]}>{e}</button>}
+      </For>
+      <Portal>
+        <div class="fixed left-0 bottom-0 m-4">
+          <button onclick={[addPath, ""]}>Add mapping</button>
+        </div>
+        <div class="fixed right-0 bottom-0 m-4">
+          <button onclick={[saveAndClose, [mapping, () => navigate("/folders")]]}>Save and close</button>
+        </div>
+      </Portal>
+    </div>
   </>
 }

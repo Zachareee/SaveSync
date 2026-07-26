@@ -4,7 +4,6 @@ import { createSignal, Index, onMount, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
-import { menuStatus } from "@/logic/menu";
 import { conflicting_listener } from "@/logic/conflicting_window";
 
 const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
@@ -12,8 +11,6 @@ const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invo
 let navigate: ReturnType<typeof useNavigate>
 
 export default function PluginSelect() {
-  menuStatus(false)
-
   navigate = useNavigate()
 
   const [services, setServices] = createStore<Info[]>([]);

@@ -8,11 +8,11 @@ const PageRoot: ParentComponent = props => {
   const navigate = useNavigate()
 
   return <>
-    <MenuButton onclick={[setShowMenu, (m: boolean) => !m]} class="absolute" />
     <Show when={showMenu()}>
       <NavBar navigate={navigate} />
     </Show>
-    <div class="inline-block">
+    <MenuButton onclick={[setShowMenu, (m: boolean) => !m]} class="fixed" />
+    <div class="inline-block w-full h-screen">
       {props.children}
     </div>
   </>
