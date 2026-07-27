@@ -22,7 +22,7 @@ export default function PluginSelect() {
   }
 
   unlisten([
-    listen("init_result", () => navigate("/folders")),
+    listen("init_result", () => navigate("/tags")),
     conflicting_listener()
   ])()
 

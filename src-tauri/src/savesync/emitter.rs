@@ -35,6 +35,6 @@ where
     S: Serialize + Clone,
 {
     app_handle()
-        .emit(event, payload)
+        .emit_to("main", event, payload)
         .expect("Unable to emit event")
 }

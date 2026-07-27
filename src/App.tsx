@@ -1,27 +1,27 @@
-import { Route, Router } from "@solidjs/router";
 import "./App.css";
-import PluginSelect from "./pages/plugin-select";
-import Fmap from "./pages/fmap";
-import ErrorPage from "./pages/error-page";
-import Mapping from "./pages/mapping";
+import { createStore } from "solid-js/store";
+import { Route, Router } from "@solidjs/router";
 import { Window } from "@tauri-apps/api/window";
 import { listen } from "@/logic/backend";
 import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
-import Conflicting from "./pages/conflicting";
 import PageRoot from "./PageRoot";
+import { FileTree } from "./types/data";
+import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags } from "./pages";
+
+export const [folders, setFolders] = createStore<FileTree>();
 
 (() => {
   const parent = Window.getCurrent()
-  if (parent.label == "main")
-    listen("plugin_error", ([title, description]) => createWindow(`/error/${description}`, { title, parent }))
+  listen("plugin_error", ([title, description]) => createWindow(`/error/${description}`, { title, parent }))
 })()
 
 function App() {
   return <>
-    <Toaster position="bottom-left" />
+    <Toaster position="bottom-center" containerClassName="cursor-pointer" />
     <Router root={PageRoot}>
-      <Route path={"/folders"} component={Fmap} />
+      <Route path={"/tags"} component={Tags} />
+      <Route path={"/tags/:TAGNAME"} component={Folders} />
       <Route path={"/error/*ERROR"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
       <Route path={"/conflicting/:FOLDERNAME/:LOCAL/:CLOUD/*TAG"} component={Conflicting} />

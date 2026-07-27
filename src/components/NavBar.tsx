@@ -3,7 +3,7 @@ import { Component, For } from "solid-js";
 import NavOption from "./NavOption";
 
 const navs = Object.entries({
-  Folders: "/folders",
+  "Folders": "/tags",
   "Tag mapping": "/mapping"
 })
 
