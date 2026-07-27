@@ -1,6 +1,6 @@
 import { folders, setFolders } from "@/App";
 import DivButton from "@/components/DivButton";
-import { emit, osStringToString, stringToOsString } from "@/logic/backend";
+import { emit, listen, osStringToString, stringToOsString, unlisten } from "@/logic/backend";
 import { OsString } from "@/types/rust";
 import { useNavigate, useParams } from "@solidjs/router";
 import Folder from "@suid/icons-material/Folder"
@@ -15,6 +15,12 @@ export default function Folders() {
   const { TAGNAME } = Object.fromEntries(
     Object.entries(params).map(([k, v]) => [k, decodeURIComponent(v)])
   )
+
+  unlisten([
+    listen("sync_result", ([tag, folder, bool]) => {
+      setFolders(tag, osStringToString(folder), { loading: false, synced: bool })
+    })
+  ])
 
   const sync_folder = (foldername: OsString) => {
     setFolders(TAGNAME, osStringToString(foldername), "loading", true)

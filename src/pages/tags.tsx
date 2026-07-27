@@ -1,4 +1,4 @@
-import { emit, invoke, listen, osStringToString, unlisten } from "@/logic/backend"
+import { emit, invoke, osStringToString, unlisten } from "@/logic/backend"
 import { useNavigate } from "@solidjs/router"
 import { For } from "solid-js"
 import toast from "solid-toast"
@@ -13,12 +13,7 @@ import { silenceMissingMappings } from "./settings"
 export default function Folders() {
   const navigate = useNavigate()
 
-  unlisten([
-    listen("sync_result", ([tag, folder, bool]) => {
-      setFolders(tag, osStringToString(folder), { loading: false, synced: bool })
-    }),
-    conflicting_listener()
-  ])()
+  unlisten([conflicting_listener()])()
 
   invoke("filetree").then(payload => {
     invoke("get_watched_folders").then(watched => {
