@@ -4,7 +4,8 @@ import NavOption from "./NavOption";
 
 const navs = Object.entries({
   "Folders": "/tags",
-  "Tag mapping": "/mapping"
+  "Tag mapping": "/mapping",
+  "Settings": "/settings"
 })
 
 const NavBar: Component<{ navigate: Navigator }> = props => {

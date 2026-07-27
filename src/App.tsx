@@ -7,7 +7,7 @@ import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
 import PageRoot from "./PageRoot";
 import { FileTree } from "./types/data";
-import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags } from "./pages";
+import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings } from "./pages";
 import { enable } from "@tauri-apps/plugin-autostart";
 
 export const [folders, setFolders] = createStore<FileTree>();
@@ -27,6 +27,7 @@ function App() {
       <Route path={"/error/*ERROR"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
       <Route path={"/conflicting/:FOLDERNAME/:LOCAL/:CLOUD/*TAG"} component={Conflicting} />
+      <Route path={"/settings"} component={Settings}/>
       <Route path={"*"} component={PluginSelect} />
     </Router>
   </>
