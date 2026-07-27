@@ -1,21 +1,17 @@
 import "./App.css";
 import { createStore } from "solid-js/store";
 import { Route, Router } from "@solidjs/router";
-import { Window } from "@tauri-apps/api/window";
 import { listen } from "@/logic/backend";
 import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
 import PageRoot from "./PageRoot";
 import { FileTree } from "./types/data";
 import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings } from "./pages";
-import { enable } from "@tauri-apps/plugin-autostart";
 
 export const [folders, setFolders] = createStore<FileTree>();
 
-await enable();
 (() => {
-  const parent = Window.getCurrent()
-  listen("plugin_error", ([title, description]) => createWindow(`/error/${description}`, { title, parent }))
+  listen("plugin_error", ([title, description]) => createWindow(`/error/${description}`, { title, parent: "main" }))
 })()
 
 function App() {

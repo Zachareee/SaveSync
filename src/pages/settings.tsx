@@ -2,8 +2,8 @@ import Switch from "@suid/material/Switch"
 import { enable, disable } from "@tauri-apps/plugin-autostart"
 
 export default function Settings() {
-  function toggleAutoStartup(_: any, checked: boolean) {
-    (checked ? enable : disable)()
+  async function toggleAutoStartup(_: any, checked: boolean) {
+    await (checked ? enable : disable)()
   }
 
   return <div class="overflow-y-scroll m-4">
