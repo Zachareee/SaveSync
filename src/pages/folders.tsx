@@ -3,7 +3,9 @@ import DivButton from "@/components/DivButton";
 import { emit, osStringToString, stringToOsString } from "@/logic/backend";
 import { OsString } from "@/types/rust";
 import { useNavigate, useParams } from "@solidjs/router";
-import { Folder, InsertDriveFile, Loop } from "@suid/icons-material";
+import Folder from "@suid/icons-material/Folder"
+import InsertDriveFile from "@suid/icons-material/InsertDriveFile"
+import Loop from "@suid/icons-material/Loop"
 import { Index } from "solid-js";
 import { Portal } from "solid-js/web";
 

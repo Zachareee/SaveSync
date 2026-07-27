@@ -96,9 +96,7 @@ impl AppStore {
     }
 
     pub fn get_mapping(&self, key: &str) -> Option<PathBuf> {
-        self.path_mapping()
-            .get(key)
-            .map(|s| s.into())
+        self.path_mapping().get(key).map(|s| s.into())
     }
 
     pub fn resolve_path(&self, tag: &str, path: impl AsRef<Path>) -> PathBuf {

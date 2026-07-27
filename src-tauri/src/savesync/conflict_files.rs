@@ -2,7 +2,11 @@ use std::ffi::{OsStr, OsString};
 
 use tauri_plugin_opener::OpenerExt;
 
-use crate::{app_handle, app_store, savesync::watch::{handle_buffer, strip_zip_extension}, write_app_state};
+use crate::{
+    app_handle, app_store,
+    savesync::watch::{handle_buffer, strip_zip_extension},
+    write_app_state,
+};
 
 use super::{
     config_paths::temp,

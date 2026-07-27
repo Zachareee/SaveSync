@@ -9,13 +9,14 @@
     "npm:@tailwindcss/vite@^4.0.3": "4.0.3_vite@6.4.2__lightningcss@1.29.1",
     "npm:@tauri-apps/api@2": "2.11.0",
     "npm:@tauri-apps/cli@2": "2.2.5",
+    "npm:@tauri-apps/plugin-autostart@~2.5.1": "2.5.1",
     "npm:@tauri-apps/plugin-deep-link@2": "2.4.9",
     "npm:@tauri-apps/plugin-dialog@2": "2.7.1",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
     "npm:@tauri-apps/plugin-store@2": "2.4.3",
     "npm:@types/lodash@^4.17.15": "4.17.15",
     "npm:lodash@^4.17.21": "4.17.21",
-    "npm:postcss@^8.5.1": "8.5.1",
+    "npm:postcss@^8.5.1": "8.5.15",
     "npm:solid-js@^1.9.3": "1.9.14",
     "npm:solid-toast@0.5": "0.5.0_solid-js@1.9.14",
     "npm:tailwindcss@^4.0.3": "4.0.3",
@@ -694,6 +695,12 @@
       ],
       "bin": true
     },
+    "@tauri-apps/plugin-autostart@2.5.1": {
+      "integrity": "sha512-zS/xx7yzveCcotkA+8TqkI2lysmG2wvQXv2HGAVExITmnFfHAdj1arGsbbfs3o6EktRHf6l34pJxc3YGG2mg7w==",
+      "dependencies": [
+        "@tauri-apps/api"
+      ]
+    },
     "@tauri-apps/plugin-deep-link@2.4.9": {
       "integrity": "sha512-u0SKOUHnJ1wqeqXsDFq2+kASCBj9xxbG0g9XZWPy9SOmU4wXtp6b/wiYpm6oH6/5fBTQsLqnLhIvqLBRpgHJlA==",
       "dependencies": [
@@ -984,10 +991,6 @@
       "integrity": "sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==",
       "bin": true
     },
-    "nanoid@3.3.8": {
-      "integrity": "sha512-WNLf5Sd8oZxOm+TzppcYk8gVOgP+l58xNy58D0nbUnOxOWRWvlcCV4kUF7ltmI6PsrLl/BgKEyS4mqsGChFN0w==",
-      "bin": true
-    },
     "node-releases@2.0.19": {
       "integrity": "sha512-xxOWJsBKtzAq7DY0J+DTzuz58K8e7sJbdgwkbMWQe8UYB6ekmsQ45q0M/tJDsGaZmbC+l7n57UV8Hl5tHxO9uw=="
     },
@@ -1003,18 +1006,10 @@
     "picomatch@4.0.4": {
       "integrity": "sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A=="
     },
-    "postcss@8.5.1": {
-      "integrity": "sha512-6oz2beyjc5VMn/KV1pPw8fliQkhBXrVn1Z3TVyqZxU8kZpzEKhBdmCFqI6ZbmGtamQvQGuU1sgPTk8ZrXDD7jQ==",
-      "dependencies": [
-        "nanoid@3.3.8",
-        "picocolors",
-        "source-map-js"
-      ]
-    },
     "postcss@8.5.15": {
       "integrity": "sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==",
       "dependencies": [
-        "nanoid@3.3.12",
+        "nanoid",
         "picocolors",
         "source-map-js"
       ]
@@ -1142,7 +1137,7 @@
         "fdir",
         "lightningcss",
         "picomatch",
-        "postcss@8.5.15",
+        "postcss",
         "rollup",
         "tinyglobby"
       ],
@@ -1178,6 +1173,7 @@
         "npm:@tailwindcss/vite@^4.0.3",
         "npm:@tauri-apps/api@2",
         "npm:@tauri-apps/cli@2",
+        "npm:@tauri-apps/plugin-autostart@~2.5.1",
         "npm:@tauri-apps/plugin-deep-link@2",
         "npm:@tauri-apps/plugin-dialog@2",
         "npm:@tauri-apps/plugin-opener@2",

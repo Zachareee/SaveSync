@@ -1,7 +1,4 @@
-use std::{
-    ffi::OsStr,
-    time::SystemTime,
-};
+use std::{ffi::OsStr, time::SystemTime};
 
 use serde::Serialize;
 use tauri::Emitter;

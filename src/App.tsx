@@ -8,9 +8,11 @@ import { Toaster } from "solid-toast";
 import PageRoot from "./PageRoot";
 import { FileTree } from "./types/data";
 import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags } from "./pages";
+import { enable } from "@tauri-apps/plugin-autostart";
 
 export const [folders, setFolders] = createStore<FileTree>();
 
+await enable();
 (() => {
   const parent = Window.getCurrent()
   listen("plugin_error", ([title, description]) => createWindow(`/error/${description}`, { title, parent }))

@@ -46,14 +46,8 @@ impl Default for AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let mut builder = tauri::Builder::default();
 
-    #[cfg(desktop)]
-    {
-        builder = builder.plugin(tauri_plugin_single_instance::init(|_, _, _| {}));
-    }
-
-    builder
+    tauri::Builder::default()
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -69,6 +63,14 @@ pub fn run() {
         ])
         .setup(|app| {
             emit_listeners(app);
+
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))?;
+
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))?;
 
             let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
 

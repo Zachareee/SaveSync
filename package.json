@@ -17,6 +17,7 @@
     "@suid/material": "^0.19.0",
     "@suid/vite-plugin": "^0.4.1",
     "@tailwindcss/vite": "^4.0.3",
+    "@tauri-apps/plugin-autostart": "~2.5.1",
     "@tauri-apps/plugin-deep-link": "^2",
     "@tauri-apps/plugin-dialog": "^2",
     "@tauri-apps/plugin-store": "^2",
