@@ -11,7 +11,7 @@ import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings 
 export const [folders, setFolders] = createStore<FileTree>();
 
 (() => {
-  listen("plugin_error", ([title, description]) => createWindow(`/error/${description}`, { title, parent: "main" }))
+  listen("plugin_error", ([title, error]) => createWindow(`/error?${{ error }}`, { title, parent: "main" }))
 })()
 
 function App() {
@@ -20,10 +20,10 @@ function App() {
     <Router root={PageRoot}>
       <Route path={"/tags"} component={Tags} />
       <Route path={"/tags/:TAGNAME"} component={Folders} />
-      <Route path={"/error/*ERROR"} component={ErrorPage} />
+      <Route path={"/error"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
-      <Route path={"/conflicting/:FOLDERNAME/:LOCAL/:CLOUD/*TAG"} component={Conflicting} />
-      <Route path={"/settings"} component={Settings}/>
+      <Route path={"/conflicting"} component={Conflicting} />
+      <Route path={"/settings"} component={Settings} />
       <Route path={"*"} component={PluginSelect} />
     </Router>
   </>

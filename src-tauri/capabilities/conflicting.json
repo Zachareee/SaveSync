@@ -3,7 +3,7 @@
   "identifier": "conflicting",
   "description": "Capability for the conflicting window",
   "windows": [
-    "/conflicting/*/*"
+    "conflicting"
   ],
   "permissions": [
     "core:default",
