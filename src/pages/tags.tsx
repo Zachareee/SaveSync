@@ -2,12 +2,13 @@ import { emit, invoke, listen, osStringToString, unlisten } from "@/logic/backen
 import { useNavigate } from "@solidjs/router"
 import { For } from "solid-js"
 import toast from "solid-toast"
-import lo from "lodash"
+import isEqual from "lodash/isEqual"
 import { Portal } from "solid-js/web"
 import { reconcile } from "solid-js/store"
 import { conflicting_listener } from "@/logic/conflicting_window"
 
 import { folders, setFolders } from "@/App"
+import { silenceMissingMappings } from "./settings"
 
 export default function Folders() {
   const navigate = useNavigate()
@@ -27,7 +28,7 @@ export default function Folders() {
             [osStringToString(filename), {
               folder: isFolder,
               synced: watched.some(
-                tagpath => lo.isEqual(tagpath, [k, filename])
+                tagpath => isEqual(tagpath, [k, filename])
               ),
               loading: false
             }]
@@ -39,7 +40,7 @@ export default function Folders() {
 
   invoke("get_mapping").then(({ mapping, required }) => {
     let current = Object.entries(mapping).map(([key]) => key)
-    if (required.some(tag => !current.includes(tag)))
+    if (required.some(tag => !current.includes(tag)) && !silenceMissingMappings())
       toast.error(
         (t) =>
           <p onclick={() => {
