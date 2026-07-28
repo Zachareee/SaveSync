@@ -79,6 +79,7 @@ pub fn init_func(path: &OsStr) {
 pub fn start_server() {
     tauri_plugin_oauth::start_with_config(
         OauthConfig {
+            redirect_uri: None,
             ports: Some(vec![PORT]),
             response: None,
         },

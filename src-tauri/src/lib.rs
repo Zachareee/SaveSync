@@ -12,7 +12,11 @@ use std::{
     ops::Deref,
     sync::{Arc, OnceLock, RwLock},
 };
-use tauri::{AppHandle, Manager, RunEvent};
+use tauri::{
+    menu::{Menu, MenuBuilder, MenuItem},
+    tray::TrayIconBuilder,
+    AppHandle, Manager, RunEvent,
+};
 use tauri_plugin_deep_link::DeepLinkExt;
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
@@ -46,7 +50,6 @@ impl Default for AppState {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-
     tauri::Builder::default()
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
@@ -63,23 +66,43 @@ pub fn run() {
         ])
         .setup(|app| {
             emit_listeners(app);
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(
+                    &Menu::with_items(
+                        app,
+                        &[&MenuItem::new(app, "Close", true, None::<Box<str>>).unwrap()],
+                    )?,
+                    // &MenuBuilder::new(app)
+                    //     .items(&[&MenuItem::new(app, "Close", true, None::<Box<str>>).unwrap()])
+                    //     .build()
+                    //     .unwrap(),
+                )
+                .build(app)?;
 
             #[cfg(desktop)]
-            app.handle()
-                .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))?;
+            {
+                app.handle()
+                    .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+                        app.get_webview_window("main")
+                            .expect("No main window found")
+                            .set_focus()
+                            .expect("Unable to focus main window");
+                    }))?;
 
-            #[cfg(desktop)]
-            app.handle()
-                .plugin(tauri_plugin_autostart::init(tauri_plugin_autostart::MacosLauncher::LaunchAgent, None))?;
+                app.handle().plugin(tauri_plugin_autostart::init(
+                    tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+                    None,
+                ))?;
+
+                app.deep_link().on_open_url(|e| {
+                    println!("Urls: {:?}", e.urls());
+                });
+            }
 
             let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
 
             app.manage(RwLock::new(AppState::default()));
-
-            #[cfg(desktop)]
-            app.deep_link().on_open_url(|e| {
-                println!("Urls: {:?}", e.urls());
-            });
 
             APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
             Ok(())
