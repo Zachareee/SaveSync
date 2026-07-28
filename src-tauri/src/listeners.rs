@@ -28,7 +28,7 @@ use tauri::{Event, Listener};
 use tauri_plugin_oauth::OauthConfig;
 use tauri_plugin_opener::open_url;
 
-const PORT: u16 = 3333;
+const PORT: u16 = 3000;
 
 pub fn emit_listeners(app: &tauri::App) {
     let arr: Vec<(&str, fn(Event))> = vec![
@@ -84,15 +84,23 @@ pub fn start_server() {
             response: None,
         },
         move |url| {
-            write_app_state(|s| {
+            let result = write_app_state(|s| {
                 let mut plugin = s.plugin.take().unwrap();
-                if let Err(s) = plugin.process_save_credentials(&url) {
-                    emitter::plugin_error(plugin.filename().to_str().unwrap(), &s);
+                match plugin.process_save_credentials(&url) {
+                    Err(s) => {
+                        emitter::plugin_error(plugin.filename().to_str().unwrap(), &s);
+                        false
+                    }
+                    Ok(_) => {
+                        s.plugin = Some(plugin);
+                        true
+                    }
                 }
-                s.plugin = Some(plugin);
             });
             stop_server(PORT);
-            init_download_folders();
+            if result {
+                init_download_folders();
+            }
         },
     )
     .unwrap();

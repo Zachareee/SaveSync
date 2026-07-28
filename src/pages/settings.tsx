@@ -3,13 +3,17 @@ import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart"
 import { load } from '@tauri-apps/plugin-store'
 import { createSignal } from "solid-js"
 
-const store = await load("store.json")
-const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>((await store.get("silenceMissingMappings") ?? false))
-const [autoStartup, _] = createSignal(await isEnabled())
+const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
+const [autoStartup, setAutoStartup] = createSignal<boolean>()
 
 export { silenceMissingMappings }
 
 export default function Settings() {
+  isEnabled().then(setAutoStartup)
+
+  const store = load("store.json")
+  store.then(s => s.get<boolean>("silenceMissingMappings")).then(setSilenceMappingsMissing)
+
   async function toggleAutoStartup(_: any, checked: boolean) {
     await (checked ? enable : disable)()
   }
@@ -20,8 +24,10 @@ export default function Settings() {
       <span>Silence "Mappings missing" notifications</span>
       <Switch onChange={async (_, checked) => {
         setSilenceMappingsMissing(checked)
-        await store.set("silenceMissingMappings", checked)
-        await store.save()
+        store.then(async s => {
+          await s.set("silenceMissingMappings", checked)
+          await s.save()
+        })
       }} checked={silenceMissingMappings()} />
     </div>
     <br />

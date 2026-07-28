@@ -1,5 +1,6 @@
 import "./App.css";
 import { createStore } from "solid-js/store";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Route, Router } from "@solidjs/router";
 import { listen } from "@/logic/backend";
 import { createWindow } from "@/logic/window";
@@ -11,7 +12,8 @@ import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings 
 export const [folders, setFolders] = createStore<FileTree>();
 
 (() => {
-  listen("plugin_error", ([title, error]) => createWindow(`/error?${{ error }}`, { title, parent: "main" }))
+  if (getCurrentWindow().label === "main")
+    listen("plugin_error", ([title, error]) => createWindow(`/error?${new URLSearchParams({ error })}`, { title, parent: "main" }))
 })()
 
 function App() {

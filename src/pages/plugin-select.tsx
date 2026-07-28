@@ -4,14 +4,9 @@ import { createSignal, Index, onMount, Show } from "solid-js";
 import { useNavigate } from "@solidjs/router";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
-import { conflicting_listener } from "@/logic/conflicting_window";
-
-const refresh = (setServices: ReturnType<typeof createStore<Info[]>>[1]) => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
-
-let navigate: ReturnType<typeof useNavigate>
 
 export default function PluginSelect() {
-  navigate = useNavigate()
+  const navigate = useNavigate()
 
   const [services, setServices] = createStore<Info[]>([]);
   const [loading, setLoading] = createSignal<AbortInfo | undefined>()
@@ -22,20 +17,20 @@ export default function PluginSelect() {
   }
 
   unlisten([
-    listen("init_result", () => navigate("/tags")),
-    conflicting_listener()
+    listen("init_result", () => navigate("/tags"))
   ])()
 
   // run on app boot
   emit("saved_plugin")
 
-  onMount(() => { refresh(setServices) })
+  const refresh = () => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
+  onMount(() => { refresh() })
 
   return <>
     <main class="container items-center">
       <Portal>
         <div class="fixed right-0 bottom-0 m-4">
-          <button onclick={[refresh, setServices]}>Refresh</button>
+          <button onclick={refresh}>Refresh</button>
         </div>
       </Portal>
       <Show when={!loading()} fallback={<>
