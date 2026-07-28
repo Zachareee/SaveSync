@@ -5,7 +5,7 @@ use tauri::Emitter;
 
 use crate::app_handle;
 
-pub fn plugin_error(title: &str, description: &str) {
+pub fn plugin_error(title: &OsStr, description: &str) {
     app_emit("plugin_error", (title, description))
 }
 

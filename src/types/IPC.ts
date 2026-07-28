@@ -37,7 +37,7 @@ export type ListenTypes = {
   plugins: Info[]
   init_result: undefined
   abort_result: string
-  plugin_error: [string, string]
+  plugin_error: [OsString, string]
   saved_result: undefined
   sync_result: [string, OsString, boolean]
   conflicting_files: [string, OsString, [SystemTime, SystemTime]]

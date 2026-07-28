@@ -51,11 +51,9 @@ fn init_listener(event: Event) {
 
 // async to prevent UI thread from freezing
 pub fn init_func(path: &OsStr) {
-    let pathstr = path.to_string_lossy();
-
     match unsafe { Plugin::new(path) } {
         Err(e) => {
-            emitter::plugin_error(&pathstr, &e);
+            emitter::plugin_error(path, &e);
         }
         Ok(mut plugin) => {
             app_store().set_plugin(path);
@@ -88,7 +86,7 @@ pub fn start_server() {
                 let mut plugin = s.plugin.take().unwrap();
                 match plugin.process_save_credentials(&url) {
                     Err(s) => {
-                        emitter::plugin_error(plugin.filename().to_str().unwrap(), &s);
+                        emitter::plugin_error(&plugin.filename(), &s);
                         false
                     }
                     Ok(_) => {
@@ -130,7 +128,7 @@ where
                     Some(details)
                 }
                 Err(e) => {
-                    emitter::plugin_error("read_cloud", &e);
+                    emitter::plugin_error(&OsString::from("read_cloud"), &e);
                     None
                 }
             }
@@ -195,7 +193,7 @@ fn process_cloud_details(
                     },
                     Err(e) => {
                         println!("{e}");
-                        emitter::plugin_error("Download", &e);
+                        emitter::plugin_error(&OsString::from("Download"), &e);
                         return;
                     }
                 }

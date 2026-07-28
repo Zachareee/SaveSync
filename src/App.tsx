@@ -2,7 +2,7 @@ import "./App.css";
 import { createStore } from "solid-js/store";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Route, Router } from "@solidjs/router";
-import { listen } from "@/logic/backend";
+import { listen, osStringToString } from "@/logic/backend";
 import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
 import PageRoot from "./PageRoot";
@@ -13,7 +13,7 @@ export const [folders, setFolders] = createStore<FileTree>();
 
 (() => {
   if (getCurrentWindow().label === "main")
-    listen("plugin_error", ([title, error]) => createWindow(`/error?${new URLSearchParams({ error })}`, { title, parent: "main" }))
+    listen("plugin_error", ([title, error]) => createWindow(`/error?${new URLSearchParams({ error })}`, { title: osStringToString(title), parent: "main" }))
 })()
 
 function App() {

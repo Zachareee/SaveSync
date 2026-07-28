@@ -23,14 +23,14 @@ pub fn get_plugins() -> Vec<PluginInfo> {
         .filter_map(|path| {
             unsafe { Plugin::new(&path) }.map_or_else(
                 |e| {
-                    emitter::plugin_error(&path.to_string_lossy(), &e.to_string());
+                    emitter::plugin_error(&path, &e.to_string());
                     None
                 },
                 |x| {
                     x.info()
                         .map_err(|e| {
                             emitter::plugin_error(
-                                &path.to_string_lossy(),
+                                &path,
                                 &format!("Failed to run Info() in {:?}: {e}", path),
                             )
                         })
