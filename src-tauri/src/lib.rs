@@ -26,6 +26,7 @@ pub struct AppState {
     pub tags: HashSet<String>,
     pub buffers: HashMap<(String, OsString), Vec<u8>>,
     pub plugin: Option<Plugin>,
+    pub server_port: Option<u16>,
 }
 
 impl AppState {
@@ -44,6 +45,7 @@ impl Default for AppState {
             tags: HashSet::new(),
             buffers: HashMap::new(),
             plugin: None,
+            server_port: None
         }
     }
 }

@@ -21,14 +21,13 @@ use std::{
         Ordering::{Equal, Greater, Less},
     },
     ffi::{OsStr, OsString},
+    ops::RangeInclusive,
     thread,
     time::SystemTime,
 };
 use tauri::{Event, Listener};
 use tauri_plugin_oauth::OauthConfig;
 use tauri_plugin_opener::open_url;
-
-const PORT: u16 = 3000;
 
 pub fn emit_listeners(app: &tauri::App) {
     let arr: Vec<(&str, fn(Event))> = vec![
@@ -62,23 +61,28 @@ pub fn init_func(path: &OsStr) {
                 write_app_state(move |s| s.plugin = Some(plugin));
                 init_download_folders();
             } else {
-                start_server();
+                let port = start_server();
                 let _ = open_url(
-                    plugin.auth_url(&format!("http://localhost:{PORT}")),
+                    plugin.auth_url(&format!("http://localhost:{port}")),
                     None::<&str>,
                 );
-                write_app_state(|s| s.plugin = Some(plugin));
+                write_app_state(|s| {
+                    s.plugin = Some(plugin);
+                    s.server_port = Some(port);
+                });
                 // emitter::plugin_error(&pathstr, &err);
             };
         }
     }
 }
 
-pub fn start_server() {
+const PORTS: RangeInclusive<u16> = 5000..=5009;
+
+pub fn start_server() -> u16 {
     tauri_plugin_oauth::start_with_config(
         OauthConfig {
             redirect_uri: None,
-            ports: Some(vec![PORT]),
+            ports: Some(PORTS.collect()),
             response: None,
         },
         move |url| {
@@ -95,17 +99,17 @@ pub fn start_server() {
                     }
                 }
             });
-            stop_server(PORT);
+            stop_server();
             if result {
                 init_download_folders();
             }
         },
     )
-    .unwrap();
+    .unwrap()
 }
 
-fn stop_server(port: u16) {
-    tauri_plugin_oauth::cancel(port).unwrap();
+fn stop_server() {
+    write_app_state(|s| tauri_plugin_oauth::cancel(s.server_port.take().unwrap()).unwrap());
 }
 
 pub fn init_download_folders() {
