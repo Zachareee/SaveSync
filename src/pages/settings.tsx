@@ -4,11 +4,11 @@ import { load } from '@tauri-apps/plugin-store'
 import { createSignal } from "solid-js"
 
 const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
-const [autoStartup, setAutoStartup] = createSignal<boolean>()
 
 export { silenceMissingMappings }
 
 export default function Settings() {
+  const [autoStartup, setAutoStartup] = createSignal<boolean>(false)
   isEnabled().then(setAutoStartup)
 
   const store = load("store.json")
@@ -16,6 +16,7 @@ export default function Settings() {
 
   async function toggleAutoStartup(_: any, checked: boolean) {
     await (checked ? enable : disable)()
+    setAutoStartup(checked)
   }
 
   return <div class="overflow-y-scroll m-4">
