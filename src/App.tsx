@@ -5,7 +5,6 @@ import { Route, Router } from "@solidjs/router";
 import { listen, osStringToString } from "@/logic/backend";
 import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
-import PageRoot from "./PageRoot";
 import { FileTree } from "./types/data";
 import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings } from "./pages";
 
@@ -19,7 +18,7 @@ export const [folders, setFolders] = createStore<FileTree>();
 function App() {
   return <>
     <Toaster position="bottom-center" containerClassName="cursor-pointer" />
-    <Router root={PageRoot}>
+    <Router>
       <Route path={"/tags"} component={Tags} />
       <Route path={"/tags/:TAGNAME"} component={Folders} />
       <Route path={"/error"} component={ErrorPage} />

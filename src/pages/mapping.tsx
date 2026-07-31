@@ -5,6 +5,7 @@ import { Portal } from "solid-js/web"
 import { useNavigate } from "@solidjs/router"
 import { open } from "@tauri-apps/plugin-dialog"
 import { RequiredList } from "@/types/data"
+import PageRoot from "@/PageRoot"
 
 type MappingArray = [string, string][]
 
@@ -30,7 +31,7 @@ export default function Mapping() {
   const [requiredList, setRequiredList] = createStore<RequiredList>([])
 
   invoke("get_mapping").then(({ mapping, required }) => {
-    setMapping(Object.entries(mapping).map(e => [e[0], osStringToString(e[1])]))
+    setMapping(Object.entries(mapping).map(e => [e[0], osStringToString(e[1])] as [string, string]).toSorted(([a, _a], [b, _b]) => a.localeCompare(b)))
     setRequiredList(required)
   })
 
@@ -39,7 +40,7 @@ export default function Mapping() {
 
   const navigate = useNavigate()
 
-  return <>
+  return <PageRoot>
     <div class="flex flex-col items-center overflow-auto">
       <div class="space-y-2">
         <Index each={mapping}>
@@ -72,5 +73,5 @@ export default function Mapping() {
         </div>
       </Portal>
     </div>
-  </>
+  </PageRoot>
 }

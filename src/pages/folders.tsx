@@ -1,6 +1,7 @@
 import { folders, setFolders } from "@/App";
 import DivButton from "@/components/DivButton";
 import { emit, listen, osStringToString, stringToOsString, unlisten } from "@/logic/backend";
+import PageRoot from "@/PageRoot";
 import { OsString } from "@/types/rust";
 import { useNavigate, useParams } from "@solidjs/router";
 import Folder from "@suid/icons-material/Folder"
@@ -27,7 +28,7 @@ export default function Folders() {
     emit("sync", { tag: TAGNAME, foldername })
   }
 
-  return <>
+  return <PageRoot>
     <div class="flex justify-center overflow-y-auto">
       <div class="w-min h-screen">
         <Index each={Object.entries(folders[TAGNAME])}>
@@ -46,5 +47,5 @@ export default function Folders() {
         </div>
       </Portal>
     </div>
-  </>
+  </PageRoot>
 }

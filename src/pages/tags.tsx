@@ -9,6 +9,7 @@ import { conflicting_listener } from "@/logic/conflicting_window"
 
 import { folders, setFolders } from "@/App"
 import { silenceMissingMappings } from "./settings"
+import PageRoot from "@/PageRoot"
 
 export default function Folders() {
   const navigate = useNavigate()
@@ -45,20 +46,22 @@ export default function Folders() {
       )
   })
 
-  return <div class="flex justify-center overflow-y-auto">
-    <div class="text-center">
-      <For each={Object.keys(folders).toSorted()}>
-        {elem =>
-          <div class="border-white border-3 rounded-full m-4 px-4 py-2 bg-indigo-600 cursor-pointer hover:bg-indigo-800" onclick={[navigate, `/tags/${elem}`]}>
-            {elem}
+  return <PageRoot>
+    <div class="flex justify-center overflow-y-auto">
+      <div class="text-center">
+        <For each={Object.keys(folders).toSorted()}>
+          {elem =>
+            <div class="border-white border-3 rounded-full m-4 px-4 py-2 bg-indigo-600 cursor-pointer hover:bg-indigo-800" onclick={[navigate, `/tags/${elem}`]}>
+              {elem}
+            </div>
+          }
+        </For>
+        <Portal>
+          <div class="fixed right-0 bottom-0 m-4">
+            <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
           </div>
-        }
-      </For>
-      <Portal>
-        <div class="fixed right-0 bottom-0 m-4">
-          <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
-        </div>
-      </Portal>
+        </Portal>
+      </div>
     </div>
-  </div>
+  </PageRoot>
 }
