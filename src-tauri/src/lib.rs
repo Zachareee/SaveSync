@@ -15,9 +15,10 @@ use std::{
 use tauri::{
     menu::{Menu, MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
-    AppHandle, Manager, RunEvent,
+    AppHandle, Manager, RunEvent, WindowEvent,
 };
 use tauri_plugin_deep_link::DeepLinkExt;
+use tauri_plugin_notification::NotificationExt;
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
@@ -45,7 +46,7 @@ impl Default for AppState {
             tags: HashSet::new(),
             buffers: HashMap::new(),
             plugin: None,
-            server_port: None
+            server_port: None,
         }
     }
 }
@@ -53,6 +54,7 @@ impl Default for AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -66,6 +68,19 @@ pub fn run() {
             get_watched_folders,
             filetree
         ])
+        .on_menu_event(|app, event| match event.id.as_ref() {
+            "close" => {
+                app.exit(0);
+            }
+            "show_window" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+            _ => (),
+        })
         .setup(|app| {
             emit_listeners(app);
             TrayIconBuilder::new()
@@ -73,7 +88,18 @@ pub fn run() {
                 .menu(
                     &Menu::with_items(
                         app,
-                        &[&MenuItem::new(app, "Close", true, None::<Box<str>>).unwrap()],
+                        &[
+                            &MenuItem::with_id(
+                                app,
+                                "show_window",
+                                "Show Window",
+                                true,
+                                None::<Box<str>>,
+                            )
+                            .unwrap(),
+                            &MenuItem::with_id(app, "close", "Close", true, None::<Box<str>>)
+                                .unwrap(),
+                        ],
                     )?,
                     // &MenuBuilder::new(app)
                     //     .items(&[&MenuItem::new(app, "Close", true, None::<Box<str>>).unwrap()])
@@ -103,11 +129,25 @@ pub fn run() {
             }
 
             let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
-
-            app.manage(RwLock::new(AppState::default()));
-
-            APP_INSTANCE.set(app.app_handle().to_owned()).unwrap();
+            let _ = APP_INSTANCE.set(app.app_handle().to_owned());
             Ok(())
+        })
+        .manage(RwLock::new(AppState::default()))
+        .on_window_event(|window, event| match event {
+            WindowEvent::CloseRequested { api, .. } => {
+                if app_store().close_behaviour() {
+                    api.prevent_close();
+                    window.hide().unwrap();
+                    app_handle()
+                        .notification()
+                        .builder()
+                        .title("savesync")
+                        .body("The app has been minimised to the tray")
+                        .show()
+                        .unwrap();
+                }
+            },
+            _ => (),
         })
         .build(tauri::generate_context!())
         .expect("Error while building tauri application")

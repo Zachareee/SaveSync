@@ -14,14 +14,6 @@ pub struct AppStore {
     store: Arc<Store<Wry>>,
 }
 
-impl Clone for AppStore {
-    fn clone(&self) -> Self {
-        Self {
-            store: self.store.clone(),
-        }
-    }
-}
-
 impl AppStore {
     pub fn new<M>(app: &M) -> AppStore
     where
@@ -32,6 +24,8 @@ impl AppStore {
                 .default("plugin", "")
                 .default("path_mapping", json!({}))
                 .default("last_sync", 0)
+                .default("silenceMissingMappings", false)
+                .default("hide_to_tray", true)
                 .auto_save(Duration::from_secs(60))
                 .build()
                 .unwrap(),
@@ -42,23 +36,17 @@ impl AppStore {
         from_value(self.store.get("plugin").unwrap_or_default()).ok()
     }
 
+    pub fn set_plugin(&self, plugin: &OsStr) {
+        self.store
+            .set("plugin", to_value(plugin).unwrap_or_default());
+    }
+
     pub fn path_mapping(&self) -> PathMapping {
         self.mapping()
             .into_iter()
             .map(|(k, v)| (k, from_value(v).unwrap_or_default()))
             .filter(|(_, v)| Path::new(v).exists())
             .collect()
-    }
-
-    pub fn set_plugin(&self, plugin: &OsStr) {
-        self.store
-            .set("plugin", to_value(plugin).unwrap_or_default());
-    }
-
-    pub fn save(&self) -> Result<()> {
-        self.set_last_sync(SystemTime::now());
-        self.set_mapping(self.path_mapping());
-        self.store.save()
     }
 
     pub fn set_mapping(&self, map: PathMapping) {
@@ -101,6 +89,20 @@ impl AppStore {
 
     pub fn resolve_path(&self, tag: &str, path: impl AsRef<Path>) -> PathBuf {
         self.get_mapping(tag).unwrap().join(&path)
+    }
+
+    pub fn close_behaviour(&self) -> bool {
+        self.store
+            .get("hide_to_tray")
+            .as_ref()
+            .and_then(Value::as_bool)
+            .unwrap_or_default()
+    }
+
+    pub fn save(&self) -> Result<()> {
+        self.set_last_sync(SystemTime::now());
+        self.set_mapping(self.path_mapping());
+        self.store.save()
     }
 }
 
