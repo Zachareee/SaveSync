@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
-use std::fs::DirEntry;
+use std::fs::{self, DirEntry};
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use tauri::command;
@@ -99,4 +99,10 @@ pub fn set_mapping(map: PathMapping) {
 #[command]
 pub fn get_watched_folders() -> Vec<(String, OsString)> {
     watched_folders()
+}
+
+#[command]
+pub fn add_plugin(filepath: String) {
+    let path = PathBuf::from(filepath);
+    fs::copy(&path, config_paths::plugin().join(path.file_name().unwrap())).unwrap();
 }
