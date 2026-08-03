@@ -3,7 +3,7 @@ mod commands;
 mod listeners;
 mod savesync;
 
-use commands::{filetree, get_mapping, get_plugins, get_watched_folders, set_mapping};
+use commands::{filetree, get_mapping, get_plugins, get_watched_folders, set_mapping, add_plugin, logout, logged_in};
 use listeners::emit_listeners;
 use savesync::{plugin::Plugin, store::AppStore};
 use std::{
@@ -66,7 +66,10 @@ pub fn run() {
             get_mapping,
             set_mapping,
             get_watched_folders,
-            filetree
+            filetree,
+            add_plugin,
+            logout,
+            logged_in
         ])
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show_window" => {
