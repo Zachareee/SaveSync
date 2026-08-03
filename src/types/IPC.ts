@@ -13,7 +13,9 @@ export type InvokeTypes = {
   set_mapping: [{ map: FolderMapping }, undefined]
   get_watched_folders: [undefined, [string, OsString][]]
   filetree: [undefined, Record<string, [OsString, boolean][]>]
-  add_plugin: [{ filepath: string }, undefined]
+  add_plugin: [{ filepath: OsString }, undefined]
+  logout: [{ filepath: OsString }, undefined]
+  logged_in: [{filepath: OsString}, boolean]
 };
 
 /**
@@ -21,9 +23,9 @@ export type InvokeTypes = {
  *  value: input type
  */
 export type EmitTypes = {
-  init: string
+  init: OsString
   refresh: undefined
-  abort: string
+  abort: OsString
   sync: { tag: string, foldername: OsString }
   unload: undefined
   saved_plugin: undefined

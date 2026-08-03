@@ -102,7 +102,23 @@ pub fn get_watched_folders() -> Vec<(String, OsString)> {
 }
 
 #[command]
-pub fn add_plugin(filepath: String) {
+pub fn add_plugin(filepath: OsString) {
     let path = PathBuf::from(filepath);
-    fs::copy(&path, config_paths::plugin().join(path.file_name().unwrap())).unwrap();
+    fs::copy(
+        &path,
+        config_paths::plugin().join(path.file_name().unwrap()),
+    )
+    .unwrap();
+}
+
+#[command]
+pub fn logged_in(mut filepath: OsString) -> bool {
+    filepath.push(".auth");
+    fs::exists(config_paths::creds().join(&filepath)).unwrap_or_default()
+}
+
+#[command]
+pub fn logout(mut filepath: OsString) {
+    filepath.push(".auth");
+    let _ = fs::remove_file(config_paths::creds().join(&filepath));
 }

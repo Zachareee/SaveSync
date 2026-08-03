@@ -4,14 +4,17 @@ import { createStore, reconcile } from "solid-js/store";
 import { useNavigate } from "@solidjs/router";
 import { open } from "@tauri-apps/plugin-dialog"
 
-import { emit, listen, invoke, unlisten } from "@/logic/backend";
+import { emit, listen, invoke, unlisten, stringToOsString, osStringToString } from "@/logic/backend";
 import { Info } from "@/types/data";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from "@suid/material";
+import Logout from "@suid/icons-material/Logout";
+import { OsString } from "@/types/rust";
 
 export default function PluginSelect() {
   const navigate = useNavigate()
 
   const [services, setServices] = createStore<Info[]>([]);
+  const [loggedInPlugins, setLoggedInPlugins] = createStore<Record<string, boolean>>({})
   const [loading, setLoading] = createSignal<AbortInfo | undefined>()
   const [filepath, setFilepath] = createSignal<string>("")
 
@@ -32,8 +35,14 @@ export default function PluginSelect() {
   // run on app boot
   emit("saved_plugin")
 
-  const refresh = () => invoke("get_plugins").then(plugins => setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name)))));
-  onMount(() => { refresh() })
+  const refresh = () => invoke("get_plugins").then(plugins => {
+    setServices(reconcile(plugins.sort((p1, p2) => p1.name.localeCompare(p2.name))))
+    return plugins.map(({ filename }) => filename)
+  }).then(plugins =>
+    Promise.all(plugins.map(async s => [osStringToString(s), await invoke("logged_in", { filepath: s })] as const))
+  ).then(entries => setLoggedInPlugins(Object.fromEntries(entries)));
+
+  onMount(refresh)
 
   function onClickOpenFileSelector() {
     open({
@@ -46,8 +55,15 @@ export default function PluginSelect() {
   }
 
   function addPlugin() {
-    invoke("add_plugin", { filepath: filepath() }).then(refresh)
+    invoke("add_plugin", { filepath: stringToOsString(filepath()) }).then(refresh)
     setFilepath("")
+  }
+
+  function logout(plugin: OsString) {
+    return (e: MouseEvent) => {
+      e.stopPropagation()
+      invoke("logout", { filepath: plugin }).then(refresh)
+    }
   }
 
   return <>
@@ -86,6 +102,11 @@ export default function PluginSelect() {
                   <h2>{elem().name}</h2>
                   <p>Description: {elem().description}</p>
                   <span>Written by: {elem().author}</span>
+                </div>
+                <div class="inline-block">
+                  <Show when={loggedInPlugins[osStringToString(elem().filename)]}>
+                    <Logout class="bg-red-600 size-full content-center hover:outline-2" onClick={logout(elem().filename)} />
+                  </Show>
                 </div>
               </div>
             }
