@@ -13,7 +13,7 @@ use std::{
     sync::{Arc, OnceLock, RwLock},
 };
 use tauri::{
-    menu::{Menu, MenuBuilder, MenuItem},
+    menu::{MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
     AppHandle, Manager, RunEvent, WindowEvent,
 };
@@ -69,9 +69,6 @@ pub fn run() {
             filetree
         ])
         .on_menu_event(|app, event| match event.id.as_ref() {
-            "close" => {
-                app.exit(0);
-            }
             "show_window" => {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.unminimize();
@@ -86,25 +83,17 @@ pub fn run() {
             TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(
-                    &Menu::with_items(
-                        app,
-                        &[
-                            &MenuItem::with_id(
-                                app,
-                                "show_window",
-                                "Show Window",
-                                true,
-                                None::<Box<str>>,
-                            )
-                            .unwrap(),
-                            &MenuItem::with_id(app, "close", "Close", true, None::<Box<str>>)
-                                .unwrap(),
-                        ],
-                    )?,
-                    // &MenuBuilder::new(app)
-                    //     .items(&[&MenuItem::new(app, "Close", true, None::<Box<str>>).unwrap()])
-                    //     .build()
-                    //     .unwrap(),
+                    &MenuBuilder::new(app)
+                        .items(&[&MenuItem::with_id(
+                            app,
+                            "show_window",
+                            "Show Window",
+                            true,
+                            None::<Box<str>>,
+                        )
+                        .unwrap()])
+                        .quit()
+                        .build()?,
                 )
                 .build(app)?;
 
@@ -143,10 +132,11 @@ pub fn run() {
                         .builder()
                         .title("savesync")
                         .body("The app has been minimised to the tray")
+                        .sound("Default")
                         .show()
                         .unwrap();
                 }
-            },
+            }
             _ => (),
         })
         .build(tauri::generate_context!())
