@@ -234,6 +234,7 @@ fn sync_listener(event: Event) {
 
 fn unload_listener(_: Event) {
     app_store().set_plugin(OsStr::new(""));
+    write_app_state(|s| s.plugin = None);
     dump_watchers();
 }
 

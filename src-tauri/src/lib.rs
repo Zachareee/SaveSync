@@ -127,7 +127,7 @@ pub fn run() {
         .manage(RwLock::new(AppState::default()))
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {
-                if app_store().close_behaviour() {
+                if read_app_state(|s| s.plugin.is_some()) && app_store().close_behaviour() {
                     api.prevent_close();
                     window.hide().unwrap();
                     app_handle()
