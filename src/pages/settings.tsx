@@ -4,13 +4,10 @@ import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart"
 import { load } from '@tauri-apps/plugin-store'
 import { createSignal } from "solid-js"
 
-const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
-
-export { silenceMissingMappings }
-
 export default function Settings() {
   const [autoStartup, setAutoStartup] = createSignal<boolean>(false)
   const [closeBehaviour, setCloseBehaviour] = createSignal<boolean>(true)
+  const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
 
   isEnabled().then(setAutoStartup)
 

@@ -1,18 +1,36 @@
-import { emit, invoke, osStringToString, unlisten } from "@/logic/backend"
 import { useNavigate } from "@solidjs/router"
-import { For } from "solid-js"
+import { createSignal, For } from "solid-js"
 import toast from "solid-toast"
 import isEqual from "lodash/isEqual"
 import { Portal } from "solid-js/web"
 import { reconcile } from "solid-js/store"
-import { conflicting_listener } from "@/logic/conflicting_window"
+import { load } from "@tauri-apps/plugin-store"
 
 import { folders, setFolders } from "@/App"
-import { silenceMissingMappings } from "./settings"
 import PageRoot from "@/PageRoot"
+import { emit, invoke, osStringToString, unlisten } from "@/logic/backend"
+import { conflicting_listener } from "@/logic/conflicting_window"
 
-export default function Folders() {
+export default function Tags() {
   const navigate = useNavigate()
+  const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
+
+  const store = load("store.json")
+  store.then(s =>
+    s.get<boolean>("silenceMissingMappings").then(setSilenceMappingsMissing)
+  ).then(() =>
+    invoke("get_mapping").then(({ mapping, required }) => {
+      let current = Object.entries(mapping).map(([key]) => key)
+      if (required.some(tag => !current.includes(tag)) && !silenceMissingMappings())
+        toast.error(
+          (t) =>
+            <p onclick={() => {
+              toast.dismiss(t.id)
+              navigate("/mapping")
+            }}>Some folders were not synced, please check Tag Mapping</p>
+        )
+    })
+  )
 
   unlisten([conflicting_listener()])()
 
@@ -32,18 +50,6 @@ export default function Folders() {
         )
       )))
     })
-  })
-
-  invoke("get_mapping").then(({ mapping, required }) => {
-    let current = Object.entries(mapping).map(([key]) => key)
-    if (required.some(tag => !current.includes(tag)) && !silenceMissingMappings())
-      toast.error(
-        (t) =>
-          <p onclick={() => {
-            toast.dismiss(t.id)
-            navigate("/mapping")
-          }}>Some folders were not synced, please check Tag Mapping</p>
-      )
   })
 
   return <PageRoot>
