@@ -41,37 +41,41 @@ export default function Mapping() {
   const navigate = useNavigate()
 
   return <PageRoot>
-    <div class="flex flex-col items-center overflow-auto">
-      <div class="space-y-2">
-        <Index each={mapping}>
-          {(elem, idx) =>
-            <div class="text-center space-x-0.5">
-              <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} class="w-min" />
-              <input value={elem()[1]} disabled />
-              <button
-                onclick={() => open({ directory: true, multiple: false }).then(path => {
-                  if (path)
-                    setMapping(idx, 1, path)
-                })}
-              >Browse</button>
-              <button onclick={[removePath, idx]}>Delete</button>
-            </div>
-          }
-        </Index>
+    <div class="h-screen flex-col content-center">
+      <div class="flex flex-col items-center overflow-y-auto max-h-1/2">
+        <div class="space-y-2">
+          <Index each={mapping}>
+            {(elem, idx) =>
+              <div class="text-center space-x-0.5">
+                <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} class="w-min" />
+                <input value={elem()[1]} disabled />
+                <button
+                  onclick={() => open({ directory: true, multiple: false }).then(path => {
+                    if (path)
+                      setMapping(idx, 1, path)
+                  })}
+                >Browse</button>
+                <button onclick={[removePath, idx]}>Delete</button>
+              </div>
+            }
+          </Index>
+        </div>
       </div>
       <br />
-      <h2> Missing tags </h2>
-      <For each={requiredList.filter(tag => !mapping.some(([key]) => tag == key))}>
-        {e => <button onclick={[addPath, e]}>{e}</button>}
-      </For>
-      <Portal>
-        <div class="fixed left-0 bottom-0 m-4">
+      <div class="flex-col text-center">
+        <h2> Missing tags </h2>
+        <For each={requiredList.filter(tag => !mapping.some(([key]) => tag == key))}>
+          {e => <button onclick={[addPath, e]}>{e}</button>}
+        </For>
+      </div>
+      <div class="flex justify-between self-end">
+        <div class="m-4">
           <button onclick={[addPath, ""]}>Add mapping</button>
         </div>
-        <div class="fixed right-0 bottom-0 m-4">
+        <div class="m-4">
           <button onclick={[saveAndClose, [mapping, () => navigate("/folders")]]}>Save and close</button>
         </div>
-      </Portal>
+      </div>
     </div>
   </PageRoot>
 }
