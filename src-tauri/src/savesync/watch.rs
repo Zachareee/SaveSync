@@ -1,4 +1,4 @@
-use notify_debouncer_full::{new_debouncer, notify::*, Debouncer, RecommendedCache};
+use notify_debouncer_full::{Debouncer, RecommendedCache, new_debouncer, notify::*};
 use std::{
     collections::HashMap,
     ffi::OsString,
@@ -36,14 +36,12 @@ pub fn upload_file(tag: &str, path: &PathType) {
     };
 
     read_app_state(|s| {
-        s.plugin_ref()
-            .upload(
-                tag.as_bytes(),
-                refpath.as_os_str().as_encoded_bytes(),
-                date,
-                zipbuffer.as_slice(),
-            )
-            .unwrap()
+        s.plugin_ref().upload(
+            tag.as_bytes(),
+            refpath.as_os_str().as_encoded_bytes(),
+            date,
+            zipbuffer.as_slice(),
+        )
     });
 }
 
@@ -131,7 +129,6 @@ pub fn toggle_watch(tag: &str, path: &OsString) -> bool {
                 read_app_state(|s| {
                     s.plugin_ref()
                         .remove(tag.as_bytes(), pathbuf.as_os_str().as_encoded_bytes())
-                        .unwrap()
                 });
                 false
             }

@@ -10,7 +10,7 @@ use tauri::command;
 use crate::listeners::collect_filter_from_cloud;
 use crate::savesync::watch::{drop_watchers, watched_folders};
 use crate::savesync::{
-    config_paths, emitter,
+    config_paths,
     plugin::{Plugin, PluginInfo},
     store::PathMapping,
 };
@@ -20,24 +20,7 @@ use crate::{app_store, read_app_state};
 pub fn get_plugins() -> Vec<PluginInfo> {
     config_paths::get_pluginfiles()
         .into_iter()
-        .filter_map(|path| {
-            unsafe { Plugin::new(&path) }.map_or_else(
-                |e| {
-                    emitter::plugin_error(&path, &e.to_string());
-                    None
-                },
-                |x| {
-                    x.info()
-                        .map_err(|e| {
-                            emitter::plugin_error(
-                                &path,
-                                &format!("Failed to run Info() in {:?}: {e}", path),
-                            )
-                        })
-                        .ok()
-                },
-            )
-        })
+        .filter_map(|path| unsafe { Plugin::new(&path) }.and_then(|x| x.info()))
         .collect()
 }
 

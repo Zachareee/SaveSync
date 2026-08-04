@@ -17,8 +17,8 @@ use serde::Deserialize;
 use serde_json::from_str;
 use std::{
     cmp::{
-        max,
         Ordering::{Equal, Greater, Less},
+        max,
     },
     ffi::{OsStr, OsString},
     ops::RangeInclusive,
@@ -50,29 +50,22 @@ fn init_listener(event: Event) {
 
 // async to prevent UI thread from freezing
 pub fn init_func(path: &OsStr) {
-    match unsafe { Plugin::new(path) } {
-        Err(e) => {
-            emitter::plugin_error(path, &e);
-        }
-        Ok(mut plugin) => {
-            app_store().set_plugin(path);
+    if let Some(mut plugin) = unsafe { Plugin::new(path) } {
+        app_store().set_plugin(path);
 
-            if plugin.authenticate() {
-                write_app_state(move |s| s.plugin = Some(plugin));
-                init_download_folders();
-            } else {
-                let port = start_server();
-                let _ = open_url(
-                    plugin.auth_url(&format!("http://localhost:{port}")),
-                    None::<&str>,
-                );
+        if plugin.authenticate() {
+            write_app_state(move |s| s.plugin = Some(plugin));
+            init_download_folders();
+        } else {
+            let port = start_server();
+            if let Some(url) = plugin.auth_url(&format!("http://localhost:{port}")) {
+                let _ = open_url(url, None::<&str>);
                 write_app_state(|s| {
                     s.plugin = Some(plugin);
                     s.server_port = Some(port);
                 });
-                // emitter::plugin_error(&pathstr, &err);
-            };
-        }
+            }
+        };
     }
 }
 
@@ -88,16 +81,11 @@ pub fn start_server() -> u16 {
         move |url| {
             let result = write_app_state(|s| {
                 let mut plugin = s.plugin.take().unwrap();
-                match plugin.process_save_credentials(&url) {
-                    Err(s) => {
-                        emitter::plugin_error(&plugin.filename(), &s);
-                        false
-                    }
-                    Ok(_) => {
-                        s.plugin = Some(plugin);
-                        true
-                    }
+                let result = plugin.process_save_credentials(&url);
+                if result {
+                    s.plugin = Some(plugin);
                 }
+                result
             });
             stop_server();
             if result {
@@ -126,16 +114,9 @@ where
     thread::spawn(move || {
         if let Some(details) = write_app_state(|s| {
             let plugin = s.plugin_mut_ref();
-            match plugin.read_cloud() {
-                Ok(details) => {
-                    s.tags = details.iter().map(|f| f.tag.clone()).collect();
-                    Some(details)
-                }
-                Err(e) => {
-                    emitter::plugin_error(&OsString::from("read_cloud"), &e);
-                    None
-                }
-            }
+            plugin.read_cloud().inspect(|details| {
+                s.tags = details.iter().map(|f| f.tag.clone()).collect();
+            })
         }) {
             details
                 .into_iter()
@@ -177,13 +158,13 @@ fn process_cloud_details(
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
             (k, Less) => {
                 println!("Less branch");
-                match data.ok_or(|| ()).or_else(|_| {
+                if let Some(buf) = data.or_else(|| {
                     read_app_state(|s| {
                         s.plugin_ref()
                             .download(tag.as_bytes(), item.as_encoded_bytes())
                     })
                 }) {
-                    Ok(buf) => match k {
+                    match k {
                         Less => {
                             println!("Both less");
                             store_buffer(&tag, &item, buf);
@@ -194,11 +175,6 @@ fn process_cloud_details(
                             println!("Extracting");
                             handle_buffer(&path, &fileinfo, buf);
                         }
-                    },
-                    Err(e) => {
-                        println!("{e}");
-                        emitter::plugin_error(&OsString::from("Download"), &e);
-                        return;
                     }
                 }
             }

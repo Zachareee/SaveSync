@@ -1,10 +1,12 @@
-use libloading::Library;
+use libloading::{Library, Symbol};
 use serde::{Deserialize, Serialize};
 use std::{
-    ffi::{c_char, CStr, CString, OsStr, OsString},
+    ffi::{CStr, CString, OsStr, OsString, c_char},
     fs,
     time::{Duration, SystemTime},
 };
+
+use crate::savesync::emitter;
 
 use super::config_paths;
 
@@ -32,9 +34,9 @@ pub struct FileDetails {
 impl Plugin {
     unsafe fn free_string(&self, raw_str: DLLString) {
         unsafe {
-            self.library
-                .get::<unsafe extern "C" fn(DLLString)>(b"free_string")
-                .expect("free_string function not found")(raw_str)
+            if let Some(f) = self.get_function::<unsafe extern "C" fn(DLLString)>(b"free_string") {
+                f(raw_str)
+            }
         }
     }
 
@@ -53,6 +55,14 @@ impl Plugin {
         }
     }
 
+    unsafe fn test_error_string(&self, raw_str: DLLString) -> bool {
+        unsafe {
+            self.create_string(raw_str)
+                .map(|e| self.emit_error(e))
+                .is_none()
+        }
+    }
+
     fn credentials(&self) -> String {
         self.credentials.clone().unwrap_or_default()
     }
@@ -61,16 +71,38 @@ impl Plugin {
         self.filename.clone()
     }
 
-    pub unsafe fn new(servicename: &OsStr) -> PluginResult<Plugin> {
+    fn emit_error(&self, description: String) {
+        emitter::plugin_error(&self.filename(), &description);
+    }
+
+    fn get_function<T>(&self, symbol: &[u8]) -> Option<Symbol<'_, T>> {
+        unsafe {
+            self.library
+                .get::<T>(symbol)
+                .inspect_err(|_| {
+                    self.emit_error(format!(
+                        "{} function not found",
+                        String::from_utf8_lossy(symbol)
+                    ))
+                })
+                .ok()
+        }
+    }
+
+    pub unsafe fn new(servicename: &OsStr) -> Option<Plugin> {
         let library: Library = unsafe {
             let library =
                 libloading::os::windows::Library::new(config_paths::plugin().join(servicename))
-                    .unwrap();
-            library.pin().unwrap();
+                    .inspect_err(|e| emitter::plugin_error(servicename, &e.to_string()))
+                    .ok()?;
+            library
+                .pin()
+                .inspect_err(|e| emitter::plugin_error(servicename, &e.to_string()))
+                .ok()?;
             library.into()
         };
 
-        Ok(Plugin {
+        Some(Plugin {
             library,
             filename: servicename.to_owned(),
             credentials: Plugin::read_creds(servicename),
@@ -78,13 +110,9 @@ impl Plugin {
         })
     }
 
-    pub fn info(&self) -> PluginResult<PluginInfo> {
+    pub fn info(&self) -> Option<PluginInfo> {
         let ptr = unsafe {
-            self.library
-                .get::<unsafe extern "C" fn() -> (DLLString, DLLString, DLLString, DLLString)>(
-                    b"info",
-                )
-                .expect("info function not found")()
+            self.get_function::<unsafe extern "C" fn() -> (DLLString, DLLString, DLLString, DLLString)>(b"info")?()
         };
 
         let (name, description, author, icon_url) = ptr;
@@ -100,14 +128,12 @@ impl Plugin {
         };
 
         unsafe {
-            self.library
-                .get::<unsafe extern "C" fn((DLLString, DLLString, DLLString, DLLString))>(
-                    b"free_info",
-                )
-                .expect("free_info function not found")(ptr)
+            self.get_function::<unsafe extern "C" fn((DLLString, DLLString, DLLString, DLLString))>(
+                b"free_info",
+            )?(ptr)
         };
 
-        Ok(info)
+        Some(info)
     }
 
     fn read_creds(filename: &OsStr) -> Option<String> {
@@ -128,118 +154,100 @@ impl Plugin {
     pub fn authenticate(&mut self) -> bool {
         let credentials = CString::new(self.credentials()).unwrap_or_default();
 
-        let (new_token, msg) = unsafe {
-            self.library
-                .get::<unsafe extern "C" fn(DLLString) -> (DLLString, DLLString)>(b"authenticate")
-                .expect("authenticate function not found")(credentials.as_ptr())
-        };
-
-        unsafe {
-            match (self.create_string(new_token), self.create_string(msg)) {
-                (None, Some(_err)) => false,
-                (Some(creds), None) => {
-                    let _ = self.write_creds(&creds);
-                    true
-                }
-                (Some(_), Some(_)) => todo!("authenticate function should not return two values"),
-                _ => true,
+        self.get_function::<unsafe extern "C" fn(DLLString) -> (DLLString, DLLString)>(
+            b"authenticate",
+        )
+        .map(|f| unsafe { f(credentials.as_ptr()) })
+        .is_some_and(|(new_token, msg)| unsafe {
+            let result = self.test_error_string(msg);
+            if result && let Some(creds) = self.create_string(new_token) {
+                self.write_creds(&creds).unwrap();
             }
-        }
+            result
+        })
     }
 
-    pub fn auth_url(&self, redirect_uri: &str) -> String {
+    pub fn auth_url(&self, redirect_uri: &str) -> Option<String> {
         let redirect_uri = CString::new(redirect_uri).unwrap_or_default();
 
         unsafe {
             self.create_string(self
-                .library
-                .get::<unsafe extern "C" fn(DLLString) -> DLLString>(b"auth_url")
-                .expect("auth_url function not found")(
-                redirect_uri.as_ptr()
-            ))
-            .expect("Null pointer received from auth_url function")
+                .get_function::<unsafe extern "C" fn(DLLString) -> DLLString>(
+                    b"auth_url",
+                )?(redirect_uri.as_ptr()))
         }
     }
 
-    pub fn process_save_credentials(&mut self, url: &str) -> PluginResult<()> {
+    pub fn process_save_credentials(&mut self, url: &str) -> bool {
         let cstring = CString::new(url).unwrap_or_default();
 
-        let (res, possible_err) = unsafe {
-            self.library
-                .get::<unsafe extern "C" fn(DLLString) -> (DLLString, DLLString)>(
-                    b"extract_credentials",
-                )
-                .expect("extract_credentials function not found")(cstring.as_ptr())
-        };
-
-        match unsafe { self.create_string(possible_err) } {
-            None => {
-                let _ = self.write_creds(&unsafe {
-                    self.create_string(res)
-                        .expect("Both ok and error value are empty")
-                });
-                Ok(())
-            }
-            Some(e) => Err(e.into()),
+        unsafe {
+            self.get_function::<unsafe extern "C" fn(DLLString) -> (DLLString, DLLString)>(
+                b"extract_credentials",
+            )
+            .map(|f| f(cstring.as_ptr()))
+            .is_some_and(|(res, possible_err)| {
+                let result = self.test_error_string(possible_err);
+                if result && let Some(credentials) = self.create_string(res) {
+                    let _ = self.write_creds(&credentials);
+                };
+                result
+            })
         }
     }
 
-    pub fn abort(&self) -> PluginResult<()> {
-        Ok(())
+    pub fn abort(&self) -> bool {
+        true
     }
 
-    pub fn upload(
-        &self,
-        tag: &[u8],
-        folder_name: &[u8],
-        date: SystemTime,
-        buffer: &[u8],
-    ) -> PluginResult<()> {
+    pub fn upload(&self, tag: &[u8], folder_name: &[u8], date: SystemTime, buffer: &[u8]) -> bool {
         let access_token = CString::new(self.credentials()).unwrap_or_default();
         let tagname = CString::new(tag).unwrap_or_default();
         let filename = CString::new(folder_name).unwrap_or_default();
 
         unsafe {
-            let ptr = self
-                .library
-                .get::<unsafe extern "C" fn(
-                    DLLString,
-                    DLLString,
-                    DLLString,
-                    u64,
-                    DLLString,
-                    u64,
-                ) -> DLLString>(b"upload")
-                .expect("upload function not found")(
-                access_token.as_ptr(),
-                tagname.as_ptr(),
-                filename.as_ptr(),
-                date.duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs(),
-                buffer.as_ptr() as *const i8,
-                buffer.len() as u64,
-            );
-            self.create_string(ptr).map_or(Ok(()), |e| Err(e))
+            self.get_function::<unsafe extern "C" fn(
+                DLLString,
+                DLLString,
+                DLLString,
+                u64,
+                DLLString,
+                u64,
+            ) -> DLLString>(b"upload")
+                .map(|f| {
+                    f(
+                        access_token.as_ptr(),
+                        tagname.as_ptr(),
+                        filename.as_ptr(),
+                        date.duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                        buffer.as_ptr() as *const i8,
+                        buffer.len() as u64,
+                    )
+                })
+                .is_some_and(|ptr| self.test_error_string(ptr))
         }
     }
 
-    pub fn download(&self, tag: &[u8], folder_name: &[u8]) -> PluginResult<Vec<u8>> {
+    pub fn download(&self, tag: &[u8], folder_name: &[u8]) -> Option<Vec<u8>> {
         let access_token = CString::new(self.credentials()).unwrap_or_default();
         let tagname = CString::new(tag).unwrap_or_default();
         let filename = CString::new(folder_name).unwrap_or_default();
 
         let (ptr, count, possible_err) = unsafe {
-            self.library
-                .get::<unsafe extern "C" fn(DLLString, DLLString, DLLString) -> (DLLString, u64, DLLString)>(
-                    b"download",
-                )
-                .expect("download function not found")(access_token.as_ptr(), tagname.as_ptr(), filename.as_ptr())
+            self.get_function::<unsafe extern "C" fn(
+                DLLString,
+                DLLString,
+                DLLString,
+            ) -> (DLLString, u64, DLLString)>(b"download")?(
+                access_token.as_ptr(),
+                tagname.as_ptr(),
+                filename.as_ptr(),
+            )
         };
 
-        if let Some(err) = unsafe { self.create_string(possible_err) } {
-            Err(err)
-        } else {
+        if unsafe { self.test_error_string(possible_err) } {
             let mut v = Vec::new();
             let u8_ptr = ptr as *const u8;
 
@@ -249,80 +257,69 @@ impl Plugin {
 
             unsafe { self.free_string(ptr) };
 
-            Ok(v)
+            Some(v)
+        } else {
+            None
         }
     }
 
-    pub fn remove(&self, tag: &[u8], folder_name: &[u8]) -> PluginResult<()> {
+    pub fn remove(&self, tag: &[u8], folder_name: &[u8]) -> bool {
         let access_token = CString::new(self.credentials()).unwrap_or_default();
         let tagname = CString::new(tag).unwrap_or_default();
         let filename = CString::new(folder_name).unwrap_or_default();
 
         unsafe {
-            let ptr = self
-                .library
-                .get::<unsafe extern "C" fn(DLLString, DLLString, DLLString) -> DLLString>(
-                    b"remove",
-                )
-                .expect("upload function not found")(
-                access_token.as_ptr(),
-                tagname.as_ptr(),
-                filename.as_ptr(),
-            );
-
-            self.create_string(ptr).map_or(Ok(()), |e| Err(e))
+            self.get_function::<unsafe extern "C" fn(DLLString, DLLString, DLLString) -> DLLString>(
+                b"remove",
+            )
+            .map(|f| f(access_token.as_ptr(), tagname.as_ptr(), filename.as_ptr()))
+            .is_some_and(|ptr| self.test_error_string(ptr))
         }
     }
 
-    pub fn read_cloud(&mut self) -> PluginResult<Vec<FileDetails>> {
-        if let Some(details) = self.details.clone() {
-            Ok(details)
-        } else {
+    pub fn read_cloud(&mut self) -> Option<Vec<FileDetails>> {
+        self.details.clone().or_else(|| {
             let access_token = CString::new(self.credentials()).unwrap_or_default();
 
             unsafe {
-                let (ptr, count, possible_err) = self
-                    .library
-                    .get::<unsafe extern "C" fn(DLLString) -> (DLLFileDetails, u64, DLLString)>(
-                        b"read_cloud",
-                    )
-                    .expect("read_cloud function not found")(
+                let (ptr, count, possible_err) = self.get_function::<unsafe extern "C" fn(
+                    DLLString,
+                ) -> (
+                    DLLFileDetails,
+                    u64,
+                    DLLString,
+                )>(b"read_cloud")?(
                     access_token.as_ptr()
                 );
 
-                match self.create_string(possible_err) {
-                    Some(err) => Err(err),
-                    None => {
-                        let mut v: Vec<FileDetails> = Vec::new();
+                if self.test_error_string(possible_err) {
+                    let mut v: Vec<FileDetails> = Vec::new();
 
-                        for i in 0..count as isize {
-                            let detail = *ptr.offset(i);
-                            v.push(FileDetails {
-                                tag: self.create_string(detail.0).unwrap().into(),
-                                folder_name: self.create_string(detail.1).unwrap().into(),
-                                last_modified: SystemTime::UNIX_EPOCH
-                                    + Duration::from_secs(detail.2),
-                                data: if detail.3.is_null() {
-                                    None
-                                } else {
-                                    Some(CStr::from_ptr(detail.3).to_bytes().to_vec())
-                                },
-                            });
-                        }
-
-                        self.library
-                            .get::<unsafe extern "C" fn(u64, DLLFileDetails)>(b"free_file_details")
-                            .expect("free_file_details function not found")(
-                            count, ptr
-                        );
-
-                        self.details =
-                            Some(v.clone().into_iter().filter(|f| f.data.is_none()).collect());
-                        Ok(v)
+                    for i in 0..count as isize {
+                        let detail = *ptr.offset(i);
+                        v.push(FileDetails {
+                            tag: self.create_string(detail.0).unwrap().into(),
+                            folder_name: self.create_string(detail.1).unwrap().into(),
+                            last_modified: SystemTime::UNIX_EPOCH + Duration::from_secs(detail.2),
+                            data: if detail.3.is_null() {
+                                None
+                            } else {
+                                Some(CStr::from_ptr(detail.3).to_bytes().to_vec())
+                            },
+                        });
                     }
+
+                    self.get_function::<unsafe extern "C" fn(u64, DLLFileDetails)>(
+                        b"free_file_details",
+                    )?(count, ptr);
+
+                    self.details = Some(v);
+                    self.details.clone()
+                } else {
+                    None
                 }
             }
-        }
+        })
     }
 }
 
@@ -334,5 +331,3 @@ pub struct PluginInfo {
     icon_url: String,
     filename: OsString,
 }
-
-pub type PluginResult<T> = Result<T, String>;
