@@ -1,7 +1,6 @@
 import { invoke, osStringToString, stringToOsString } from "@/logic/backend"
 import { For, Index } from "solid-js"
 import { createStore } from "solid-js/store"
-import { Portal } from "solid-js/web"
 import { useNavigate } from "@solidjs/router"
 import { open } from "@tauri-apps/plugin-dialog"
 import { RequiredList } from "@/types/data"

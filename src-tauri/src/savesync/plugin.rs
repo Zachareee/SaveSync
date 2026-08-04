@@ -55,7 +55,7 @@ impl Plugin {
         }
     }
 
-    unsafe fn test_error_string(&self, raw_str: DLLString) -> bool {
+    unsafe fn test_error_empty(&self, raw_str: DLLString) -> bool {
         unsafe {
             self.create_string(raw_str)
                 .map(|e| self.emit_error(e))
@@ -137,18 +137,16 @@ impl Plugin {
     }
 
     fn read_creds(filename: &OsStr) -> Option<String> {
-        let mut filename = filename.to_owned();
-        filename.push(".auth");
-
-        fs::read_to_string(config_paths::creds().join(&filename)).ok()
+        fs::read_to_string(config_paths::create_credential_path(filename.to_owned())).ok()
     }
 
     fn write_creds(&mut self, credentials: &str) -> std::io::Result<()> {
         self.credentials = Some(credentials.into());
-        let mut filename = self.filename.to_os_string();
-        filename.push(".auth");
 
-        fs::write(config_paths::creds().join(&filename), credentials)
+        fs::write(
+            config_paths::create_credential_path(self.filename()),
+            credentials,
+        )
     }
 
     pub fn authenticate(&mut self) -> bool {
@@ -158,12 +156,10 @@ impl Plugin {
             b"authenticate",
         )
         .map(|f| unsafe { f(credentials.as_ptr()) })
-        .is_some_and(|(new_token, msg)| unsafe {
-            let result = self.test_error_string(msg);
-            if result && let Some(creds) = self.create_string(new_token) {
-                self.write_creds(&creds).unwrap();
-            }
-            result
+        .is_some_and(|(new_token, err)| unsafe {
+            self.create_string(new_token)
+                .map(|creds| self.write_creds(&creds));
+            err.is_null()
         })
     }
 
@@ -187,7 +183,7 @@ impl Plugin {
             )
             .map(|f| f(cstring.as_ptr()))
             .is_some_and(|(res, possible_err)| {
-                let result = self.test_error_string(possible_err);
+                let result = self.test_error_empty(possible_err);
                 if result && let Some(credentials) = self.create_string(res) {
                     let _ = self.write_creds(&credentials);
                 };
@@ -226,7 +222,7 @@ impl Plugin {
                         buffer.len() as u64,
                     )
                 })
-                .is_some_and(|ptr| self.test_error_string(ptr))
+                .is_some_and(|ptr| self.test_error_empty(ptr))
         }
     }
 
@@ -247,7 +243,7 @@ impl Plugin {
             )
         };
 
-        if unsafe { self.test_error_string(possible_err) } {
+        if unsafe { self.test_error_empty(possible_err) } {
             let mut v = Vec::new();
             let u8_ptr = ptr as *const u8;
 
@@ -273,7 +269,7 @@ impl Plugin {
                 b"remove",
             )
             .map(|f| f(access_token.as_ptr(), tagname.as_ptr(), filename.as_ptr()))
-            .is_some_and(|ptr| self.test_error_string(ptr))
+            .is_some_and(|ptr| self.test_error_empty(ptr))
         }
     }
 
@@ -292,7 +288,7 @@ impl Plugin {
                     access_token.as_ptr()
                 );
 
-                if self.test_error_string(possible_err) {
+                if self.test_error_empty(possible_err) {
                     let mut v: Vec<FileDetails> = Vec::new();
 
                     for i in 0..count as isize {

@@ -3,7 +3,10 @@ mod commands;
 mod listeners;
 mod savesync;
 
-use commands::{filetree, get_mapping, get_plugins, get_watched_folders, set_mapping, add_plugin, logout, logged_in};
+use commands::{
+    add_plugin, filetree, get_mapping, get_plugins, get_watched_folders, logged_in, logout,
+    set_mapping,
+};
 use listeners::emit_listeners;
 use savesync::{plugin::Plugin, store::AppStore};
 use std::{
@@ -13,9 +16,9 @@ use std::{
     sync::{Arc, OnceLock, RwLock},
 };
 use tauri::{
+    AppHandle, Manager, RunEvent, WindowEvent,
     menu::{MenuBuilder, MenuItem},
     tray::TrayIconBuilder,
-    AppHandle, Manager, RunEvent, WindowEvent,
 };
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_notification::NotificationExt;
@@ -127,7 +130,10 @@ pub fn run() {
         .manage(RwLock::new(AppState::default()))
         .on_window_event(|window, event| match event {
             WindowEvent::CloseRequested { api, .. } => {
-                if read_app_state(|s| s.plugin.is_some()) && app_store().close_behaviour() {
+                if read_app_state(|s| s.plugin.is_some())
+                    && app_store().close_behaviour()
+                    && window.label() == "main"
+                {
                     api.prevent_close();
                     window.hide().unwrap();
                     app_handle()

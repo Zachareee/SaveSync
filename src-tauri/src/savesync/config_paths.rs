@@ -1,7 +1,5 @@
 use std::{
-    ffi::OsString,
-    fs,
-    path::{Path, PathBuf},
+    ffi::OsString, fs, path::{Path, PathBuf}
 };
 
 use super::fs_utils::FolderItems;
@@ -49,6 +47,11 @@ pub fn plugin() -> PathBuf {
 
 pub fn temp(tag: &str) -> PathBuf {
     create_dir_if_not_exist(config().join("temp").join(tag))
+}
+
+pub fn create_credential_path(mut plugin_name: OsString) -> PathBuf {
+    plugin_name.push(".auth");
+    creds().join(&plugin_name)
 }
 
 fn create_dir_if_not_exist(path: PathBuf) -> PathBuf {

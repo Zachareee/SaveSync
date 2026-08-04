@@ -95,13 +95,11 @@ pub fn add_plugin(filepath: OsString) {
 }
 
 #[command]
-pub fn logged_in(mut filepath: OsString) -> bool {
-    filepath.push(".auth");
-    fs::exists(config_paths::creds().join(&filepath)).unwrap_or_default()
+pub fn logged_in(filepath: OsString) -> bool {
+    fs::exists(config_paths::create_credential_path(filepath)).unwrap_or_default()
 }
 
 #[command]
-pub fn logout(mut filepath: OsString) {
-    filepath.push(".auth");
-    let _ = fs::remove_file(config_paths::creds().join(&filepath));
+pub fn logout(filepath: OsString) {
+    let _ = fs::remove_file(config_paths::create_credential_path(filepath));
 }
