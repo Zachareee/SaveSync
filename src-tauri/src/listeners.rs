@@ -121,7 +121,17 @@ where
             details
                 .into_iter()
                 .filter(|FileDetails { tag, .. }| lambda(tag))
-                .for_each(|f| process_cloud_details(f, last_sync));
+                .for_each(|f| {
+                    let last_sync = last_sync.clone();
+                    thread::Builder::new()
+                        .name(format!(
+                            "tag: {}, folder: {}",
+                            f.tag,
+                            f.folder_name.to_string_lossy()
+                        ))
+                        .spawn(move || process_cloud_details(f, last_sync))
+                        .unwrap();
+                });
         }
     })
 }
