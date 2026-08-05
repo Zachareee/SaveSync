@@ -115,7 +115,9 @@ where
         if let Some(details) = write_app_state(|s| {
             let plugin = s.plugin_mut_ref();
             plugin.read_cloud().inspect(|details| {
-                s.tags = details.iter().map(|f| f.tag.clone()).collect();
+                if s.tags.is_empty() {
+                    s.tags = details.iter().map(|f| f.tag.clone()).collect();
+                }
             })
         }) {
             details
@@ -195,7 +197,9 @@ fn process_cloud_details(
             }
             (i, j) => {
                 println!("{i:?}, {j:?}");
-                if local_date == SystemTime::UNIX_EPOCH && let Some(buf) = data {
+                if local_date == SystemTime::UNIX_EPOCH
+                    && let Some(buf) = data
+                {
                     handle_buffer(&path, &fileinfo, buf);
                 }
             }
