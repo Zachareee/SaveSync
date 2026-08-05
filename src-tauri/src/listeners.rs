@@ -137,6 +137,12 @@ fn process_cloud_details(
 ) {
     if let Some(path) = app_store().get_mapping(&tag) {
         let fileinfo = strip_zip_extension(&item);
+        let data = data.or_else(|| {
+            read_app_state(|s| {
+                s.plugin_ref()
+                    .download(tag.as_bytes(), item.as_encoded_bytes())
+            })
+        });
 
         let local_date = recurse_directories(
             &path.join(fileinfo.value()),
@@ -152,18 +158,13 @@ fn process_cloud_details(
         // syncd < local < cloud (Conflict)
         // syncd < cloud < local (Conflict)
         //
-        // cloud < local < syncd (Shouldn't be possible)
-        // local < cloud < syncd (Shouldn't be possible)
+        // cloud < local < syncd (Ignore)
+        // local < cloud < syncd (Ignore)
 
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
             (k, Less) => {
                 println!("Less branch");
-                if let Some(buf) = data.or_else(|| {
-                    read_app_state(|s| {
-                        s.plugin_ref()
-                            .download(tag.as_bytes(), item.as_encoded_bytes())
-                    })
-                }) {
+                if let Some(buf) = data {
                     match k {
                         Less => {
                             println!("Both less");
@@ -182,7 +183,12 @@ fn process_cloud_details(
                 println!("Less with equal or greater");
                 upload_file(&tag, &fileinfo)
             }
-            (i, j) => println!("{i:?}, {j:?}"),
+            (i, j) => {
+                println!("{i:?}, {j:?}");
+                if local_date == SystemTime::UNIX_EPOCH && let Some(buf) = data {
+                    handle_buffer(&path, &fileinfo, buf);
+                }
+            }
         }
 
         let val = fileinfo.value();

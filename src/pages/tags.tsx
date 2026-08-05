@@ -57,7 +57,7 @@ export default function Tags() {
       <div class="text-center">
         <For each={Object.keys(folders).toSorted()}>
           {elem =>
-            <div class="border-white border-3 rounded-full m-4 px-4 py-2 bg-indigo-600 cursor-pointer hover:bg-indigo-800" onclick={[navigate, `/tags/${elem}`]}>
+            <div class="border-white border-3 rounded-full m-4 px-4 py-2 bg-indigo-600 cursor-pointer hover:bg-indigo-800" onclick={[navigate, `/tags/${encodeURIComponent(elem)}`]}>
               {elem}
             </div>
           }
