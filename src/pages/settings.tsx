@@ -8,6 +8,7 @@ export default function Settings() {
   const [autoStartup, setAutoStartup] = createSignal<boolean>(false)
   const [closeBehaviour, setCloseBehaviour] = createSignal<boolean>(true)
   const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
+  const [syncNotifications, setSyncNotifications] = createSignal<boolean>(true)
 
   isEnabled().then(setAutoStartup)
 
@@ -15,6 +16,7 @@ export default function Settings() {
   store.then(s => {
     s.get<boolean>("silenceMissingMappings").then(setSilenceMappingsMissing)
     s.get<boolean>("hide_to_tray").then(setCloseBehaviour)
+    s.get<boolean>("sync_notifications").then(setSyncNotifications)
   })
 
   async function toggleAutoStartup(_: any, checked: boolean) {
@@ -36,8 +38,14 @@ export default function Settings() {
     <div class="overflow-y-scroll m-4">
       <h1 class="font-bold text-3xl justify-self-start mb-2">Notifications</h1>
       <div class="border-2 border-indigo-200 rounded-xl p-2">
-        <span>Silence "Mappings missing" notifications</span>
-        <Switch onChange={toggleSetterAndSave(setSilenceMappingsMissing, "silenceMissingMappings")} checked={silenceMissingMappings()} />
+        <div>
+          <span>Silence "Mappings missing" notifications</span>
+          <Switch onChange={toggleSetterAndSave(setSilenceMappingsMissing, "silenceMissingMappings")} checked={silenceMissingMappings()} />
+        </div>
+        <div>
+          <span>Turn on sync notifications</span>
+          <Switch onChange={toggleSetterAndSave(setSyncNotifications, "sync_notifications")} checked={syncNotifications()} />
+        </div>
       </div>
       <br />
       <h1 class="font-bold text-3xl justify-self-start mb-2">Behaviour</h1>

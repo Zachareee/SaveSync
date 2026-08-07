@@ -21,7 +21,8 @@ use tauri::{
     tray::TrayIconBuilder,
 };
 use tauri_plugin_deep_link::DeepLinkExt;
-use tauri_plugin_notification::NotificationExt;
+
+use crate::savesync::notifications::desktop_notify;
 
 static APP_INSTANCE: OnceLock<AppHandle> = OnceLock::new();
 static APP_STORE: OnceLock<Arc<AppStore>> = OnceLock::new();
@@ -136,14 +137,11 @@ pub fn run() {
                 {
                     api.prevent_close();
                     window.hide().unwrap();
-                    app_handle()
-                        .notification()
-                        .builder()
-                        .title("savesync")
-                        .body("The app has been minimised to the tray")
-                        .sound("Default")
-                        .show()
-                        .unwrap();
+                    desktop_notify(savesync::notifications::DesktopNotification {
+                        title: Some("savesync".into()),
+                        body: Some("The app has been minimised to the tray".into()),
+                        silent: false,
+                    });
                 }
             }
             _ => (),

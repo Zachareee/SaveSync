@@ -7,9 +7,14 @@ use std::{
     sync::{LazyLock, Mutex},
     time::Duration,
 };
-use tauri_plugin_notification::NotificationExt;
 
-use crate::{app_handle, app_store, read_app_state, savesync::zip_utils};
+use crate::{
+    app_store, read_app_state,
+    savesync::{
+        notifications::{DesktopNotification, sync_notify},
+        zip_utils,
+    },
+};
 
 use super::zip_utils::zip_dir;
 
@@ -20,16 +25,14 @@ static WATCHERS: LazyLock<
 const ZIPEXTENSION: &'static str = "savesynczip";
 
 pub fn upload_file(tag: &str, path: &PathType) {
-    app_handle()
-        .notification()
-        .builder()
-        .title(format!("Syncing {tag} save"))
-        .body(format!(
+    sync_notify(DesktopNotification {
+        title: Some(format!("Syncing {tag} save")),
+        body: Some(format!(
             "Changes detected in {}",
             path.value().to_string_lossy()
-        ))
-        .show()
-        .unwrap();
+        )),
+        silent: true,
+    });
 
     let (zipbuffer, date) = match path {
         PathType::Directory(path) => zip_dir(&app_store().resolve_path(tag, path)),
@@ -56,21 +59,37 @@ pub fn upload_file(tag: &str, path: &PathType) {
         )
     });
 
-    app_handle()
-        .notification()
-        .builder()
-        .title(format!("Syncing {tag} done"))
-        .body("Done syncing")
-        .show()
-        .unwrap();
+    sync_notify(DesktopNotification {
+        title: Some(format!("Syncing {tag} done")),
+        body: Some("Done syncing".into()),
+        silent: true,
+    });
 }
 
 pub fn handle_buffer(path: impl AsRef<Path>, foldername: &PathType, buffer: Vec<u8>) {
+    sync_notify(DesktopNotification {
+        title: Some("Outdated saves".into()),
+        body: Some(format!(
+            "Downloading changes to {}",
+            foldername.value().to_string_lossy()
+        )),
+        silent: true,
+    });
+
     if let PathType::File(foldername) = foldername {
         fs::write(path.as_ref().join(foldername), buffer).unwrap();
     } else {
         zip_utils::extract(path.as_ref().with_extension(""), buffer).unwrap()
     }
+
+    sync_notify(DesktopNotification {
+        title: Some("Saves synced".into()),
+        body: Some(format!(
+            "{} is up to date",
+            foldername.value().to_string_lossy()
+        )),
+        silent: true,
+    });
 }
 
 fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, RecommendedCache> {

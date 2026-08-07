@@ -26,6 +26,7 @@ impl AppStore {
                 .default("last_sync", 0)
                 .default("silenceMissingMappings", false)
                 .default("hide_to_tray", true)
+                .default("sync_notifications", true)
                 .auto_save(Duration::from_secs(60))
                 .build()
                 .unwrap(),
@@ -94,6 +95,14 @@ impl AppStore {
     pub fn close_behaviour(&self) -> bool {
         self.store
             .get("hide_to_tray")
+            .as_ref()
+            .and_then(Value::as_bool)
+            .unwrap_or_default()
+    }
+
+    pub fn sync_notifications(&self) -> bool {
+        self.store
+            .get("sync_notifications")
             .as_ref()
             .and_then(Value::as_bool)
             .unwrap_or_default()
