@@ -29,7 +29,6 @@ export default function Folders() {
   }
 
   return <PageRoot>
-    <div class="flex justify-center overflow-y-auto">
       <div class="w-min h-screen">
         <Index each={Object.entries(folders[TAGNAME])}>
           {
@@ -46,6 +45,5 @@ export default function Folders() {
           <button onclick={[navigate, "/tags"]}>Back to tags</button>
         </div>
       </Portal>
-    </div>
   </PageRoot>
 }
