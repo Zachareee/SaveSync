@@ -7,7 +7,7 @@ const PageRoot: ParentComponent = props => {
 
   return <div class="w-full flex">
     <NavBar navigate={navigate} />
-    <div class="content-center flex-auto overflow-auto">
+    <div class="h-screen justify-center items-center flex-1 overflow-auto">
       {props.children}
     </div>
   </div>

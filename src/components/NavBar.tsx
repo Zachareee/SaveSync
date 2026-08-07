@@ -11,7 +11,7 @@ const navs = Object.entries({
 const NavBar: Component<{ navigate: Navigator }> = props => {
   const location = useLocation().pathname
   return <>
-    <div class="inline-block h-screen content-center bg-indigo-950 p-2">
+    <div class="content-center bg-indigo-950 p-2">
       <For each={navs}>
         {name => <NavOption onclick={[props.navigate, name[1]]} active={location.startsWith(name[1])}>{name[0]}</NavOption>}
       </For>

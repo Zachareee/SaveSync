@@ -7,8 +7,9 @@ use std::{
     sync::{LazyLock, Mutex},
     time::Duration,
 };
+use tauri_plugin_notification::NotificationExt;
 
-use crate::{app_store, read_app_state, savesync::zip_utils};
+use crate::{app_handle, app_store, read_app_state, savesync::zip_utils};
 
 use super::zip_utils::zip_dir;
 
@@ -19,6 +20,17 @@ static WATCHERS: LazyLock<
 const ZIPEXTENSION: &'static str = "savesynczip";
 
 pub fn upload_file(tag: &str, path: &PathType) {
+    app_handle()
+        .notification()
+        .builder()
+        .title(format!("Syncing {tag} save"))
+        .body(format!(
+            "Changes detected in {}",
+            path.value().to_string_lossy()
+        ))
+        .show()
+        .unwrap();
+
     let (zipbuffer, date) = match path {
         PathType::Directory(path) => zip_dir(&app_store().resolve_path(tag, path)),
         PathType::File(path) => {
@@ -43,6 +55,14 @@ pub fn upload_file(tag: &str, path: &PathType) {
             zipbuffer.as_slice(),
         )
     });
+
+    app_handle()
+        .notification()
+        .builder()
+        .title(format!("Syncing {tag} done"))
+        .body("Done syncing")
+        .show()
+        .unwrap();
 }
 
 pub fn handle_buffer(path: impl AsRef<Path>, foldername: &PathType, buffer: Vec<u8>) {

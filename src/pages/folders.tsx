@@ -29,21 +29,21 @@ export default function Folders() {
   }
 
   return <PageRoot>
-      <div class="w-min h-screen">
-        <Index each={Object.entries(folders[TAGNAME])}>
-          {
-            foldername => <DivButton onclick={[sync_folder, stringToOsString(foldername()[0])]}>
-              <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1].synced} onclick={(e) => e.preventDefault()} />
-              {foldername()[1].folder ? <Folder /> : <InsertDriveFile />} {foldername()[0]}
-              <Loop style={{ "visibility": foldername()[1].loading ? "visible" : "hidden" }} class="ml-2" />
-            </DivButton>
-          }
-        </Index>
+    <div class="w-full h-screen flex-col content-center justify-center items-center">
+      <Index each={Object.entries(folders[TAGNAME])}>
+        {
+          foldername => <DivButton onclick={[sync_folder, stringToOsString(foldername()[0])]}>
+            <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1].synced} onclick={(e) => e.preventDefault()} />
+            {foldername()[1].folder ? <Folder /> : <InsertDriveFile />} {foldername()[0]}
+            <Loop style={{ "visibility": foldername()[1].loading ? "visible" : "hidden" }} class="ml-2" />
+          </DivButton>
+        }
+      </Index>
+    </div>
+    <Portal>
+      <div class="fixed right-0 bottom-0 m-4">
+        <button onclick={[navigate, "/tags"]}>Back to tags</button>
       </div>
-      <Portal>
-        <div class="fixed right-0 bottom-0 m-4">
-          <button onclick={[navigate, "/tags"]}>Back to tags</button>
-        </div>
-      </Portal>
+    </Portal>
   </PageRoot>
 }
