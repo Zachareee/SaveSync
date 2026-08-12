@@ -1,5 +1,5 @@
 use std::{
-    fs::{read_dir, DirEntry, FileType},
+    fs::{DirEntry, FileType, read_dir},
     io,
     path::{Path, PathBuf},
 };
@@ -46,10 +46,18 @@ where
     V: Clone + Copy,
 {
     let relative_path = PathBuf::new();
-    recurse_directories_sub(path, &relative_path, dvalue, lambda, accumulator)
+    if path.is_file() {
+        read_dir(path.parent().unwrap())?
+            .filter(|direntry| direntry.as_ref().unwrap().path() == path)
+            .try_fold(dvalue, |initial, entry| {
+                Ok(accumulator(initial, lambda(path, &relative_path, entry?)?))
+            })
+    } else {
+        recurse_directories_sub(path, &relative_path, dvalue, lambda, accumulator)
+    }
 }
 
-pub fn recurse_directories_sub<V, F, A>(
+fn recurse_directories_sub<V, F, A>(
     path: &Path,
     relative_path: &PathBuf,
     dvalue: V,
