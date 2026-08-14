@@ -15,5 +15,5 @@ export const conflicting_listener = () =>
       })}`,
       title: "Outdated folder",
       parent: "main"
-    }).once("tauri://error", console.log)
+    }).once("tauri://error", alert)
   })
