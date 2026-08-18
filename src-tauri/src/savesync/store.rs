@@ -6,7 +6,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use serde_json::{from_value, json, to_value, Map, Value};
+use serde_json::{Map, Value, from_value, json, to_value};
 use tauri::{Manager, Wry};
 use tauri_plugin_store::{Result, Store, StoreBuilder};
 

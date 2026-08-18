@@ -1,5 +1,7 @@
 use std::{
-    ffi::OsString, fs, path::{Path, PathBuf}
+    ffi::OsString,
+    fs,
+    path::{Path, PathBuf},
 };
 
 use super::fs_utils::FolderItems;

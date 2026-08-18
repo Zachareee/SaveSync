@@ -6,7 +6,7 @@ use std::{
     time::SystemTime,
 };
 
-use zip::{result::ZipResult, write::SimpleFileOptions, ZipArchive, ZipWriter};
+use zip::{ZipArchive, ZipWriter, result::ZipResult, write::SimpleFileOptions};
 
 use crate::savesync::fs_utils::recurse_directories;
 

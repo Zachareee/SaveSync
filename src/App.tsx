@@ -1,12 +1,16 @@
 import "./App.css";
+import { onCleanup, onMount } from "solid-js";
 import { createStore } from "solid-js/store";
-import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Route, Router } from "@solidjs/router";
-import { listen, osStringToString } from "@/logic/backend";
-import { createWindow } from "@/logic/window";
 import { Toaster } from "solid-toast";
-import { FileTree } from "./types/data";
-import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings } from "./pages";
+
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { exit } from "@tauri-apps/plugin-process"
+
+import { createWindow } from "@/logic/window";
+import { listen, osStringToString } from "@/logic/backend";
+import { FileTree } from "@/types/data";
+import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings } from "@/pages";
 
 export const [folders, setFolders] = createStore<FileTree>();
 
@@ -16,6 +20,23 @@ export const [folders, setFolders] = createStore<FileTree>();
 })()
 
 function App() {
+  onMount(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      const ctrlPressed = e.ctrlKey || e.metaKey
+      const qPressed = e.key.toLowerCase() === "q"
+
+      if (ctrlPressed && qPressed) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        await exit(0)
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown)
+
+    onCleanup(() => window.removeEventListener("keydown", handleKeyDown))
+  })
+
   return <>
     <Toaster position="bottom-center" containerClassName="cursor-pointer" />
     <Router>
