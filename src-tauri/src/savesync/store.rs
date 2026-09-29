@@ -27,6 +27,7 @@ impl AppStore {
                 .default("silenceMissingMappings", false)
                 .default("hide_to_tray", true)
                 .default("sync_notifications", true)
+                .default("minimize_on_start", false)
                 .auto_save(Duration::from_secs(60))
                 .build()
                 .unwrap(),
@@ -92,17 +93,21 @@ impl AppStore {
         self.get_mapping(tag).unwrap().join(&path)
     }
 
+    pub fn minimize_on_start(&self) -> bool {
+        self.get_bool_setting("minimize_on_start")
+    }
+
     pub fn close_behaviour(&self) -> bool {
-        self.store
-            .get("hide_to_tray")
-            .as_ref()
-            .and_then(Value::as_bool)
-            .unwrap_or_default()
+        self.get_bool_setting("hide_to_tray")
     }
 
     pub fn sync_notifications(&self) -> bool {
+        self.get_bool_setting("sync_notifications")
+    }
+
+    fn get_bool_setting(&self, key: &str) -> bool {
         self.store
-            .get("sync_notifications")
+            .get(key)
             .as_ref()
             .and_then(Value::as_bool)
             .unwrap_or_default()

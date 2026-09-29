@@ -105,28 +105,33 @@ pub fn run() {
                 )
                 .build(app)?;
 
+            let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
+            let _ = APP_INSTANCE.set(app.app_handle().to_owned());
+
             #[cfg(desktop)]
             {
-                app.handle()
-                    .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-                        app.get_webview_window("main")
-                            .expect("No main window found")
-                            .set_focus()
-                            .expect("Unable to focus main window");
-                    }))?;
+                let handle = app.handle();
 
-                app.handle().plugin(tauri_plugin_autostart::init(
+                handle.plugin(tauri_plugin_single_instance::init(|app, _, _| {
+                    app.get_webview_window("main")
+                        .expect("No main window found")
+                        .set_focus()
+                        .expect("Unable to focus main window");
+                }))?;
+
+                handle.plugin(tauri_plugin_autostart::init(
                     tauri_plugin_autostart::MacosLauncher::LaunchAgent,
                     None,
                 ))?;
+
+                if app_store().minimize_on_start() {
+                    handle.get_webview_window("main").unwrap().hide().unwrap();
+                }
 
                 app.deep_link().on_open_url(|e| {
                     println!("Urls: {:?}", e.urls());
                 });
             }
-
-            let _ = APP_STORE.set(Arc::new(AppStore::new(app)));
-            let _ = APP_INSTANCE.set(app.app_handle().to_owned());
             Ok(())
         })
         .manage(RwLock::new(AppState::default()))

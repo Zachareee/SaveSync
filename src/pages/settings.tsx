@@ -9,6 +9,7 @@ export default function Settings() {
   const [closeBehaviour, setCloseBehaviour] = createSignal<boolean>(true)
   const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
   const [syncNotifications, setSyncNotifications] = createSignal<boolean>(true)
+  const [minimizeOnStart, setMinimizeOnStart] = createSignal<boolean>(false)
 
   isEnabled().then(setAutoStartup)
 
@@ -17,6 +18,7 @@ export default function Settings() {
     s.get<boolean>("silenceMissingMappings").then(setSilenceMappingsMissing)
     s.get<boolean>("hide_to_tray").then(setCloseBehaviour)
     s.get<boolean>("sync_notifications").then(setSyncNotifications)
+    s.get<boolean>("minimize_on_start").then(setMinimizeOnStart)
   })
 
   async function toggleAutoStartup(_: any, checked: boolean) {
@@ -55,8 +57,12 @@ export default function Settings() {
           <Switch onChange={toggleAutoStartup} checked={autoStartup()} />
         </div>
         <div>
-          <span>Hide when closed</span>
+          <span>Hide when window is closed</span>
           <Switch onChange={toggleSetterAndSave(setCloseBehaviour, "hide_to_tray")} checked={closeBehaviour()} />
+        </div>
+        <div>
+          <span>Minimize on startup</span>
+          <Switch onChange={toggleSetterAndSave(setMinimizeOnStart, "minimize_on_start")} checked={minimizeOnStart()} />
         </div>
       </div>
     </div>
