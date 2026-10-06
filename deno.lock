@@ -5,8 +5,8 @@
     "npm:@solidjs/router@~0.15.3": "0.15.3_solid-js@1.9.14",
     "npm:@suid/icons-material@0.9": "0.9.0_solid-js@1.9.14",
     "npm:@suid/material@0.19": "0.19.0_solid-js@1.9.14",
-    "npm:@suid/vite-plugin@~0.4.1": "0.4.1_vite@6.4.2__lightningcss@1.29.1",
-    "npm:@tailwindcss/vite@^4.0.3": "4.0.3_vite@6.4.2__lightningcss@1.29.1",
+    "npm:@suid/vite-plugin@~0.4.1": "0.4.1_vite@6.4.2",
+    "npm:@tailwindcss/vite@^4.0.3": "4.0.3_vite@6.4.2",
     "npm:@tauri-apps/api@2": "2.11.0",
     "npm:@tauri-apps/cli@2": "2.2.5",
     "npm:@tauri-apps/plugin-autostart@~2.5.1": "2.5.1",
@@ -16,14 +16,14 @@
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
     "npm:@tauri-apps/plugin-process@~2.3.1": "2.3.1",
     "npm:@tauri-apps/plugin-store@2": "2.4.3",
-    "npm:@types/lodash@^4.17.15": "4.17.15",
-    "npm:lodash@^4.17.21": "4.17.21",
+    "npm:@types/lodash-es@^4.17.12": "4.17.12",
+    "npm:lodash-es@^4.18.1": "4.18.1",
     "npm:postcss@^8.5.1": "8.5.15",
     "npm:solid-js@^1.9.3": "1.9.14",
     "npm:solid-toast@0.5": "0.5.0_solid-js@1.9.14",
     "npm:tailwindcss@^4.0.3": "4.0.3",
     "npm:typescript@~5.6.2": "5.6.3",
-    "npm:vite-plugin-solid@^2.11.0": "2.11.0_solid-js@1.9.14_vite@6.4.2__lightningcss@1.29.1",
+    "npm:vite-plugin-solid@^2.11.0": "2.11.0_solid-js@1.9.14_vite@6.4.2",
     "npm:vite@^6.0.3": "6.4.2_lightningcss@1.29.1"
   },
   "npm": {
@@ -527,7 +527,7 @@
         "solid-js"
       ]
     },
-    "@suid/vite-plugin@0.4.1_vite@6.4.2__lightningcss@1.29.1": {
+    "@suid/vite-plugin@0.4.1_vite@6.4.2": {
       "integrity": "sha512-UqdrbkzyfqnSIKu4K6pGeYKQmxPDE4axwSwYwpeaf4aBnEaH31WmS5PpSVsZ1P8HieYyltx1HsKSFQgWfEEFIA==",
       "dependencies": [
         "@babel/generator",
@@ -618,7 +618,7 @@
         "@tailwindcss/oxide-win32-x64-msvc"
       ]
     },
-    "@tailwindcss/vite@4.0.3_vite@6.4.2__lightningcss@1.29.1": {
+    "@tailwindcss/vite@4.0.3_vite@6.4.2": {
       "integrity": "sha512-Qj6rSO+EvXnNDymloKZ11D54JJTnDrkRWJBzNHENDxjt0HtrCZJbSLIrcJ/WdaoU4othrel/oFqHpO/doxIS/Q==",
       "dependencies": [
         "@tailwindcss/node",
@@ -770,6 +770,12 @@
     },
     "@types/estree@1.0.8": {
       "integrity": "sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w=="
+    },
+    "@types/lodash-es@4.17.12": {
+      "integrity": "sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==",
+      "dependencies": [
+        "@types/lodash"
+      ]
     },
     "@types/lodash@4.17.15": {
       "integrity": "sha512-w/P33JFeySuhN6JLkysYUK2gEmy9kHHFN7E8ro0tkfmlDOgxBDzWEZ/J8cWA+fHqFevpswDTFZnDx+R9lbL6xw=="
@@ -983,8 +989,8 @@
         "lightningcss-win32-x64-msvc"
       ]
     },
-    "lodash@4.17.21": {
-      "integrity": "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg=="
+    "lodash-es@4.18.1": {
+      "integrity": "sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A=="
     },
     "lru-cache@5.1.1": {
       "integrity": "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==",
@@ -1131,7 +1137,7 @@
     "validate-html-nesting@1.2.2": {
       "integrity": "sha512-hGdgQozCsQJMyfK5urgFcWEqsSSrK63Awe0t/IMR0bZ0QMtnuaiHzThW81guu3qx9abLi99NEuiaN6P9gVYsNg=="
     },
-    "vite-plugin-solid@2.11.0_solid-js@1.9.14_vite@6.4.2__lightningcss@1.29.1": {
+    "vite-plugin-solid@2.11.0_solid-js@1.9.14_vite@6.4.2": {
       "integrity": "sha512-G+NiwDj4EAeUE0wt3Ur9f+Lt9oMUuLd0FIxYuqwJSqRacKQRteCwUFzNy8zMEt88xWokngQhiFjfJMhjc1fDXw==",
       "dependencies": [
         "@babel/core",
@@ -1163,7 +1169,7 @@
       ],
       "bin": true
     },
-    "vitefu@1.0.5_vite@6.4.2__lightningcss@1.29.1": {
+    "vitefu@1.0.5_vite@6.4.2": {
       "integrity": "sha512-h4Vflt9gxODPFNGPwp4zAMZRpZR7eslzwH2c5hn5kNZ5rhnKyRJ50U+yGCdc2IRaBs8O4haIgLNGrV5CrpMsCA==",
       "dependencies": [
         "vite"
@@ -1194,8 +1200,8 @@
         "npm:@tauri-apps/plugin-opener@2",
         "npm:@tauri-apps/plugin-process@~2.3.1",
         "npm:@tauri-apps/plugin-store@2",
-        "npm:@types/lodash@^4.17.15",
-        "npm:lodash@^4.17.21",
+        "npm:@types/lodash-es@^4.17.12",
+        "npm:lodash-es@^4.18.1",
         "npm:solid-js@^1.9.3",
         "npm:solid-toast@0.5",
         "npm:tailwindcss@^4.0.3",

@@ -1,7 +1,7 @@
 import { useNavigate } from "@solidjs/router"
 import { createSignal, For } from "solid-js"
 import toast from "solid-toast"
-import isEqual from "lodash/isEqual"
+import { includes, isEqual, mapValues, negate, partial, partialRight, unary } from "lodash-es"
 import { Portal } from "solid-js/web"
 import { reconcile } from "solid-js/store"
 import { load } from "@tauri-apps/plugin-store"
@@ -20,8 +20,8 @@ export default function Tags() {
     s.get<boolean>("silenceMissingMappings").then(setSilenceMappingsMissing)
   ).then(() =>
     invoke("get_mapping").then(({ mapping, required }) => {
-      let current = Object.entries(mapping).map(([key]) => key)
-      if (required.some(tag => !current.includes(tag)) && !silenceMissingMappings())
+      const current = Object.keys(mapping)
+      if (required.some(negate(partial(includes, current))) && !silenceMissingMappings())
         toast.error(
           (t) =>
             <p onclick={() => {
@@ -36,19 +36,22 @@ export default function Tags() {
 
   invoke("filetree").then(payload => {
     invoke("get_watched_folders").then(watched => {
-      setFolders(reconcile(Object.fromEntries(
-        Object.entries(payload).map(
-          ([k, v]) => [k, Object.fromEntries(v.map(([filename, isFolder]) =>
-            [osStringToString(filename), {
-              folder: isFolder,
-              synced: watched.some(
-                tagpath => isEqual(tagpath, [k, filename])
-              ),
-              loading: false
-            }]
-          ))]
+      setFolders(reconcile(
+        mapValues(payload, (v, k) =>
+          Object.fromEntries(v.map(([filename, isFolder]) =>
+            [
+              osStringToString(filename),
+              {
+                folder: isFolder,
+                synced: watched.some(
+                  unary(partialRight(isEqual, [k, filename]))
+                ),
+                loading: false
+              }
+            ]
+          ))
         )
-      )))
+      ))
     })
   })
 

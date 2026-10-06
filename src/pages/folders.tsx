@@ -7,15 +7,14 @@ import { useNavigate, useParams } from "@solidjs/router";
 import Folder from "@suid/icons-material/Folder"
 import InsertDriveFile from "@suid/icons-material/InsertDriveFile"
 import Loop from "@suid/icons-material/Loop"
+import { mapValues } from "lodash-es";
 import { Index } from "solid-js";
 import { Portal } from "solid-js/web";
 
 export default function Folders() {
   const navigate = useNavigate()
   const params = useParams()
-  const { TAGNAME } = Object.fromEntries(
-    Object.entries(params).map(([k, v]) => [k, decodeURIComponent(v)])
-  )
+  const { TAGNAME } = mapValues(params, decodeURIComponent)
 
   unlisten([
     listen("sync_result", ([tag, folder, bool]) => {
