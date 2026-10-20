@@ -5,20 +5,22 @@ import { useNavigate } from "@solidjs/router"
 import { open } from "@tauri-apps/plugin-dialog"
 import { RequiredList } from "@/types/data"
 import PageRoot from "@/PageRoot"
-import { chain, every, partialRight, unary } from "lodash-es"
+import { chain, difference, every, map, partialRight, unary } from "lodash-es"
 
 type MappingArray = [string, string][]
 
 const createAddPath = (setMapping: ReturnType<typeof createStore<MappingArray>>[1]) =>
-  (tag: string) => setMapping(mapping => [...mapping, [tag, ""] as const])
+  (tag: string) => setMapping(mapping => [...mapping, [tag, ""]])
 const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray>>[1]) =>
   (idx: number) => setMapping(mapping => mapping.toSpliced(idx, 1))
 
 function saveAndClose([mapping, navigate]: [MappingArray, () => {}]) {
   invoke("set_mapping", {
-    map: Object.fromEntries(
-      mapping.filter(unary(partialRight(every))).map(([k ,v]) => [k, stringToOsString(v)])
-    )
+    map: chain(mapping)
+      .filter(unary(partialRight(every)))
+      .fromPairs()
+      .mapValues(v => stringToOsString(v))
+      .value()
   }).then(navigate)
 }
 
@@ -27,8 +29,8 @@ export default function Mapping() {
   const [requiredList, setRequiredList] = createStore<RequiredList>([])
 
   invoke("get_mapping").then(({ mapping, required }) => {
-    setMapping(chain(mapping).map((v, k) => [k, osStringToString(v)] as [string, string]).sortBy(0).value())
-    setRequiredList(required)
+    setMapping(chain(mapping).mapValues(v => osStringToString(v)).toPairs().sortBy(0).value())
+    setRequiredList(required.toSorted())
   })
 
   const addPath = createAddPath(setMapping)
@@ -60,7 +62,7 @@ export default function Mapping() {
       <br />
       <div class="flex-col text-center">
         <h2> Missing tags </h2>
-        <For each={requiredList.filter(tag => !mapping.some(([key]) => tag == key))}>
+        <For each={difference(requiredList, map(mapping, 0))} >
           {e => <button onclick={[addPath, e]}>{e}</button>}
         </For>
       </div>
