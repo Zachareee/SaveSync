@@ -2,16 +2,13 @@ use libloading::{Library, Symbol};
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::{CStr, CString, OsStr, OsString, c_char},
-    fs,
+    fs, slice,
     time::{Duration, SystemTime},
 };
 
 use crate::savesync::emitter;
 
 use super::config_paths;
-
-type DLLString = *const c_char;
-type DLLFileDetails = *const (DLLString, DLLString, u64, DLLString);
 
 pub struct Plugin {
     library: Library,
@@ -140,37 +137,35 @@ impl Plugin {
         fs::read_to_string(config_paths::create_credential_path(filename.to_owned())).ok()
     }
 
-    fn write_creds(&mut self, credentials: &str) -> std::io::Result<()> {
+    fn write_creds(&mut self, credentials: &str) {
         self.credentials = Some(credentials.into());
 
         fs::write(
             config_paths::create_credential_path(self.filename()),
             credentials,
         )
+        .unwrap()
     }
 
     pub fn authenticate(&mut self) -> bool {
         let credentials = CString::new(self.credentials()).unwrap_or_default();
 
-        self.get_function::<unsafe extern "C" fn(DLLString) -> (DLLString, DLLString)>(
-            b"authenticate",
-        )
-        .map(|f| unsafe { f(credentials.as_ptr()) })
-        .is_some_and(|(new_token, err)| unsafe {
-            self.create_string(new_token)
-                .map(|creds| self.write_creds(&creds));
-            err.is_null()
-        })
+        self.get_function::<AuthFunction>(b"authenticate")
+            .map(|f| unsafe { f(credentials.as_ptr()) })
+            .is_some_and(|DLLResult { value, error }| unsafe {
+                self.create_string(value)
+                    .map(|creds| self.write_creds(&creds));
+                self.test_error_empty(error)
+            })
     }
 
     pub fn auth_url(&self, redirect_uri: &str) -> Option<String> {
         let redirect_uri = CString::new(redirect_uri).unwrap_or_default();
 
         unsafe {
-            self.create_string(self
-                .get_function::<unsafe extern "C" fn(DLLString) -> DLLString>(
-                    b"auth_url",
-                )?(redirect_uri.as_ptr()))
+            self.create_string(self.get_function::<AuthUrlFunction>(b"auth_url")?(
+                redirect_uri.as_ptr(),
+            ))
         }
     }
 
@@ -178,22 +173,16 @@ impl Plugin {
         let cstring = CString::new(url).unwrap_or_default();
 
         unsafe {
-            self.get_function::<unsafe extern "C" fn(DLLString) -> (DLLString, DLLString)>(
-                b"extract_credentials",
-            )
-            .map(|f| f(cstring.as_ptr()))
-            .is_some_and(|(res, possible_err)| {
-                let result = self.test_error_empty(possible_err);
-                if result && let Some(credentials) = self.create_string(res) {
-                    let _ = self.write_creds(&credentials);
-                };
-                result
-            })
+            self.get_function::<ExtractCredentialsFunction>(b"extract_credentials")
+                .map(|f| f(cstring.as_ptr()))
+                .is_some_and(|DLLResult { value, error }| {
+                    let result = self.test_error_empty(error);
+                    if result && let Some(credentials) = self.create_string(value) {
+                        self.write_creds(&credentials)
+                    };
+                    result
+                })
         }
-    }
-
-    pub fn abort(&self) -> bool {
-        true
     }
 
     pub fn upload(&self, tag: &[u8], folder_name: &[u8], date: SystemTime, buffer: &[u8]) -> bool {
@@ -202,14 +191,7 @@ impl Plugin {
         let filename = CString::new(folder_name).unwrap_or_default();
 
         unsafe {
-            self.get_function::<unsafe extern "C" fn(
-                DLLString,
-                DLLString,
-                DLLString,
-                u64,
-                DLLString,
-                u64,
-            ) -> DLLString>(b"upload")
+            self.get_function::<UploadFunction>(b"upload")
                 .map(|f| {
                     f(
                         access_token.as_ptr(),
@@ -226,34 +208,33 @@ impl Plugin {
         }
     }
 
+    fn data_from_ptr(&self, ptr: DLLString, size: u64) -> Option<Vec<u8>> {
+        if ptr.is_null() {
+            None
+        } else {
+            let v = unsafe { slice::from_raw_parts(ptr as *const u8, size as usize) }.to_vec();
+
+            unsafe { self.free_string(ptr) };
+
+            Some(v)
+        }
+    }
+
     pub fn download(&self, tag: &[u8], folder_name: &[u8]) -> Option<Vec<u8>> {
         let access_token = CString::new(self.credentials()).unwrap_or_default();
         let tagname = CString::new(tag).unwrap_or_default();
         let filename = CString::new(folder_name).unwrap_or_default();
 
-        let (ptr, count, possible_err) = unsafe {
-            self.get_function::<unsafe extern "C" fn(
-                DLLString,
-                DLLString,
-                DLLString,
-            ) -> (DLLString, u64, DLLString)>(b"download")?(
+        let DLLFileResult { ptr, size, error } = unsafe {
+            self.get_function::<DownloadFunction>(b"download")?(
                 access_token.as_ptr(),
                 tagname.as_ptr(),
                 filename.as_ptr(),
             )
         };
 
-        if unsafe { self.test_error_empty(possible_err) } {
-            let mut v = Vec::new();
-            let u8_ptr = ptr as *const u8;
-
-            for i in 0..count as isize {
-                v.push(unsafe { *u8_ptr.offset(i) });
-            }
-
-            unsafe { self.free_string(ptr) };
-
-            Some(v)
+        if unsafe { self.test_error_empty(error) } {
+            self.data_from_ptr(ptr, size)
         } else {
             None
         }
@@ -265,11 +246,9 @@ impl Plugin {
         let filename = CString::new(folder_name).unwrap_or_default();
 
         unsafe {
-            self.get_function::<unsafe extern "C" fn(DLLString, DLLString, DLLString) -> DLLString>(
-                b"remove",
-            )
-            .map(|f| f(access_token.as_ptr(), tagname.as_ptr(), filename.as_ptr()))
-            .is_some_and(|ptr| self.test_error_empty(ptr))
+            self.get_function::<RemoveFunction>(b"remove")
+                .map(|f| f(access_token.as_ptr(), tagname.as_ptr(), filename.as_ptr()))
+                .is_some_and(|ptr| self.test_error_empty(ptr))
         }
     }
 
@@ -278,17 +257,10 @@ impl Plugin {
             let access_token = CString::new(self.credentials()).unwrap_or_default();
 
             unsafe {
-                let (ptr, count, possible_err) = self.get_function::<unsafe extern "C" fn(
-                    DLLString,
-                ) -> (
-                    DLLFileDetails,
-                    u64,
-                    DLLString,
-                )>(b"read_cloud")?(
-                    access_token.as_ptr()
-                );
+                let DLLCloudResult { ptr, count, error } =
+                    self.get_function::<ReadCloudFunction>(b"read_cloud")?(access_token.as_ptr());
 
-                if self.test_error_empty(possible_err) {
+                if self.test_error_empty(error) {
                     let mut v: Vec<FileDetails> = Vec::new();
 
                     for i in 0..count as isize {
@@ -297,11 +269,7 @@ impl Plugin {
                             tag: self.create_string(detail.0).unwrap().into(),
                             folder_name: self.create_string(detail.1).unwrap().into(),
                             last_modified: SystemTime::UNIX_EPOCH + Duration::from_secs(detail.2),
-                            data: if detail.3.is_null() {
-                                None
-                            } else {
-                                Some(CStr::from_ptr(detail.3).to_bytes().to_vec())
-                            },
+                            data: self.data_from_ptr(detail.3, detail.4),
                         });
                     }
 
@@ -327,3 +295,34 @@ pub struct PluginInfo {
     icon_url: String,
     filename: OsString,
 }
+
+#[repr(C)]
+struct DLLResult {
+    pub value: DLLString,
+    pub error: DLLString,
+}
+
+#[repr(C)]
+struct DLLFileResult {
+    pub ptr: DLLString,
+    pub size: u64,
+    pub error: DLLString,
+}
+
+#[repr(C)]
+struct DLLCloudResult {
+    pub ptr: DLLFileDetails,
+    pub count: u64,
+    pub error: DLLString,
+}
+
+type DLLString = *const c_char;
+type DLLFileDetails = *const (DLLString, DLLString, u64, DLLString, u64);
+type AuthFunction = unsafe extern "C" fn(DLLString) -> DLLResult;
+type AuthUrlFunction = unsafe extern "C" fn(DLLString) -> DLLString;
+type ExtractCredentialsFunction = unsafe extern "C" fn(DLLString) -> DLLResult;
+type UploadFunction =
+    unsafe extern "C" fn(DLLString, DLLString, DLLString, u64, DLLString, u64) -> DLLString;
+type DownloadFunction = unsafe extern "C" fn(DLLString, DLLString, DLLString) -> DLLFileResult;
+type RemoveFunction = unsafe extern "C" fn(DLLString, DLLString, DLLString) -> DLLString;
+type ReadCloudFunction = unsafe extern "C" fn(DLLString) -> DLLCloudResult;
