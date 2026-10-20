@@ -79,17 +79,11 @@ pub fn start_server() -> u16 {
             response: None,
         },
         move |url| {
-            let result = write_app_state(|s| {
-                let mut plugin = s.plugin.take().unwrap();
-                let result = plugin.process_save_credentials(&url);
-                if result {
-                    s.plugin = Some(plugin);
-                }
-                result
-            });
             stop_server();
-            if result {
+            if write_app_state(|s| s.plugin.as_mut().unwrap().process_save_credentials(&url)) {
                 init_download_folders();
+            } else {
+                write_app_state(|s| s.plugin.take());
             }
         },
     )

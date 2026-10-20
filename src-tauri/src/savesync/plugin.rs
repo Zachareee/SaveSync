@@ -155,7 +155,7 @@ impl Plugin {
             .is_some_and(|DLLResult { value, error }| unsafe {
                 self.create_string(value)
                     .map(|creds| self.write_creds(&creds));
-                self.test_error_empty(error)
+                error.is_null()
             })
     }
 
