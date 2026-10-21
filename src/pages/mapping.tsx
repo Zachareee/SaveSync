@@ -5,7 +5,7 @@ import { useNavigate } from "@solidjs/router"
 import { open } from "@tauri-apps/plugin-dialog"
 import { RequiredList } from "@/types/data"
 import PageRoot from "@/PageRoot"
-import { chain, difference, every, map, partialRight, unary } from "lodash-es"
+import _, { difference, every, map, partialRight, unary } from "lodash"
 
 type MappingArray = [string, string][]
 
@@ -16,7 +16,7 @@ const createRemovePath = (setMapping: ReturnType<typeof createStore<MappingArray
 
 function saveAndClose([mapping, navigate]: [MappingArray, () => {}]) {
   invoke("set_mapping", {
-    map: chain(mapping)
+    map: _(mapping)
       .filter(unary(partialRight(every)))
       .fromPairs()
       .mapValues(v => stringToOsString(v))
@@ -29,7 +29,7 @@ export default function Mapping() {
   const [requiredList, setRequiredList] = createStore<RequiredList>([])
 
   invoke("get_mapping").then(({ mapping, required }) => {
-    setMapping(chain(mapping).mapValues(v => osStringToString(v)).toPairs().sortBy(0).value())
+    setMapping(_(mapping).mapValues(v => osStringToString(v)).toPairs().sortBy(0).value())
     setRequiredList(required.toSorted())
   })
 

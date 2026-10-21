@@ -1,7 +1,7 @@
 import { useNavigate } from "@solidjs/router"
 import { createSignal, For } from "solid-js"
 import toast from "solid-toast"
-import { includes, isEqual, mapValues, negate, partial, partialRight, unary } from "lodash-es"
+import { includes, isEqual, mapValues, negate, partial, partialRight, unary } from "lodash"
 import { Portal } from "solid-js/web"
 import { reconcile } from "solid-js/store"
 import { load } from "@tauri-apps/plugin-store"

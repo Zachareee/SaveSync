@@ -7,7 +7,7 @@ import { useNavigate, useParams } from "@solidjs/router";
 import Folder from "@suid/icons-material/Folder"
 import InsertDriveFile from "@suid/icons-material/InsertDriveFile"
 import Loop from "@suid/icons-material/Loop"
-import { mapValues } from "lodash-es";
+import { mapValues } from "lodash";
 import { Index } from "solid-js";
 import { Portal } from "solid-js/web";
 

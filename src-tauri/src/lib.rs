@@ -68,14 +68,14 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_oauth::init())
         .invoke_handler(tauri::generate_handler![
-            get_plugins,
-            get_mapping,
-            set_mapping,
-            get_watched_folders,
-            filetree,
             add_plugin,
+            filetree,
+            get_mapping,
+            get_plugins,
+            get_watched_folders,
+            logged_in,
             logout,
-            logged_in
+            set_mapping,
         ])
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show_window" => {

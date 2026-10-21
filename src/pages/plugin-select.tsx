@@ -1,4 +1,4 @@
-import { map, pick, sortBy } from "lodash-es"
+import { map, pick, sortBy } from "lodash"
 import { createSignal, Index, onMount, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";

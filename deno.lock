@@ -17,8 +17,8 @@
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
     "npm:@tauri-apps/plugin-process@~2.3.1": "2.3.1",
     "npm:@tauri-apps/plugin-store@2": "2.4.3",
-    "npm:@types/lodash-es@^4.17.12": "4.17.12",
-    "npm:lodash-es@^4.18.1": "4.18.1",
+    "npm:@types/lodash@^4.17.26": "4.17.26",
+    "npm:lodash@^4.18.1": "4.18.1",
     "npm:postcss@^8.5.1": "8.5.15",
     "npm:solid-js@^1.9.3": "1.9.14",
     "npm:solid-toast@0.5": "0.5.0_solid-js@1.9.14",
@@ -778,14 +778,8 @@
     "@types/estree@1.0.8": {
       "integrity": "sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w=="
     },
-    "@types/lodash-es@4.17.12": {
-      "integrity": "sha512-0NgftHUcV4v34VhXm8QBSftKVXtbkBG3ViCjs6+eJ5a6y6Mi/jiFGPc1sC7QK+9BFhWrURE3EOggmWaSxL9OzQ==",
-      "dependencies": [
-        "@types/lodash"
-      ]
-    },
-    "@types/lodash@4.17.15": {
-      "integrity": "sha512-w/P33JFeySuhN6JLkysYUK2gEmy9kHHFN7E8ro0tkfmlDOgxBDzWEZ/J8cWA+fHqFevpswDTFZnDx+R9lbL6xw=="
+    "@types/lodash@4.17.26": {
+      "integrity": "sha512-48NWfiY6oNcKOh47Z4h+sIvwcQR91h6KPhaYKgeMIrkT2jV82Gy90SErj60vW8jQbeMSOSbhIv3bZ7JoqPPVhA=="
     },
     "babel-plugin-jsx-dom-expressions@0.39.6_@babel+core@7.26.0": {
       "integrity": "sha512-HMkTn5A3NyydEgG7HKmm48YcnsQQyqeT6SKNWh2TrS6nn5rOLeHDfg5hPbrRUCFUqaT9WGn5NInQfMc3qne3Dg==",
@@ -996,8 +990,8 @@
         "lightningcss-win32-x64-msvc"
       ]
     },
-    "lodash-es@4.18.1": {
-      "integrity": "sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A=="
+    "lodash@4.18.1": {
+      "integrity": "sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q=="
     },
     "lru-cache@5.1.1": {
       "integrity": "sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==",
@@ -1208,8 +1202,8 @@
         "npm:@tauri-apps/plugin-opener@2",
         "npm:@tauri-apps/plugin-process@~2.3.1",
         "npm:@tauri-apps/plugin-store@2",
-        "npm:@types/lodash-es@^4.17.12",
-        "npm:lodash-es@^4.18.1",
+        "npm:@types/lodash@^4.17.26",
+        "npm:lodash@^4.18.1",
         "npm:solid-js@^1.9.3",
         "npm:solid-toast@0.5",
         "npm:tailwindcss@^4.0.3",
