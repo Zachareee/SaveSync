@@ -23,10 +23,9 @@ use std::{
     },
     ffi::{OsStr, OsString},
     ops::RangeInclusive,
-    thread,
     time::SystemTime,
 };
-use tauri::{Event, Listener};
+use tauri::{Event, Listener, async_runtime};
 use tauri_plugin_oauth::OauthConfig;
 use tauri_plugin_opener::open_url;
 
@@ -79,7 +78,7 @@ pub fn start_server() -> u16 {
             ports: Some(PORTS.collect()),
             response: None,
         },
-        move |url| {
+        |url| {
             stop_server();
             if write_app_state(|s| s.plugin.as_mut().unwrap().process_save_credentials(&url)) {
                 init_download_folders();
@@ -100,13 +99,13 @@ pub fn init_download_folders() {
     emitter::init_result();
 }
 
-pub fn collect_filter_from_cloud<F>(lambda: F) -> thread::JoinHandle<()>
+pub fn collect_filter_from_cloud<F>(lambda: F)
 where
     F: Fn(&String) -> bool + Send + 'static,
 {
     let last_sync = app_store().last_sync();
 
-    thread::spawn(move || {
+    async_runtime::spawn_blocking(move || {
         if let Some(details) = write_app_state(|s| {
             let plugin = s.plugin_mut_ref();
             plugin.read_cloud().inspect(|details| {
@@ -120,17 +119,10 @@ where
                 .filter(|FileDetails { tag, .. }| lambda(tag))
                 .for_each(|f| {
                     let last_sync = last_sync.clone();
-                    thread::Builder::new()
-                        .name(format!(
-                            "tag: {}, folder: {}",
-                            f.tag,
-                            f.folder_name.to_string_lossy()
-                        ))
-                        .spawn(move || process_cloud_details(f, last_sync))
-                        .unwrap();
+                    async_runtime::spawn_blocking(move || process_cloud_details(f, last_sync));
                 });
         }
-    })
+    });
 }
 
 fn process_cloud_details(
@@ -238,7 +230,7 @@ struct SyncStruct {
 fn sync_listener(event: Event) {
     let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
 
-    thread::spawn(move || {
+    async_runtime::spawn_blocking(move || {
         let bool = toggle_watch(&tag, &foldername);
         if bool {
             upload_file(&tag, &strip_zip_extension(&foldername))
