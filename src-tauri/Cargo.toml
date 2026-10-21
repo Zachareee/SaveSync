@@ -21,20 +21,22 @@ debug = 0
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = ["tray-icon"] }
-tauri-plugin-opener = "2"
+libloading = "0"
+log = "0.4.34"
+notify-debouncer-full = "0"
+regex = "1"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-regex = "1"
-zip = "8"
-notify-debouncer-full = "0"
-tauri-plugin-store = "2"
-tauri-plugin-dialog = "2"
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-deep-link = "2"
-libloading = "0"
-tauri-plugin-oauth = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-log = "2"
 tauri-plugin-notification = "2"
+tauri-plugin-oauth = "2"
+tauri-plugin-opener = "2"
 tauri-plugin-process = "2"
+tauri-plugin-store = "2"
+zip = "8"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2"

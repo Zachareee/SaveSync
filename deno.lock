@@ -7,11 +7,12 @@
     "npm:@suid/material@0.19": "0.19.0_solid-js@1.9.14",
     "npm:@suid/vite-plugin@~0.4.1": "0.4.1_vite@6.4.2",
     "npm:@tailwindcss/vite@^4.0.3": "4.0.3_vite@6.4.2",
-    "npm:@tauri-apps/api@2": "2.11.0",
+    "npm:@tauri-apps/api@2": "2.12.4",
     "npm:@tauri-apps/cli@2": "2.2.5",
     "npm:@tauri-apps/plugin-autostart@~2.5.1": "2.5.1",
     "npm:@tauri-apps/plugin-deep-link@2": "2.4.9",
     "npm:@tauri-apps/plugin-dialog@2": "2.7.1",
+    "npm:@tauri-apps/plugin-log@~2.10.1": "2.10.1",
     "npm:@tauri-apps/plugin-notification@~2.3.3": "2.3.3",
     "npm:@tauri-apps/plugin-opener@2": "2.2.5",
     "npm:@tauri-apps/plugin-process@~2.3.1": "2.3.1",
@@ -628,8 +629,8 @@
         "vite"
       ]
     },
-    "@tauri-apps/api@2.11.0": {
-      "integrity": "sha512-7CinYODhky9lmO23xHnUFv0Xt43fbtWMyxZcLcRBlFkcgXKuEirBvHpmtJ89YMhyeGcq20Wuc47Fa4XjyniywA=="
+    "@tauri-apps/api@2.12.4": {
+      "integrity": "sha512-pVmfis+4zT8H0Qhp3xPZx9Ju7kpzvA6rr/PSJPyuwfvucTQ8sVt61NYU9KMkK703UFlYadFmjKA4HhybOtN0gg=="
     },
     "@tauri-apps/cli-darwin-arm64@2.2.5": {
       "integrity": "sha512-qdPmypQE7qj62UJy3Wl/ccCJZwsv5gyBByOrAaG7u5c/PB3QSxhNPegice2k4EHeIuApaVJOoe/CEYVgm/og2Q==",
@@ -711,6 +712,12 @@
     },
     "@tauri-apps/plugin-dialog@2.7.1": {
       "integrity": "sha512-OK1UBXYt+ojcmxMktzzuyonYIFta8CmAASpX+CA+DTGK24KlHjhYI6x2iOJ/TjZF4N7/ACK1oFmEOjIY9IhzOQ==",
+      "dependencies": [
+        "@tauri-apps/api"
+      ]
+    },
+    "@tauri-apps/plugin-log@2.10.1": {
+      "integrity": "sha512-QYgxDunUZP+Cd3ev+8ItOc3Q6uUFkEhRHdTolxUtlC/8SGsc5IyVjGgFclprkAx736HUCUYfh2vqUr3qwNfTTw==",
       "dependencies": [
         "@tauri-apps/api"
       ]
@@ -1196,6 +1203,7 @@
         "npm:@tauri-apps/plugin-autostart@~2.5.1",
         "npm:@tauri-apps/plugin-deep-link@2",
         "npm:@tauri-apps/plugin-dialog@2",
+        "npm:@tauri-apps/plugin-log@~2.10.1",
         "npm:@tauri-apps/plugin-notification@~2.3.3",
         "npm:@tauri-apps/plugin-opener@2",
         "npm:@tauri-apps/plugin-process@~2.3.1",
