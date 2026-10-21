@@ -26,7 +26,7 @@ export type EmitTypes = {
   init: OsString
   refresh: undefined
   abort: OsString
-  sync: { tag: string, foldername: OsString }
+  sync: { tag: string, foldername: OsString, is_folder: boolean }
   unload: undefined
   saved_plugin: undefined
   conflict_resolve: [string, OsString, string]

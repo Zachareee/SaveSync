@@ -7,7 +7,7 @@ use crate::{
         fs_utils::recurse_directories,
         plugin::{FileDetails, Plugin},
         watch::{
-            dump_watchers, handle_buffer, strip_zip_extension, toggle_watch, upload_file,
+            PathType, dump_watchers, handle_buffer, strip_zip_extension, toggle_watch, upload_file,
             watch_folder,
         },
     },
@@ -225,15 +225,29 @@ fn abort_listener(event: Event) {
 struct SyncStruct {
     tag: String,
     foldername: OsString,
+    is_folder: bool,
 }
 
 fn sync_listener(event: Event) {
-    let SyncStruct { tag, foldername } = from_str(event.payload()).unwrap();
+    let SyncStruct {
+        tag,
+        foldername,
+        is_folder,
+    } = from_str(event.payload()).unwrap();
+
+    let pathtype = {
+        let foldername = foldername.clone();
+        if is_folder {
+            PathType::Directory(foldername.into())
+        } else {
+            PathType::File(foldername.into())
+        }
+    };
 
     async_runtime::spawn_blocking(move || {
         let bool = toggle_watch(&tag, &foldername);
         if bool {
-            upload_file(&tag, &strip_zip_extension(&foldername))
+            upload_file(&tag, &pathtype)
         };
         emitter::sync_result(&tag, &foldername, bool);
     });

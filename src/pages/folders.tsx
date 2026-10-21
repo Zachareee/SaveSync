@@ -14,7 +14,7 @@ import { Portal } from "solid-js/web";
 export default function Folders() {
   const navigate = useNavigate()
   const params = useParams()
-  const { TAGNAME } = mapValues(params, decodeURIComponent)
+  const { TAGNAME: tag } = mapValues(params, decodeURIComponent)
 
   unlisten([
     listen("sync_result", ([tag, folder, bool]) => {
@@ -22,19 +22,19 @@ export default function Folders() {
     })
   ])
 
-  const sync_folder = (foldername: OsString) => {
-    setFolders(TAGNAME, osStringToString(foldername), "loading", true)
-    emit("sync", { tag: TAGNAME, foldername })
+  const sync_folder = ({ foldername, is_folder }: { foldername: OsString, is_folder: boolean }) => {
+    setFolders(tag, osStringToString(foldername), "loading", true)
+    emit("sync", { tag, foldername, is_folder })
   }
 
   return <PageRoot>
     <div class="w-full h-screen flex-col content-center justify-center items-center">
-      <Index each={Object.entries(folders[TAGNAME])}>
+      <Index each={Object.entries(folders[tag])}>
         {
-          foldername => <DivButton onclick={[sync_folder, stringToOsString(foldername()[0])]}>
-            <input type="checkbox" class="mr-4 rounded-2xl" checked={foldername()[1].synced} onclick={(e) => e.preventDefault()} />
-            {foldername()[1].folder ? <Folder /> : <InsertDriveFile />} {foldername()[0]}
-            <Loop style={{ "visibility": foldername()[1].loading ? "visible" : "hidden" }} class="ml-2" />
+          e => <DivButton onclick={[sync_folder, { foldername: stringToOsString(e()[0]), is_folder: e()[1].folder }]}>
+            <input type="checkbox" class="mr-4 rounded-2xl" checked={e()[1].synced} onclick={(e) => e.preventDefault()} />
+            {e()[1].folder ? <Folder /> : <InsertDriveFile />} {e()[0]}
+            <Loop style={{ "visibility": e()[1].loading ? "visible" : "hidden" }} class="ml-2" />
           </DivButton>
         }
       </Index>
