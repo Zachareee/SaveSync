@@ -58,7 +58,22 @@ impl Default for AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().build())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .format(|out, message, record| {
+                    // https://docs.rs/tauri-plugin-log/latest/src/tauri_plugin_log/lib.rs.html#5-925
+                    // let format =
+                    //     format_description!("[[[year]-[month]-[day]][[[hour]:[minute]:[second]]");
+                    out.finish(format_args!(
+                        "[{}:{}][{}] {}",
+                        record.target(),
+                        record.line().unwrap_or_default(),
+                        record.level(),
+                        message
+                    ));
+                })
+                .build(),
+        )
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_deep_link::init())

@@ -1,3 +1,4 @@
+use log::trace;
 use notify_debouncer_full::{Debouncer, RecommendedCache, new_debouncer, notify::*};
 use std::{
     collections::HashMap,
@@ -25,6 +26,7 @@ static WATCHERS: LazyLock<
 const ZIPEXTENSION: &'static str = "savesynczip";
 
 pub fn upload_file(tag: &str, path: &PathType) {
+    trace!("Uploading file {path:?}");
     sync_notify(DesktopNotification {
         title: Some(format!("Syncing {tag} save")),
         body: Some(format!(
@@ -114,7 +116,7 @@ fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, Recom
     debouncer
 }
 
-#[derive(Eq, Hash, PartialEq, Clone)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone)]
 pub enum PathType {
     Directory(PathBuf),
     File(PathBuf),

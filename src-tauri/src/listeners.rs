@@ -13,6 +13,7 @@ use crate::{
     },
     write_app_state,
 };
+use log::trace;
 use serde::Deserialize;
 use serde_json::from_str;
 use std::{
@@ -167,30 +168,30 @@ fn process_cloud_details(
         // cloud < local < syncd (Ignore)
         // local < cloud < syncd (Ignore)
 
+        trace!("Comparing {path:?}");
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
             (k, Less) => {
-                println!("Less branch");
                 if let Some(buf) = data {
                     match k {
-                        Less => {
-                            println!("Both less");
+                        Equal | Less => {
+                            trace!("{item:?} is ahead of client both on local and cloud");
                             store_buffer(&tag, &item, buf);
                             emitter::conflicting_files(&tag, &item, (local_date, cloud_date));
                             return;
                         }
-                        _ => {
-                            println!("Extracting");
+                        Greater => {
+                            trace!("{item:?} is out of date on local");
                             handle_buffer(&path, &fileinfo, buf);
                         }
                     }
                 }
             }
             (Less, Equal | Greater) => {
-                println!("Less with equal or greater");
+                trace!("Less with equal or greater");
                 upload_file(&tag, &fileinfo)
             }
             (i, j) => {
-                println!("{i:?}, {j:?}");
+                trace!("{i:?}, {j:?}");
                 if local_date == SystemTime::UNIX_EPOCH
                     && let Some(buf) = data
                 {
