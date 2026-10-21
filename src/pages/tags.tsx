@@ -11,46 +11,50 @@ import { emit, invoke, unlisten } from "@/logic/backend"
 import { conflicting_listener } from "@/logic/conflicting_window"
 
 export default function Tags() {
-  const navigate = useNavigate()
-  const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
+  function _Tags() {
+    const navigate = useNavigate()
+    const [silenceMissingMappings, setSilenceMappingsMissing] = createSignal<boolean>(false)
 
-  const store = load("store.json")
-  store.then(s =>
-    s.get<boolean>("silenceMissingMappings").then(setSilenceMappingsMissing)
-  ).then(() =>
-    invoke("get_mapping").then(({ mapping, required }) => {
-      const current = Object.keys(mapping)
-      if (required.some(negate(partial(includes, current))) && !silenceMissingMappings())
-        toast.error(
-          (t) =>
-            <p onclick={() => {
-              toast.dismiss(t.id)
-              navigate("/mapping")
-            }}>Some folders were not synced, please check Tag Mapping</p>
-        )
-    })
-  )
+    const store = load("store.json")
+    store.then(s =>
+      s.get<boolean>("silenceMissingMappings").then(setSilenceMappingsMissing)
+    ).then(() =>
+      invoke("get_mapping").then(({ mapping, required }) => {
+        const current = Object.keys(mapping)
+        if (required.some(negate(partial(includes, current))) && !silenceMissingMappings())
+          toast.error(
+            (t) =>
+              <p onclick={() => {
+                toast.dismiss(t.id)
+                navigate("/mapping")
+              }}>Some folders were not synced, please check Tag Mapping</p>
+          )
+      })
+    )
 
-  unlisten([conflicting_listener()])()
+    unlisten([conflicting_listener()])()
 
-  updateFileTree()
+    updateFileTree()
 
-  return <PageRoot>
-    <div class="flex justify-center overflow-y-auto">
-      <div class="text-center">
-        <For each={Object.keys(folders).toSorted()}>
-          {elem =>
-            <div class="border-white border-3 rounded-full m-4 px-4 py-2 bg-indigo-600 cursor-pointer hover:bg-indigo-800" onclick={[navigate, `/tags/${encodeURIComponent(elem)}`]}>
-              {elem}
+    return <PageRoot>
+      <div class="flex justify-center overflow-y-auto">
+        <div class="text-center">
+          <For each={Object.keys(folders).toSorted()}>
+            {elem =>
+              <div class="border-white border-3 rounded-full m-4 px-4 py-2 bg-indigo-600 cursor-pointer hover:bg-indigo-800" onclick={[navigate, `/tags/${encodeURIComponent(elem)}`]}>
+                {elem}
+              </div>
+            }
+          </For>
+          <Portal>
+            <div class="fixed right-0 bottom-0 m-4">
+              <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
             </div>
-          }
-        </For>
-        <Portal>
-          <div class="fixed right-0 bottom-0 m-4">
-            <button onclick={() => { emit("unload"); navigate("/") }}>Back to plugin select</button>
-          </div>
-        </Portal>
+          </Portal>
+        </div>
       </div>
-    </div>
-  </PageRoot>
+    </PageRoot>
+  }
+  return _Tags
 }
+

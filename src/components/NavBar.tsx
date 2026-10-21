@@ -5,6 +5,7 @@ import NavOption from "./NavOption";
 const navs = Object.entries({
   "Folders": "/tags",
   "Tag mapping": "/mapping",
+  "Save profiles": "/profiles",
   "Settings": "/settings"
 })
 

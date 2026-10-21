@@ -11,7 +11,7 @@ import { exit } from "@tauri-apps/plugin-process"
 import { createWindow } from "@/logic/window";
 import { listen, invoke, osStringToString } from "@/logic/backend";
 import { FileTree } from "@/types/data";
-import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings } from "@/pages";
+import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings, Profiles } from "@/pages";
 
 export const [folders, setFolders] = createStore<FileTree>();
 export function updateFileTree() {
@@ -63,8 +63,10 @@ function App() {
   return <>
     <Toaster position="bottom-center" containerClassName="cursor-pointer" />
     <Router>
-      <Route path={"/tags"} component={Tags} />
+      <Route path={"/tags"} component={Tags("/path")} />
       <Route path={"/tags/:TAGNAME"} component={Folders} />
+      <Route path={"/profiles"} component={Tags("/profiles")} />
+      <Route path={"/profiles/:TAGNAME"} component={Profiles} />
       <Route path={"/error"} component={ErrorPage} />
       <Route path={"/mapping"} component={Mapping} />
       <Route path={"/conflicting"} component={Conflicting} />

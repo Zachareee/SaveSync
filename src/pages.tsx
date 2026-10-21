@@ -5,3 +5,4 @@ export { default as Mapping } from "./pages/mapping";
 export { default as Conflicting } from "./pages/conflicting";
 export { default as Folders } from "./pages/folders";
 export { default as Settings } from "./pages/settings";
+export { default as Profiles } from "./pages/profiles"
