@@ -1,18 +1,41 @@
 import "./App.css";
 import { onCleanup, onMount } from "solid-js";
-import { createStore } from "solid-js/store";
+import { createStore, reconcile } from "solid-js/store";
 import { Route, Router } from "@solidjs/router";
 import { Toaster } from "solid-toast";
+import { isEqual, mapValues, partialRight, unary } from "lodash";
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { exit } from "@tauri-apps/plugin-process"
 
 import { createWindow } from "@/logic/window";
-import { listen, osStringToString } from "@/logic/backend";
+import { listen, invoke, osStringToString } from "@/logic/backend";
 import { FileTree } from "@/types/data";
 import { Conflicting, ErrorPage, Folders, Mapping, PluginSelect, Tags, Settings } from "@/pages";
 
 export const [folders, setFolders] = createStore<FileTree>();
+export function updateFileTree() {
+  invoke("filetree").then(payload => {
+    invoke("get_watched_folders").then(watched => {
+      setFolders(reconcile(
+        mapValues(payload, (v, k) =>
+          Object.fromEntries(v.map(([filename, isFolder]) =>
+            [
+              osStringToString(filename),
+              {
+                folder: isFolder,
+                synced: watched.some(
+                  unary(partialRight(isEqual, [k, filename]))
+                ),
+                loading: false
+              }
+            ]
+          ))
+        )
+      ))
+    })
+  })
+}
 
 (() => {
   if (getCurrentWindow().label === "main")

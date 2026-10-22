@@ -1,14 +1,13 @@
 import { useNavigate } from "@solidjs/router"
 import { createSignal, For } from "solid-js"
 import toast from "solid-toast"
-import { includes, isEqual, mapValues, negate, partial, partialRight, unary } from "lodash"
+import { includes, negate, partial } from "lodash"
 import { Portal } from "solid-js/web"
-import { reconcile } from "solid-js/store"
 import { load } from "@tauri-apps/plugin-store"
 
-import { folders, setFolders } from "@/App"
+import { folders, updateFileTree } from "@/App"
 import PageRoot from "@/PageRoot"
-import { emit, invoke, osStringToString, unlisten } from "@/logic/backend"
+import { emit, invoke, unlisten } from "@/logic/backend"
 import { conflicting_listener } from "@/logic/conflicting_window"
 
 export default function Tags() {
@@ -34,26 +33,7 @@ export default function Tags() {
 
   unlisten([conflicting_listener()])()
 
-  invoke("filetree").then(payload => {
-    invoke("get_watched_folders").then(watched => {
-      setFolders(reconcile(
-        mapValues(payload, (v, k) =>
-          Object.fromEntries(v.map(([filename, isFolder]) =>
-            [
-              osStringToString(filename),
-              {
-                folder: isFolder,
-                synced: watched.some(
-                  unary(partialRight(isEqual, [k, filename]))
-                ),
-                loading: false
-              }
-            ]
-          ))
-        )
-      ))
-    })
-  })
+  updateFileTree()
 
   return <PageRoot>
     <div class="flex justify-center overflow-y-auto">
