@@ -18,8 +18,7 @@ pub fn zip_dir<P>(path: P) -> (Vec<u8>, SystemTime)
 where
     P: AsRef<Path>,
 {
-    let buffer = Cursor::new(vec![]);
-    let mut zip = ZipWriter::new(buffer);
+    let mut zip = ZipWriter::new(Cursor::new(vec![]));
 
     let date = recurse_directories(
         path.as_ref(),

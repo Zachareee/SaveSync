@@ -143,12 +143,15 @@ fn process_cloud_details(
             })
         });
 
-        let local_date = recurse_directories(
-            &path.join(fileinfo.value()),
-            SystemTime::UNIX_EPOCH,
-            &mut |_, _, e| e.metadata()?.modified(),
-            &max,
-        )
+        let local_date = match fileinfo {
+            PathType::Directory(ref dir) => recurse_directories(
+                &path.join(dir),
+                SystemTime::UNIX_EPOCH,
+                &mut |_, _, e| e.metadata()?.modified(),
+                &max,
+            ),
+            PathType::File(ref file) => file.metadata().and_then(|r| r.modified()),
+        }
         .unwrap_or(SystemTime::UNIX_EPOCH);
 
         // 6 permutations
@@ -160,7 +163,7 @@ fn process_cloud_details(
         // cloud < local < syncd (Ignore)
         // local < cloud < syncd (Ignore)
 
-        trace!("Comparing {path:?}");
+        trace!("Comparing {path:?} {item:?}");
         match (last_sync.cmp(&local_date), last_sync.cmp(&cloud_date)) {
             (k, Less) => {
                 if let Some(buf) = data {
@@ -194,7 +197,6 @@ fn process_cloud_details(
 
         let val = fileinfo.value();
         watch_folder(&tag, &val);
-        emitter::sync_result(&tag, &val.as_os_str(), true);
     }
 }
 
@@ -235,21 +237,15 @@ fn sync_listener(event: Event) {
         is_folder,
     } = from_str(event.payload()).unwrap();
 
-    let pathtype = {
-        let foldername = foldername.clone();
-        if is_folder {
-            PathType::Directory(foldername.into())
-        } else {
-            PathType::File(foldername.into())
-        }
-    };
-
     async_runtime::spawn_blocking(move || {
-        let bool = toggle_watch(&tag, &foldername);
-        if bool {
-            upload_file(&tag, &pathtype)
-        };
-        emitter::sync_result(&tag, &foldername, bool);
+        toggle_watch(
+            &tag,
+            if is_folder {
+                PathType::Directory(foldername.into())
+            } else {
+                PathType::File(foldername.into())
+            },
+        );
     });
 }
 

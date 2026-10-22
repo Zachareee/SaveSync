@@ -12,6 +12,7 @@ use std::{
 use crate::{
     app_store, read_app_state,
     savesync::{
+        emitter,
         notifications::{DesktopNotification, sync_notify},
         zip_utils,
     },
@@ -140,6 +141,8 @@ pub fn strip_zip_extension(path: impl AsRef<Path>) -> PathType {
 }
 
 pub fn watch_folder(tag: &str, path: impl AsRef<Path>) {
+    emitter::sync_result(&tag, path.as_ref().as_os_str(), true);
+
     mutate_watchers(|map| {
         let key = (tag.to_owned(), path.as_ref().to_path_buf().into_os_string());
         if !map.contains_key(&key) {
@@ -148,36 +151,40 @@ pub fn watch_folder(tag: &str, path: impl AsRef<Path>) {
     })
 }
 
-pub fn toggle_watch(tag: &str, path: &OsString) -> bool {
+pub fn toggle_watch(tag: &str, pathtype: PathType) -> bool {
+    let pathname = pathtype.value().as_os_str();
+
     mutate_watchers(|map| {
-        let key = (tag.to_owned(), path.to_owned());
+        let key = (tag.to_owned(), pathname.to_owned());
 
         // !exist, !initial => add
         // !exist, initial => add
         // exist, !initial => remove
         // exist, initial => nothing
 
-        let path = Path::new(path);
+        let path = Path::new(pathname);
         let abspath = app_store().resolve_path(&tag, &path);
         let pathbuf = if abspath.is_dir() {
             path.with_extension(ZIPEXTENSION)
         } else {
             path.into()
         };
-        match map.contains_key(&key) {
-            true => {
-                map.remove(&key);
-                read_app_state(|s| {
-                    s.plugin_ref()
-                        .remove(tag.as_bytes(), pathbuf.as_os_str().as_encoded_bytes())
-                });
-                false
-            }
-            false => {
-                map.insert(key.clone(), setup_watcher(key));
-                true
-            }
+
+        let contains = map.contains_key(&key);
+        if contains {
+            map.remove(&key);
+            read_app_state(|s| {
+                trace!("Removing {key:?} from cloud");
+                s.plugin_ref()
+                    .remove(tag.as_bytes(), pathbuf.as_os_str().as_encoded_bytes())
+            });
+        } else {
+            map.insert(key.clone(), setup_watcher(key));
+            upload_file(&tag, &pathtype)
         }
+        emitter::sync_result(&tag, pathname, !contains);
+
+        !contains
     })
 }
 
