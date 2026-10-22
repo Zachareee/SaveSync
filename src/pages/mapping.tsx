@@ -71,7 +71,7 @@ export default function Mapping() {
           <button onclick={[addPath, ""]}>Add mapping</button>
         </div>
         <div class="m-4">
-          <button onclick={[saveAndClose, [mapping, () => navigate("/folders")]]}>Save and close</button>
+          <button onclick={[saveAndClose, [mapping, () => navigate("/tags")]]}>Save and close</button>
         </div>
       </div>
     </div>
