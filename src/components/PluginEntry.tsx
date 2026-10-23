@@ -3,8 +3,7 @@ import { Component, JSX, Show } from "solid-js";
 import Logout from "@suid/icons-material/Logout";
 
 const PluginEntry: Component<JSX.HTMLAttributes<HTMLDivElement>
-  & Record<"init" | "logout", () => void>
-  & { elem: Info, loggedIn: boolean }>
+  & { elem: Info, loggedIn: () => boolean, init: () => void, logout: (e: MouseEvent) => void }>
   = ({ init, logout, elem: { icon_url, description, author, name }, loggedIn }) => {
     return <>
       <div onclick={init} class="flex border justify-end p-1.5 cursor-pointer rounded-lg">
@@ -17,7 +16,7 @@ const PluginEntry: Component<JSX.HTMLAttributes<HTMLDivElement>
           <span>Written by: {author}</span>
         </div>
         <div class="inline-block">
-          <Show when={loggedIn}>
+          <Show when={loggedIn()}>
             <Logout class="bg-red-600 size-full content-center hover:outline-2" onClick={logout} />
           </Show>
         </div>

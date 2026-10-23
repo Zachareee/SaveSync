@@ -82,6 +82,7 @@ export default function PluginSelect() {
 
   function logout(filepath: OsString) {
     return (e: MouseEvent) => {
+      e.preventDefault()
       e.stopPropagation()
       invoke("logout", { filepath }).then(refresh)
     }
@@ -110,8 +111,8 @@ export default function PluginSelect() {
               <PluginEntry
                 init={() => init(pick(elem(), ["name", "filename"]))}
                 elem={elem()}
-                loggedIn={loggedInPlugins[osStringToString(elem().filename)]}
-                logout={() => logout(elem().filename)}
+                loggedIn={() => loggedInPlugins[osStringToString(elem().filename)]}
+                logout={logout(elem().filename)}
               />
             }
           </Index>
