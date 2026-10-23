@@ -1,4 +1,4 @@
-import { map, pick, sortBy } from "lodash"
+import { map, mapValues, pick, sortBy } from "lodash"
 import { createSignal, Index, onMount, Show } from "solid-js";
 import { Portal } from "solid-js/web";
 import { createStore, reconcile } from "solid-js/store";
@@ -10,6 +10,24 @@ import { Info } from "@/types/data";
 import { OsString } from "@/types/rust";
 import PluginEntry, { AbortInfo } from "@/components/PluginEntry";
 import PluginDialog from "@/components/PluginDialog";
+import { setFolders } from "@/logic/folder_state";
+
+function updateFileTree() {
+  invoke("filetree").then(payload => setFolders(
+    mapValues(payload, v =>
+      Object.fromEntries(v.map(([filename, isFolder]) =>
+        [
+          osStringToString(filename),
+          {
+            folder: isFolder,
+            synced: false,
+            loading: false
+          }
+        ]
+      ))
+    ))
+  )
+}
 
 export default function PluginSelect() {
   const navigate = useNavigate()
@@ -30,7 +48,10 @@ export default function PluginSelect() {
   }
 
   unlisten([
-    listen("init_result", () => navigate("/tags"))
+    listen("init_result", () => {
+      updateFileTree()
+      navigate("/tags")
+    })
   ])()
 
   // run on app boot

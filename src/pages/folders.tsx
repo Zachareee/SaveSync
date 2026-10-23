@@ -1,6 +1,6 @@
-import { folders, setFolders, updateFileTree } from "@/App";
+import { folders, setFolders } from "@/logic/folder_state";
 import DivButton from "@/components/DivButton";
-import { emit, listen, osStringToString, stringToOsString, unlisten } from "@/logic/backend";
+import { emit, osStringToString, stringToOsString } from "@/logic/backend";
 import PageRoot from "@/PageRoot";
 import { OsString } from "@/types/rust";
 import { useNavigate, useParams } from "@solidjs/router";
@@ -13,16 +13,7 @@ import { Portal } from "solid-js/web";
 
 export default function Folders() {
   const navigate = useNavigate()
-  const params = useParams()
-  const { TAGNAME: tag } = mapValues(params, decodeURIComponent)
-
-  updateFileTree()
-
-  unlisten([
-    listen("sync_result", ([tag, folder, bool]) => {
-      setFolders(tag, osStringToString(folder), { loading: false, synced: bool })
-    })
-  ])
+  const { TAGNAME: tag } = mapValues(useParams(), i => decodeURIComponent(i ?? ""))
 
   const sync_folder = ({ foldername, is_folder }: { foldername: OsString, is_folder: boolean }) => {
     setFolders(tag, osStringToString(foldername), "loading", true)

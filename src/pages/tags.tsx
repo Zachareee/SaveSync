@@ -5,7 +5,7 @@ import { includes, negate, partial } from "lodash"
 import { Portal } from "solid-js/web"
 import { load } from "@tauri-apps/plugin-store"
 
-import { folders, updateFileTree } from "@/App"
+import { folders } from "@/logic/folder_state"
 import PageRoot from "@/PageRoot"
 import { emit, invoke, unlisten } from "@/logic/backend"
 import { conflicting_listener } from "@/logic/conflicting_window"
@@ -32,8 +32,6 @@ export default function Tags() {
   )
 
   unlisten([conflicting_listener()])()
-
-  updateFileTree()
 
   return <PageRoot>
     <div class="flex justify-center overflow-y-auto">

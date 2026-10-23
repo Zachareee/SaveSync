@@ -80,11 +80,6 @@ pub fn set_mapping(map: PathMapping) {
 }
 
 #[command]
-pub fn get_watched_folders() -> Vec<(String, OsString)> {
-    watched_folders()
-}
-
-#[command]
 pub fn add_plugin(filepath: OsString) {
     let path = PathBuf::from(filepath);
     fs::copy(

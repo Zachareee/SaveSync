@@ -11,7 +11,6 @@ export type InvokeTypes = {
   saved_plugin: [undefined, boolean]
   get_mapping: [undefined, { mapping: FolderMapping, required: RequiredList }]
   set_mapping: [{ map: FolderMapping }, undefined]
-  get_watched_folders: [undefined, [string, OsString][]]
   filetree: [undefined, Record<string, [OsString, boolean][]>]
   add_plugin: [{ filepath: OsString }, undefined]
   logout: [{ filepath: OsString }, undefined]

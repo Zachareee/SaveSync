@@ -4,7 +4,7 @@ mod listeners;
 mod savesync;
 
 use commands::{
-    add_plugin, filetree, get_mapping, get_plugins, get_watched_folders, logged_in, logout,
+    add_plugin, filetree, get_mapping, get_plugins, logged_in, logout,
     set_mapping,
 };
 use listeners::emit_listeners;
@@ -87,7 +87,6 @@ pub fn run() {
             filetree,
             get_mapping,
             get_plugins,
-            get_watched_folders,
             logged_in,
             logout,
             set_mapping,
