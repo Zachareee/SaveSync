@@ -150,7 +150,7 @@ fn process_cloud_details(
                 &mut |_, _, e| e.metadata()?.modified(),
                 &max,
             ),
-            PathType::File(ref file) => file.metadata().and_then(|r| r.modified()),
+            PathType::File(ref file) => path.join(file).metadata().and_then(|r| r.modified()),
         }
         .unwrap_or(SystemTime::UNIX_EPOCH);
 
