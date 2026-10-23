@@ -1,4 +1,4 @@
-import { folders, setFolders } from "@/App";
+import { folders, setFolders, updateFileTree } from "@/App";
 import DivButton from "@/components/DivButton";
 import { emit, listen, osStringToString, stringToOsString, unlisten } from "@/logic/backend";
 import PageRoot from "@/PageRoot";
@@ -15,6 +15,8 @@ export default function Folders() {
   const navigate = useNavigate()
   const params = useParams()
   const { TAGNAME: tag } = mapValues(params, decodeURIComponent)
+
+  updateFileTree()
 
   unlisten([
     listen("sync_result", ([tag, folder, bool]) => {

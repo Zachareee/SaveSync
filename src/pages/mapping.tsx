@@ -6,7 +6,6 @@ import { open } from "@tauri-apps/plugin-dialog"
 import { RequiredList } from "@/types/data"
 import PageRoot from "@/PageRoot"
 import _, { difference, every, map, partialRight, unary } from "lodash"
-import { updateFileTree } from "@/App"
 
 type MappingArray = [string, string][]
 
@@ -38,8 +37,6 @@ export default function Mapping() {
   const removePath = createRemovePath(setMapping)
 
   const navigate = useNavigate()
-
-  updateFileTree()
 
   return <PageRoot>
     <div class="h-screen flex-col content-center">
