@@ -12,8 +12,8 @@ import PluginEntry, { AbortInfo } from "@/components/PluginEntry";
 import PluginDialog from "@/components/PluginDialog";
 import { setFolders } from "@/logic/folder_state";
 
-function updateFileTree() {
-  invoke("filetree").then(payload => setFolders(
+async function updateFileTree() {
+  return invoke("filetree").then(payload => setFolders(
     mapValues(payload, v =>
       Object.fromEntries(v.map(([filename, isFolder]) =>
         [
@@ -49,8 +49,7 @@ export default function PluginSelect() {
 
   unlisten([
     listen("init_result", () => {
-      updateFileTree()
-      navigate("/tags")
+      updateFileTree().then(() => navigate("/tags"))
     })
   ])()
 

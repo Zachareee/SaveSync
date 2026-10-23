@@ -96,7 +96,6 @@ fn stop_server() {
 
 pub fn init_download_folders() {
     collect_filter_from_cloud(|_| true);
-    emitter::init_result();
 }
 
 pub fn collect_filter_from_cloud<F>(lambda: F)
@@ -122,6 +121,8 @@ where
                     async_runtime::spawn_blocking(move || process_cloud_details(f, last_sync));
                 });
         }
+
+        emitter::init_result();
     });
 }
 
