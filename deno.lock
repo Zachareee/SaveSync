@@ -17,6 +17,7 @@
     "npm:@tauri-apps/plugin-opener@2": "2.5.4",
     "npm:@tauri-apps/plugin-process@~2.3.1": "2.3.1",
     "npm:@tauri-apps/plugin-store@2": "2.4.3",
+    "npm:@thisbeyond/solid-dnd@~0.7.5": "0.7.5_solid-js@1.9.12",
     "npm:@types/lodash@^4.17.15": "4.17.26",
     "npm:@types/lodash@^4.17.26": "4.17.26",
     "npm:lodash@^4.17.21": "4.18.1",
@@ -761,6 +762,12 @@
         "@tauri-apps/api"
       ]
     },
+    "@thisbeyond/solid-dnd@0.7.5_solid-js@1.9.12": {
+      "integrity": "sha512-DfI5ff+yYGpK9M21LhYwIPlbP2msKxN2ARwuu6GF8tT1GgNVDTI8VCQvH4TJFoVApP9d44izmAcTh/iTCH2UUw==",
+      "dependencies": [
+        "solid-js"
+      ]
+    },
     "@types/babel__core@7.20.5": {
       "integrity": "sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==",
       "dependencies": [
@@ -1229,6 +1236,7 @@
         "npm:@tauri-apps/plugin-opener@2",
         "npm:@tauri-apps/plugin-process@~2.3.1",
         "npm:@tauri-apps/plugin-store@2",
+        "npm:@thisbeyond/solid-dnd@~0.7.5",
         "npm:@types/lodash@^4.17.26",
         "npm:lodash@^4.18.1",
         "npm:solid-js@^1.9.3",
