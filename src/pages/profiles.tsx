@@ -3,7 +3,7 @@ import PageRoot from "@/PageRoot"
 import { Component, createSignal, For, JSX } from "solid-js"
 import { useNavigate, useParams } from "@solidjs/router"
 
-import { closestCenter, createDraggable, DragDropProvider, DragDropSensors, DragEventHandler } from "@thisbeyond/solid-dnd"
+import { createDraggable, createDroppable, DragDropProvider, DragDropSensors, DragEventHandler } from "@thisbeyond/solid-dnd"
 import { mapValues } from "lodash"
 import { Portal } from "solid-js/web"
 
@@ -19,11 +19,18 @@ declare module 'solid-js' {
 
 const Draggable: Component<JSX.HTMLAttributes<HTMLDivElement> & { id: string }> = (props) => {
   const draggable = createDraggable(props.id)
-  return <div use:draggable>{props.children}</div>
+  return <div use:draggable {...props}>{props.children}</div>
 }
 
-const onDragEnd: DragEventHandler = ({ droppable }) => {
-  console.log(droppable?.id)
+const Droppable: Component<JSX.HTMLAttributes<HTMLDivElement> & { id: string }> = (props) => {
+  const droppable = createDroppable(props.id)
+  return <div use:droppable {...props}>{props.children}</div>
+}
+
+const onDragEnd: DragEventHandler = ({ droppable, draggable }) => {
+  if (draggable && droppable) {
+    console.log(`draggable: ${draggable.id}, droppable: ${droppable.id}`)
+  }
 }
 
 export default function Profiles() {
@@ -47,13 +54,18 @@ export default function Profiles() {
   return <PageRoot>
     <div>
       <input value={pattern()} onInput={(e) => setPattern(e.target.value)} />
-      <DragDropProvider onDragEnd={onDragEnd} collisionDetector={closestCenter}>
+      <DragDropProvider onDragEnd={onDragEnd}>
         <DragDropSensors />
-        <div>
-          <div class="inline-block">
+        <div class="flex">
+          <div class="flex-col place-items-center outline-2 h-full space-y-4">
             <For each={items.filter(file => (file.match(pattern())?.length ?? 0) > 0)}>
               {
-                item => <p>{item}</p>
+                item => <div class="flex space-x-4">
+                  <h1>{item}</h1>
+                  <Droppable id={item} >
+                    <div class="p-2 outline-2 select-none">Drop here</div>
+                  </Droppable>
+                </div>
               }
             </For>
           </div>
