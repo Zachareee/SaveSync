@@ -27,7 +27,7 @@ static WATCHERS: LazyLock<
 const ZIPEXTENSION: &'static str = "savesynczip";
 
 pub fn upload_file(tag: &str, path: &PathType) {
-    trace!("Uploading file {path:?}");
+    trace!("Uploading {path:?}");
     sync_notify(DesktopNotification {
         title: Some(format!("Syncing {tag} save")),
         body: Some(format!(
@@ -98,13 +98,14 @@ pub fn handle_buffer(path: impl AsRef<Path>, foldername: &PathType, buffer: Vec<
 fn setup_watcher(key: (String, PathType)) -> Debouncer<RecommendedWatcher, RecommendedCache> {
     let (tag, path) = key.clone();
 
-    let mut debouncer = new_debouncer(Duration::from_secs(1), None, move |result| match result {
-        Ok(_) => upload_file(&tag, &path),
-        Err(err) => println!("{err:?}"),
+    let mut debouncer = new_debouncer(Duration::from_secs(1), None, move |result| {
+        if let Ok(_) = result {
+            upload_file(&tag, &path)
+        }
     })
     .unwrap();
 
-    let (tag, path) = key.clone();
+    let (tag, path) = key;
 
     debouncer
         .watch(
