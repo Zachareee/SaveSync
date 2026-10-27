@@ -1,48 +1,78 @@
-import { folders } from "@/App"
+import { folders } from "@/logic/folder_state"
 import PageRoot from "@/PageRoot"
-import { Component, createSignal, For } from "solid-js"
-import { useParams } from "@solidjs/router"
+import { Component, createSignal, For, JSX } from "solid-js"
+import { useNavigate, useParams } from "@solidjs/router"
 
-import { createDraggable, DragDropProvider, useDragDropContext } from "@thisbeyond/solid-dnd"
+import { closestCenter, createDraggable, DragDropProvider, DragDropSensors, DragEventHandler } from "@thisbeyond/solid-dnd"
+import { mapValues } from "lodash"
+import { Portal } from "solid-js/web"
+
+declare module 'solid-js' {
+  namespace JSX {
+    interface Directives {
+      draggable: boolean
+      droppable: boolean
+      sortable: boolean
+    }
+  }
+}
+
+const Draggable: Component<JSX.HTMLAttributes<HTMLDivElement> & { id: string }> = (props) => {
+  const draggable = createDraggable(props.id)
+  return <div use:draggable>{props.children}</div>
+}
+
+const onDragEnd: DragEventHandler = ({ droppable }) => {
+  console.log(droppable?.id)
+}
 
 export default function Profiles() {
-  const params = useParams()
-  const { TAGNAME } = Object.fromEntries(
-    Object.entries(params).map(([k, v]) => [k, decodeURIComponent(v)])
-  )
-  const [pattern, setPattern] = createSignal("")
+  const { TAGNAME: tag } = mapValues(useParams<Record<string, string>>(), decodeURIComponent)
+  const [pattern, setPattern] = createSignal("", {
+    equals(prev, next) {
+      try {
+        new RegExp(next)
+      } catch {
+        return true
+      }
 
-  const items = Object.entries(folders[TAGNAME]).filter(([_, { synced }]) => synced).map(([file]) => file)
+      return prev === next
+    }
+  })
+  const navigate = useNavigate()
 
-  const Draggable: Component<{ id: string }> = (props) => {
-    const draggable = createDraggable(props.id)
-    return <div use:draggable>droppable</div>
-  }
-
-  const Sandbox = () => {
-    const [, { onDragEnd }] = useDragDropContext()
-
-    onDragEnd(({ draggable, droppable }) => {
-      if (droppable) { }
-    })
-  }
+  const items = Object.keys(folders[tag])
+  const profiles = ["allen", "bob", "charles"]
 
   return <PageRoot>
     <div>
       <input value={pattern()} onInput={(e) => setPattern(e.target.value)} />
-      <div>
-        <For each={items.filter(file => {
-          try {
-            return file.match(new RegExp(pattern(), "i"))?.length ?? 0 > 1
-          } catch {
-            return true
-          }
-        })}>
-          {
-            item => <div class="overflow-x-auto text-nowrap bg-slate-900 rounded-2xl p-4 m-2 select-none cursor-pointer hover:outline-2">{item}</div>
-          }
-        </For>
-      </div>
+      <DragDropProvider onDragEnd={onDragEnd} collisionDetector={closestCenter}>
+        <DragDropSensors />
+        <div>
+          <div class="inline-block">
+            <For each={items.filter(file => (file.match(pattern())?.length ?? 0) > 0)}>
+              {
+                item => <p>{item}</p>
+              }
+            </For>
+          </div>
+          <div class="inline-block">
+            <For each={profiles}>
+              {
+                item => <Draggable id={item}>
+                  <div class="overflow-x-auto text-nowrap bg-slate-900 rounded-2xl p-4 m-2 select-none cursor-pointer hover:outline-2">{item}</div>
+                </Draggable>
+              }
+            </For>
+          </div>
+        </div>
+      </DragDropProvider>
     </div>
+    <Portal>
+      <div class="fixed right-0 bottom-0 m-4">
+        <button onclick={[navigate, "/profiles"]}>Back to profiles</button>
+      </div>
+    </Portal>
   </PageRoot>
 }
