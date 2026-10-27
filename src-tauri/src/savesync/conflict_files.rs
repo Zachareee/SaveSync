@@ -25,7 +25,7 @@ pub fn resolve_conflict((tag, foldername, resolution): (String, OsString, String
     let fileinfo = strip_zip_extension(&foldername);
     if resolution == "local" {
         upload_file(&tag, &fileinfo);
-        watch_folder(&tag, &fileinfo.value());
+        watch_folder(&tag, &fileinfo);
         return;
     }
     let buf = retrieve_buffer(&tag, &foldername);

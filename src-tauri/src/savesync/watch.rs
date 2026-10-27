@@ -21,7 +21,7 @@ use crate::{
 use super::zip_utils::zip_dir;
 
 static WATCHERS: LazyLock<
-    Mutex<HashMap<(String, OsString), Debouncer<RecommendedWatcher, RecommendedCache>>>,
+    Mutex<HashMap<(String, PathType), Debouncer<RecommendedWatcher, RecommendedCache>>>,
 > = LazyLock::new(|| Mutex::new(HashMap::new()));
 
 const ZIPEXTENSION: &'static str = "savesynczip";
@@ -95,9 +95,8 @@ pub fn handle_buffer(path: impl AsRef<Path>, foldername: &PathType, buffer: Vec<
     });
 }
 
-fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, RecommendedCache> {
+fn setup_watcher(key: (String, PathType)) -> Debouncer<RecommendedWatcher, RecommendedCache> {
     let (tag, path) = key.clone();
-    let path = strip_zip_extension(path);
 
     let mut debouncer = new_debouncer(Duration::from_secs(1), None, move |result| match result {
         Ok(_) => upload_file(&tag, &path),
@@ -109,7 +108,7 @@ fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, Recom
 
     debouncer
         .watch(
-            &app_store().resolve_path(&tag, path),
+            &app_store().resolve_path(&tag, path.value()),
             RecursiveMode::Recursive,
         )
         .unwrap();
@@ -121,6 +120,12 @@ fn setup_watcher(key: (String, OsString)) -> Debouncer<RecommendedWatcher, Recom
 pub enum PathType {
     Directory(PathBuf),
     File(PathBuf),
+}
+
+impl From<&PathType> for PathType {
+    fn from(value: &PathType) -> Self {
+        value.to_owned()
+    }
 }
 
 impl PathType {
@@ -140,11 +145,11 @@ pub fn strip_zip_extension(path: impl AsRef<Path>) -> PathType {
     }
 }
 
-pub fn watch_folder(tag: &str, path: impl AsRef<Path>) {
-    emitter::sync_result(&tag, path.as_ref().as_os_str(), true);
+pub fn watch_folder(tag: &str, path: &PathType) {
+    emitter::sync_result(&tag, path.value().as_os_str(), true);
 
     mutate_watchers(|map| {
-        let key = (tag.to_owned(), path.as_ref().to_path_buf().into_os_string());
+        let key = (tag.to_owned(), path.to_owned());
         if !map.contains_key(&key) {
             map.insert(key.clone(), setup_watcher(key));
         }
@@ -155,7 +160,7 @@ pub fn toggle_watch(tag: &str, pathtype: PathType) -> bool {
     let pathname = pathtype.value().as_os_str();
 
     mutate_watchers(|map| {
-        let key = (tag.to_owned(), pathname.to_owned());
+        let key = (tag.to_owned(), pathtype.to_owned());
 
         // !exist, !initial => add
         // !exist, initial => add
@@ -163,7 +168,7 @@ pub fn toggle_watch(tag: &str, pathtype: PathType) -> bool {
         // exist, initial => nothing
 
         let path = Path::new(pathname);
-        let abspath = app_store().resolve_path(&tag, &path);
+        let abspath = app_store().resolve_path(&tag, path);
         let pathbuf = if abspath.is_dir() {
             path.with_extension(ZIPEXTENSION)
         } else {
@@ -188,7 +193,7 @@ pub fn toggle_watch(tag: &str, pathtype: PathType) -> bool {
     })
 }
 
-pub fn watched_folders() -> Vec<(String, OsString)> {
+pub fn watched_folders() -> Vec<(String, PathType)> {
     mutate_watchers(|map| {
         map.iter()
             .map(|((tag, path), _)| (tag.into(), path.into()))
@@ -200,7 +205,7 @@ pub fn dump_watchers() {
     mutate_watchers(|map| map.clear());
 }
 
-pub fn drop_watchers(watchers: Vec<(String, OsString)>) {
+pub fn drop_watchers(watchers: Vec<(String, PathType)>) {
     mutate_watchers(|map| {
         watchers.iter().for_each(|k| {
             map.remove(k);
@@ -211,7 +216,7 @@ pub fn drop_watchers(watchers: Vec<(String, OsString)>) {
 pub fn mutate_watchers<F, T>(func: F) -> T
 where
     F: FnOnce(
-        &mut HashMap<(String, OsString), Debouncer<RecommendedWatcher, RecommendedCache>>,
+        &mut HashMap<(String, PathType), Debouncer<RecommendedWatcher, RecommendedCache>>,
     ) -> T,
 {
     func(&mut WATCHERS.lock().unwrap())

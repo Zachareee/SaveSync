@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::ffi::OsString;
-use std::fs::{self, DirEntry};
+use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
@@ -54,7 +54,7 @@ where
     path.as_ref()
         .read_dir()
         .unwrap()
-        .collect::<io::Result<Vec<DirEntry>>>()
+        .collect::<io::Result<Vec<fs::DirEntry>>>()
         .unwrap()
         .iter()
         .map(|e| (e.file_name(), e.metadata().unwrap().is_dir()))

@@ -196,8 +196,7 @@ fn process_cloud_details(
             }
         }
 
-        let val = fileinfo.value();
-        watch_folder(&tag, &val);
+        watch_folder(&tag, &fileinfo);
     }
 }
 
