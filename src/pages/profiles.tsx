@@ -18,11 +18,13 @@ declare module 'solid-js' {
 }
 
 const Draggable: Component<JSX.HTMLAttributes<HTMLDivElement> & { id: string }> = (props) => {
+  // @ts-ignore
   const draggable = createDraggable(props.id)
   return <div use:draggable {...props}>{props.children}</div>
 }
 
 const Droppable: Component<JSX.HTMLAttributes<HTMLDivElement> & { id: string }> = (props) => {
+  // @ts-ignore
   const droppable = createDroppable(props.id)
   return <div use:droppable {...props}>{props.children}</div>
 }
