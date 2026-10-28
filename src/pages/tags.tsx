@@ -2,12 +2,11 @@ import { useNavigate } from "@solidjs/router"
 import { createSignal, For } from "solid-js"
 import toast from "solid-toast"
 import { includes, negate, partial } from "lodash"
-import { Portal } from "solid-js/web"
 import { load } from "@tauri-apps/plugin-store"
 
 import { folders } from "@/logic/folder_state"
 import PageRoot from "@/PageRoot"
-import { emit, invoke, unlisten } from "@/logic/backend"
+import { invoke, unlisten } from "@/logic/backend"
 import { conflicting_listener } from "@/logic/conflicting_window"
 
 export default function Tags(path: string) {

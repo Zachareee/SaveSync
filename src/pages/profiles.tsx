@@ -1,6 +1,6 @@
 import { folders } from "@/logic/folder_state"
 import PageRoot from "@/PageRoot"
-import { Component, createSignal, For, Index, JSX, Show } from "solid-js"
+import { Component, createSignal, For, JSX } from "solid-js"
 import { useNavigate, useParams } from "@solidjs/router"
 
 import { createDraggable, createDroppable, DragDropProvider, DragDropSensors, DragEventHandler } from "@thisbeyond/solid-dnd"
@@ -13,7 +13,6 @@ declare module 'solid-js' {
     interface Directives {
       draggable: boolean
       droppable: boolean
-      sortable: boolean
     }
   }
 }
@@ -45,24 +44,26 @@ export default function Profiles() {
   })
 
   const items = Object.keys(folders[tag])
-  const [profiles, setProfiles] = createSignal(["allen", "bob", "charles"])
+  const [profiles, setProfiles] = createStore(["allen", "bob", "charles"])
   const [profileMapping, setProfileMapping] = createStore<Record<string, string>>(Object.fromEntries(items.map(k => [k, k])))
 
   const onDragEnd: DragEventHandler = ({ droppable, draggable }) => {
     if (draggable && droppable) {
       // emit(actual file, profile file)
-      console.log(`draggable: ${draggable.id}, droppable: ${droppable.id}`)
+      const draggableString = draggable.id.toString()
+      const droppableString = droppable.id.toString()
+
       setProfiles(flow(
-        partialRight(without, draggable.id.toString()),
-        partialRight(concat, profileMapping[droppable.id.toString()])
+        partialRight(without, draggableString),
+        partialRight(concat, profileMapping[droppableString]),
       ))
-      setProfileMapping(droppable.id.toString(), draggable.id.toString())
+      setProfileMapping(droppableString, draggableString)
     }
   }
 
   return <PageRoot>
     <div>
-      <input value={pattern()} onInput={(e) => setPattern(e.target.value)} />
+      <input value={pattern()} onInput={({ target: { value } }) => setPattern(value)} />
       <DragDropProvider onDragEnd={onDragEnd}>
         <DragDropSensors />
         <div class="flex">
@@ -81,11 +82,18 @@ export default function Profiles() {
             </For>
           </div>
           <div class="inline-block">
-            <For each={profiles()}>
+            <h1>Profiles</h1>
+            <For each={profiles}>
               {
-                item => <Draggable id={item}>
-                  <div class="overflow-x-auto text-nowrap bg-slate-900 rounded-2xl p-4 m-2 select-none cursor-pointer hover:outline-2">{item}</div>
-                </Draggable>
+                (item, idx) =>
+                  <Draggable id={item}>
+                    <div class="overflow-x-auto text-nowrap bg-slate-900 rounded-2xl m-2 select-none cursor-pointer hover:outline-2">
+                      <input
+                        value={item}
+                        class="max-w-[16ch]"
+                        onInput={({ target: { value } }) => setProfiles(idx(), value)} />
+                    </div>
+                  </Draggable>
               }
             </For>
           </div>
