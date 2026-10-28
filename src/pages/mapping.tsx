@@ -40,27 +40,25 @@ export default function Mapping() {
 
   return <PageRoot>
     <div class="h-screen flex-col content-center">
-      <div class="flex flex-col items-center overflow-y-auto max-h-1/2">
-        <div class="space-y-2">
-          <Index each={mapping}>
-            {(elem, idx) =>
-              <div class="text-center space-x-0.5">
-                <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} class="w-min" />
-                <input value={elem()[1]} disabled />
-                <button
-                  onclick={() => open({ directory: true, multiple: false }).then(path => {
-                    if (path)
-                      setMapping(idx, 1, path)
-                  })}
-                >Browse</button>
-                <button onclick={[removePath, idx]}>Delete</button>
-              </div>
-            }
-          </Index>
-        </div>
+      <div class="flex flex-col items-center overflow-y-auto max-h-1/2 space-y-2">
+        <Index each={mapping}>
+          {(elem, idx) =>
+            <div class="text-center space-x-0.5">
+              <input value={elem()[0]} onInput={e => setMapping(idx, 0, e.target.value)} class="w-min" />
+              <input value={elem()[1]} disabled />
+              <button
+                onclick={() => open({ directory: true, multiple: false }).then(path => {
+                  if (path)
+                    setMapping(idx, 1, path)
+                })}
+              >Browse</button>
+              <button onclick={[removePath, idx]}>Delete</button>
+            </div>
+          }
+        </Index>
       </div>
       <br />
-      <div class="flex-col text-center">
+      <div class="text-center">
         <h2> Missing tags </h2>
         <For each={difference(requiredList, map(mapping, 0))} >
           {e => <button onclick={[addPath, e]}>{e}</button>}
