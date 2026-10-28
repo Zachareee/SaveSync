@@ -4,7 +4,7 @@ import { Component, createSignal, For, JSX } from "solid-js"
 import { useNavigate, useParams } from "@solidjs/router"
 
 import { createDraggable, createDroppable, DragDropProvider, DragDropSensors, DragEventHandler } from "@thisbeyond/solid-dnd"
-import { concat, flow, mapValues, partialRight, without } from "lodash"
+import _, { concat, flow, mapValues, partialRight, without } from "lodash"
 import { Portal } from "solid-js/web"
 import { createStore } from "solid-js/store"
 
@@ -27,6 +27,10 @@ const Droppable: Component<JSX.HTMLAttributes<HTMLDivElement> & { id: string }> 
   return <div use:droppable {...props}>{props.children}</div>
 }
 
+function createIdMap(names: string[]) {
+  return Object.fromEntries(names.map(e => [crypto.randomUUID(), e]))
+}
+
 export default function Profiles() {
   const { TAGNAME: tag } = mapValues(useParams<Record<string, string>>(), decodeURIComponent)
   const navigate = useNavigate()
@@ -43,21 +47,27 @@ export default function Profiles() {
     }
   })
 
-  const items = Object.keys(folders[tag])
-  const [profiles, setProfiles] = createStore(["allen", "bob", "charles"])
-  const [profileMapping, setProfileMapping] = createStore<Record<string, string>>(Object.fromEntries(items.map(k => [k, k])))
+  const folderNames = Object.keys(folders[tag])
+  const profileNames = ["allen", "bob", "charles"]
+
+  const uuidFolderMapping = createIdMap(folderNames)
+  const uuidProfileMapping = createIdMap(profileNames)
+  const [idMapping, setIdMapping] = createStore({ ...uuidFolderMapping, ...uuidProfileMapping })
+
+  const [inactiveProfiles, setInactiveProfiles] = createStore(Object.keys(uuidProfileMapping))
+  const [activeProfileMapping, setActiveProfileMapping] = createStore(_(uuidFolderMapping).keys().map(k => [k, k]).fromPairs().value())
 
   const onDragEnd: DragEventHandler = ({ droppable, draggable }) => {
     if (draggable && droppable) {
       // emit(actual file, profile file)
-      const draggableString = draggable.id.toString()
-      const droppableString = droppable.id.toString()
+      const draggableId = draggable.id.toString()
+      const droppableId = droppable.id.toString()
 
-      setProfiles(flow(
-        partialRight(without, draggableString),
-        partialRight(concat, profileMapping[droppableString]),
+      setInactiveProfiles(flow(
+        partialRight(without, draggableId),
+        partialRight(concat, activeProfileMapping[droppableId]),
       ))
-      setProfileMapping(droppableString, draggableString)
+      setActiveProfileMapping(droppableId, draggableId)
     }
   }
 
@@ -68,13 +78,19 @@ export default function Profiles() {
         <DragDropSensors />
         <div class="flex">
           <div class="flex-col place-items-center outline-2 h-full space-y-4 p-2 rounded-xl">
-            <For each={items.filter(file => (file.match(pattern())?.length ?? 0) > 0)}>
+            <For each={
+              _(uuidFolderMapping)
+                .toPairs()
+                .filter(([_, file]) => (file.match(pattern())?.length ?? 0) > 0)
+                .map(0)
+                .value()
+            }>
               {
-                item => <div class="flex space-x-4">
-                  <h1>{item}</h1>
-                  <Droppable id={item}>
+                id => <div class="flex space-x-4">
+                  <h1>{uuidFolderMapping[id]}</h1>
+                  <Droppable id={id}>
                     <div class="p-2 outline-2 select-none rounded-xl">
-                      {profileMapping[item]}
+                      {idMapping[activeProfileMapping[id]]}
                     </div>
                   </Droppable>
                 </div>
@@ -83,15 +99,15 @@ export default function Profiles() {
           </div>
           <div class="inline-block">
             <h1>Profiles</h1>
-            <For each={profiles}>
+            <For each={inactiveProfiles}>
               {
-                (item, idx) =>
-                  <Draggable id={item}>
+                id =>
+                  <Draggable id={id}>
                     <div class="overflow-x-auto text-nowrap bg-slate-900 rounded-2xl m-2 select-none cursor-pointer hover:outline-2">
                       <input
-                        value={item}
+                        value={idMapping[id]}
                         class="max-w-[16ch]"
-                        onInput={({ target: { value } }) => setProfiles(idx(), value)} />
+                        onInput={({ target: { value } }) => setIdMapping(id, value)} />
                     </div>
                   </Draggable>
               }
