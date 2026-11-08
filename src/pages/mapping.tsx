@@ -5,7 +5,8 @@ import { useNavigate } from "@solidjs/router"
 import { open } from "@tauri-apps/plugin-dialog"
 import { RequiredList } from "@/types/data"
 import PageRoot from "@/PageRoot"
-import _, { difference, every, map, partialRight, unary } from "lodash"
+import _, { difference, every, map, merge, partialRight, pick, unary } from "lodash"
+import { setFolders } from "@/logic/folder_state"
 
 type MappingArray = [string, string][]
 
@@ -22,6 +23,8 @@ function saveAndClose([mapping, navigate]: [MappingArray, () => {}]) {
       .mapValues(v => stringToOsString(v))
       .value()
   }).then(navigate)
+    .then(() => invoke("filetree"))
+    .then(tree => setFolders(f => merge(tree, pick(f, Object.keys(tree)))))
 }
 
 export default function Mapping() {

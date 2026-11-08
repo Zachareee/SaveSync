@@ -14,7 +14,11 @@ export type InvokeTypes = {
   filetree: [undefined, Record<string, [OsString, boolean][]>]
   add_plugin: [{ filepath: OsString }, undefined]
   logout: [{ filepath: OsString }, undefined]
-  logged_in: [{filepath: OsString}, boolean]
+  logged_in: [{ filepath: OsString }, boolean]
+
+  // return type Record<OsString, OsString>
+  get_profiles: [{ tag: string }, Record<any, any>]
+  change_active_profile: [{ tag: string, filename: OsString, profile: OsString }]
 };
 
 /**

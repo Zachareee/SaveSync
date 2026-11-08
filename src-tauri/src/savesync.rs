@@ -7,3 +7,4 @@ pub mod plugin;
 pub mod store;
 pub mod watch;
 pub mod zip_utils;
+pub mod profiles;

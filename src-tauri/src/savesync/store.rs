@@ -6,6 +6,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use log::trace;
 use serde_json::{Map, Value, from_value, json, to_value};
 use tauri::{Manager, Wry};
 use tauri_plugin_store::{Result, Store, StoreBuilder};
@@ -28,6 +29,7 @@ impl AppStore {
                 .default("hide_to_tray", true)
                 .default("sync_notifications", true)
                 .default("minimize_on_start", false)
+                .default("profiles", json!({}))
                 .auto_save(Duration::from_secs(60))
                 .build()
                 .unwrap(),
@@ -117,6 +119,34 @@ impl AppStore {
         self.set_last_sync(SystemTime::now());
         self.set_mapping(self.path_mapping());
         self.store.save()
+    }
+
+    fn profiles(&self) -> Map<String, Value> {
+        self.store
+            .get("profiles")
+            .unwrap_or_default()
+            .as_object()
+            .unwrap_or(&Map::new())
+            .to_owned()
+    }
+
+    pub fn get_active_profiles(&self, tag: &str) -> HashMap<OsString, OsString> {
+        self.profiles()
+            .get(tag)
+            .unwrap_or_default()
+            .as_object()
+            .unwrap_or(&Map::new())
+            .to_owned()
+            .into_iter()
+            .map(|(k, v)| (k.into(), from_value(v).unwrap_or_default()))
+            .collect()
+    }
+
+    pub fn set_active_profiles(&self, tag: &str, profile_map: HashMap<OsString, OsString>) {
+        trace!("{profile_map:?}");
+        let mut profiles = self.profiles();
+        profiles.insert(tag.to_owned(), to_value(profile_map).unwrap_or_default());
+        self.store.set("profiles", profiles);
     }
 }
 

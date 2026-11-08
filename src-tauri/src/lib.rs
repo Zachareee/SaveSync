@@ -4,8 +4,7 @@ mod listeners;
 mod savesync;
 
 use commands::{
-    add_plugin, filetree, get_mapping, get_plugins, logged_in, logout,
-    set_mapping,
+    add_plugin, filetree, get_mapping, get_plugins, get_profiles, logged_in, logout, set_mapping, change_active_profile
 };
 use listeners::emit_listeners;
 use savesync::{plugin::Plugin, store::AppStore};
@@ -90,6 +89,8 @@ pub fn run() {
             logged_in,
             logout,
             set_mapping,
+            get_profiles,
+            change_active_profile
         ])
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show_window" => {

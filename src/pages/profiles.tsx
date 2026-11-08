@@ -4,9 +4,11 @@ import { Component, createSignal, For, JSX } from "solid-js"
 import { useNavigate, useParams } from "@solidjs/router"
 
 import { createDraggable, createDroppable, DragDropProvider, DragDropSensors, DragEventHandler } from "@thisbeyond/solid-dnd"
-import _, { concat, flow, mapValues, partialRight, without } from "lodash"
+import _, { concat, flow, map, mapKeys, mapValues, partialRight, without } from "lodash"
 import { Portal } from "solid-js/web"
 import { createStore } from "solid-js/store"
+import { invoke, osStringToString, stringToOsString } from "@/logic/backend"
+import { OsString } from "@/types/rust"
 
 declare module 'solid-js' {
   namespace JSX {
@@ -49,21 +51,32 @@ export default function Profiles() {
     }
   })
 
-  const folderNames = Object.keys(folders[tag])
-  const profileNames = ["allen", "bob", "charles"]
+  const uuidFolderMapping = createIdMap(
+    Object.keys(folders[tag]).filter(name => !name.endsWith(".savesyncprofile"))
+  )
+  const [idMapping, setIdMapping] = createStore<Record<string, string>>({})
 
-  const uuidFolderMapping = createIdMap(folderNames)
-  const uuidProfileMapping = createIdMap(profileNames)
-  const [idMapping, setIdMapping] = createStore({ ...uuidFolderMapping, ...uuidProfileMapping })
+  const [uuidProfileMapping, setUuidProfileMapping] = createStore<Record<string, string>>({})
+  invoke("get_profiles", { tag })
+    .then(dict => (Object.keys(dict) as unknown as OsString[]).map((k: OsString) => osStringToString(k)))
+    .then(createIdMap)
+    .then(newMapping => {
+      setIdMapping({ ...uuidFolderMapping, ...newMapping })
+      setUuidProfileMapping(newMapping)
+    })
 
   const [inactiveProfiles, setInactiveProfiles] = createStore(Object.keys(uuidProfileMapping))
   const [activeProfileMapping, setActiveProfileMapping] = createStore(_(uuidFolderMapping).keys().map(k => [k, k]).fromPairs().value())
 
   const onDragEnd: DragEventHandler = ({ droppable, draggable }) => {
     if (draggable && droppable) {
-      // emit(actual file, profile file)
       const draggableId = draggable.id.toString()
       const droppableId = droppable.id.toString()
+      invoke("change_active_profile", {
+        tag,
+        filename: stringToOsString(idMapping[droppableId]),
+        profile: stringToOsString(idMapping[draggableId])
+      })
 
       setInactiveProfiles(flow(
         partialRight(without, draggableId),

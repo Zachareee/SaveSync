@@ -8,10 +8,12 @@ use serde::{Deserialize, Serialize};
 use tauri::command;
 
 use crate::listeners::collect_filter_from_cloud;
+use crate::savesync::profiles::swap_saves;
 use crate::savesync::watch::{drop_watchers, watched_folders};
 use crate::savesync::{
     config_paths,
     plugin::{Plugin, PluginInfo},
+    profiles,
     store::PathMapping,
 };
 use crate::{app_store, read_app_state};
@@ -97,4 +99,14 @@ pub fn logged_in(filepath: OsString) -> bool {
 #[command]
 pub fn logout(filepath: OsString) {
     let _ = fs::remove_file(config_paths::create_credential_path(filepath));
+}
+
+#[command]
+pub fn get_profiles(tag: String) -> HashMap<OsString, OsString> {
+    app_store().get_active_profiles(&tag)
+}
+
+#[command]
+pub fn change_active_profile(tag: String, filename: OsString, profile: OsString) {
+    profiles::swap_saves(&tag, &filename, &profile);
 }
