@@ -68,7 +68,7 @@ pub fn set_mapping(map: PathMapping) {
     drop_watchers(
         watched_folders()
             .into_iter()
-            .filter(|(k, _)| !map.contains_key(k))
+            .filter(|(k, v)| map.get(k).is_none_or(|value| v.value() != value))
             .collect(),
     );
     let store = app_store();
